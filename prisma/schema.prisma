@@ -62,7 +62,6 @@ model Subscription {
   details       String // JSON: forgotten reasons, bundle parts, price history, cancellation URL
 
   @@index([sessionId])
-  @@unique([sessionId, labelKey, frequency])
 }
 
 model Match {
