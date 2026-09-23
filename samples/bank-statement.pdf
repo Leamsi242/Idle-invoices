@@ -1,0 +1,109 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 3340 >>
+stream
+BT
+/F1 9 Tf
+11 TL
+40 800 Td
+(BANQUE EXEMPLE - Releve de compte joint) Tj T*
+(Titulaires: A. MARTIN et C. MARTIN) Tj T*
+(IBAN: FR14 2004 1010 0505 0001 3M02 606) Tj T*
+(Periode du 01/10/2025 au 30/09/2026) Tj T*
+() Tj T*
+(Date        Libelle                                   Montant EUR) Tj T*
+(06/10/2025  PRLV SEPA CANAL+                          -34,99) Tj T*
+(07/10/2025  PRLV SEPA FREE MOBILE                     -19,99) Tj T*
+(17/10/2025  CB DECATHLON                              -5,84) Tj T*
+(25/10/2025  VIR RECU A MARTIN                         +400,00) Tj T*
+(03/11/2025  CB PHARMACIE DU CENTRE                    -24,43) Tj T*
+(06/11/2025  PRLV SEPA CANAL+                          -34,99) Tj T*
+(07/11/2025  PRLV SEPA FREE MOBILE                     -19,99) Tj T*
+(25/11/2025  VIR RECU A MARTIN                         +400,00) Tj T*
+(28/11/2025  CB DECATHLON                              -52,38) Tj T*
+(04/12/2025  CB BOULANGERIE DU PORT                    -60,45) Tj T*
+(06/12/2025  PRLV SEPA CANAL+                          -34,99) Tj T*
+(07/12/2025  PRLV SEPA FREE MOBILE                     -19,99) Tj T*
+(25/12/2025  VIR RECU A MARTIN                         +400,00) Tj T*
+(06/01/2026  PRLV SEPA CANAL+                          -34,99) Tj T*
+(07/01/2026  PRLV SEPA FREE MOBILE                     -19,99) Tj T*
+(25/01/2026  VIR RECU A MARTIN                         +400,00) Tj T*
+(05/02/2026  CB PHARMACIE DU CENTRE                    -43,04) Tj T*
+(06/02/2026  PRLV SEPA CANAL+                          -34,99) Tj T*
+(07/02/2026  PRLV SEPA FREE MOBILE                     -19,99) Tj T*
+(25/02/2026  VIR RECU A MARTIN                         +400,00) Tj T*
+(25/02/2026  CB BOULANGERIE DU PORT                    -3,39) Tj T*
+(01/03/2026  CB BOULANGERIE DU PORT                    -58,57) Tj T*
+(06/03/2026  PRLV SEPA CANAL+                          -34,99) Tj T*
+(07/03/2026  PRLV SEPA FREE MOBILE                     -19,99) Tj T*
+(25/03/2026  VIR RECU A MARTIN                         +400,00) Tj T*
+(06/04/2026  PRLV SEPA CANAL+                          -34,99) Tj T*
+(07/04/2026  PRLV SEPA FREE MOBILE                     -19,99) Tj T*
+(25/04/2026  VIR RECU A MARTIN                         +400,00) Tj T*
+(28/04/2026  CB DECATHLON                              -57,28) Tj T*
+(06/05/2026  PRLV SEPA CANAL+                          -34,99) Tj T*
+(07/05/2026  PRLV SEPA FREE MOBILE                     -19,99) Tj T*
+(25/05/2026  VIR RECU A MARTIN                         +400,00) Tj T*
+(05/06/2026  CB DECATHLON                              -33,02) Tj T*
+(06/06/2026  PRLV SEPA CANAL+                          -34,99) Tj T*
+(07/06/2026  PRLV SEPA FREE MOBILE                     -19,99) Tj T*
+(09/06/2026  CB DECATHLON                              -10,93) Tj T*
+(25/06/2026  VIR RECU A MARTIN                         +400,00) Tj T*
+(25/06/2026  CB BOULANGERIE DU PORT                    -26,45) Tj T*
+(06/07/2026  PRLV SEPA CANAL+                          -34,99) Tj T*
+(07/07/2026  PRLV SEPA FREE MOBILE                     -19,99) Tj T*
+(25/07/2026  VIR RECU A MARTIN                         +400,00) Tj T*
+(03/08/2026  CB PHARMACIE DU CENTRE                    -36,98) Tj T*
+(06/08/2026  PRLV SEPA CANAL+                          -34,99) Tj T*
+(07/08/2026  PRLV SEPA FREE MOBILE                     -19,99) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 477 >>
+stream
+BT
+/F1 9 Tf
+11 TL
+40 800 Td
+(13/08/2026  CB BOULANGERIE DU PORT                    -12,61) Tj T*
+(25/08/2026  VIR RECU A MARTIN                         +400,00) Tj T*
+(06/09/2026  PRLV SEPA CANAL+                          -34,99) Tj T*
+(07/09/2026  PRLV SEPA FREE MOBILE                     -19,99) Tj T*
+(16/09/2026  CB PHARMACIE DU CENTRE                    -43,31) Tj T*
+(25/09/2026  VIR RECU A MARTIN                         +400,00) Tj T*
+() Tj T*
+(Fin du releve) Tj T*
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 6 0 R >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000216 00000 n 
+0000003608 00000 n 
+0000003734 00000 n 
+0000004262 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+4388
+%%EOF
