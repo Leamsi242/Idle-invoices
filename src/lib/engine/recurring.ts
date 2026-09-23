@@ -20,7 +20,7 @@ const MAX_PRICE_CHANGE = 0.6; // a larger jump is treated as a different charge
 interface Regularity { frequency: Frequency; missed: number }
 
 /** Checks that every interval fits one frequency, allowing a single missed payment (a double interval). */
-export function regularity(dates: string[]): Regularity | null {
+export function regularity(dates: string[], minOccurrences?: number): Regularity | null {
   if (dates.length < 2) return null;
   const intervals = dates.slice(1).map((d, i) => daysBetween(dates[i], d));
   for (const frequency of Object.keys(WINDOWS) as Frequency[]) {
@@ -31,7 +31,7 @@ export function regularity(dates: string[]): Regularity | null {
       if (days >= lo && days <= hi) ok++;
       else if (frequency !== "yearly" && days >= lo * 2 && days <= hi * 2) missed++;
     }
-    if (ok + missed === intervals.length && missed <= 1 && ok >= 1 && dates.length >= MIN_OCCURRENCES[frequency]) {
+    if (ok + missed === intervals.length && missed <= 1 && ok >= 1 && dates.length >= (minOccurrences ?? MIN_OCCURRENCES[frequency])) {
       return { frequency, missed };
     }
   }
@@ -122,12 +122,13 @@ export function toGroup(key: string, txs: NormalizedTransaction[], frequency: Fr
 /**
  * Step 1 of the core logic. Groups charges by key (cleaned label, or real merchant once
  * reconciled) and similar amount, then keeps the groups whose intervals are regular.
- * Returns the recurring groups and the leftover single charges (for yearly evidence).
+ * Returns the recurring groups and the leftover charges, still keyed, for the extra rules in
+ * the pipeline (yearly plans seen once, new subscriptions, paid trials).
  */
 export function detectRecurring(
   charges: NormalizedTransaction[],
   keyOf: (tx: NormalizedTransaction) => string,
-): { groups: RecurringGroup[]; leftovers: NormalizedTransaction[][] } {
+): { groups: RecurringGroup[]; leftovers: { key: string; txs: NormalizedTransaction[] }[] } {
   const byKey = new Map<string, NormalizedTransaction[]>();
   for (const tx of charges) {
     if (tx.amount <= 0) continue;
@@ -136,12 +137,12 @@ export function detectRecurring(
     byKey.set(key, [...(byKey.get(key) ?? []), tx]);
   }
   const groups: RecurringGroup[] = [];
-  const leftovers: NormalizedTransaction[][] = [];
+  const leftovers: { key: string; txs: NormalizedTransaction[] }[] = [];
   for (const [key, txs] of byKey) {
     for (const cluster of mergePriceChanges(amountClusters(txs))) {
       const reg = regularity(datesOf(cluster));
       if (reg) groups.push(toGroup(key, cluster, reg.frequency, reg.missed));
-      else leftovers.push(cluster);
+      else leftovers.push({ key, txs: cluster });
     }
   }
   return { groups: groups.sort((a, b) => a.key.localeCompare(b.key)), leftovers };

@@ -4,11 +4,17 @@ import { PER_YEAR, PERIOD_DAYS } from "./recurring";
 import { sameName } from "./labels";
 
 export const SMALL_MONTHLY_AMOUNT = 10;
+/** A subscription first charged this recently is "new": check it was meant to continue. */
+export const NEW_WITHIN_DAYS = 60;
+
+const SYMBOL: Record<string, string> = { EUR: "€", USD: "$", GBP: "£" };
+const price = (amount: number, currency: string) => (SYMBOL[currency] ? `${SYMBOL[currency]}${amount.toFixed(2)}` : `${amount.toFixed(2)} ${currency}`);
 
 export interface FlagContext {
   /** Receipts and app store records, used for "trial" and "no receipt email". */
   records: NormalizedTransaction[];
-  /** Last date covered by the uploaded statements. */
+  /** First and last dates covered by the uploaded statements. */
+  dataStart: string;
   dataEnd: string;
   usage: Record<string, Usage | undefined>;
 }
@@ -37,6 +43,14 @@ export function flagSubscriptions(subs: DetectedSubscription[], ctx: FlagContext
     if (emailsUploaded && !related.some((r) => r.source === "email")) reasons.push("No receipt email found");
     const bundle = bundles.find((b) => b !== s && b.bundle!.some((part) => sameName(part, s.serviceName)));
     if (bundle) reasons.push(`Already included in ${bundle.serviceName}`);
+    if (s.frequency === "weekly") reasons.push(`Billed every week, about ${price(monthlyEquivalent(s), s.currency)} a month`);
+    if (s.trialCharge) reasons.push(`Started with a ${price(s.trialCharge.amount, s.currency)} trial on ${s.trialCharge.date}`);
+    // "New" only means something if the statements go back far enough to show it was not there before.
+    const isNew = !!ctx.dataStart && daysBetween(s.firstSeen, ctx.dataEnd) <= NEW_WITHIN_DAYS && daysBetween(ctx.dataStart, s.firstSeen) >= 30;
+    if (isNew) reasons.push(`New: first charged on ${s.firstSeen}, check you meant to keep it`);
+    const stillCharging = (o: DetectedSubscription) => daysBetween(o.lastSeen, ctx.dataEnd) <= PERIOD_DAYS[o.frequency] * 1.5 + 3;
+    const twin = stillCharging(s) && subs.find((o) => o !== s && o.serviceName === s.serviceName && stillCharging(o));
+    if (twin) reasons.push("Charged twice: two accounts or a duplicate subscription?");
 
     const usage = ctx.usage[s.key] ?? s.usage;
     const overdue = daysBetween(s.lastSeen, ctx.dataEnd) > PERIOD_DAYS[s.frequency] * 1.5 + 3;
@@ -51,6 +65,7 @@ export function flagSubscriptions(subs: DetectedSubscription[], ctx: FlagContext
       status,
       forgottenReasons: reasons,
       includedIn: bundle?.serviceName,
+      isNew,
       yearlyCost: Math.round(s.currentAmount * PER_YEAR[s.frequency] * 100) / 100,
     };
   });

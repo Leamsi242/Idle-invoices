@@ -52,6 +52,8 @@ const n26: Row[] = [
   ...monthly(3, "BASIC-FIT FRANCE", () => 29.99, { kind: "Direct Debit", ref: "PRLV SEPA BF-778123" }),
   // Duolingo yearly plan through PayPal (charged once in the period).
   { date: "2025-11-16", label: "PAYPAL *", amount: 83.99, kind: "Direct Debit", ref: "1039920017 PAYPAL" },
+  // A trial that was never cancelled: WeTransfer Pro billed every week since late August.
+  ...["2026-08-26", "2026-09-02", "2026-09-09", "2026-09-16", "2026-09-23"].map((date) => ({ date, label: "WETRANSFER.COM", amount: 9.99, kind: "MasterCard Payment" })),
   // One-off eBay purchase through PayPal.
   { date: "2026-05-03", label: "PAYPAL *", amount: 45.0, kind: "Direct Debit", ref: "1041188820 PAYPAL" },
   { date: "2026-03-14", label: "SNCF CONNECT", amount: 67.4, kind: "MasterCard Payment" },
@@ -102,6 +104,10 @@ const card: Row[] = [
   ...monthly(9, "CB PADDLE.NET* FOCUSFLOW", (_i, y, m) => (y === 2026 && m >= 4 ? 4.99 : null)),
   // Deezer: stopped after March 2026 (cancelled).
   ...monthly(15, "CB DEEZER", (_i, y, m) => (y === 2025 || m <= 3 ? 11.99 : null)),
+  // Strava: €1 paid trial, then two monthly charges at full price (a subscription started recently).
+  { date: "2026-07-28", label: "CB STRAVA", amount: 1.0 },
+  { date: "2026-08-11", label: "CB STRAVA", amount: 11.99 },
+  { date: "2026-09-11", label: "CB STRAVA", amount: 11.99 },
   // Amazon Prime yearly: two renewals 362 days apart.
   { date: "2025-10-02", label: "CB AMAZON PRIME FR", amount: 69.9 },
   { date: "2026-09-29", label: "CB AMAZON PRIME FR", amount: 69.9 },

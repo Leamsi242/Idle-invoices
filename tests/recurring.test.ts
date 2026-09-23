@@ -89,7 +89,7 @@ describe("recurring detection on the samples", () => {
     ["Netflix", "monthly"], ["Spotify", "monthly"], ["Uber One", "monthly"], ["Disney+", "monthly"],
     ["Basic-Fit", "monthly"], ["Duolingo", "yearly"], ["Apple One", "monthly"], ["iCloud+", "monthly"],
     ["Notion", "monthly"], ["Paddle.Net* Focusflow", "monthly"], ["Deezer", "monthly"], ["Amazon Prime", "yearly"],
-    ["Canal+", "monthly"], ["Free Mobile", "monthly"],
+    ["Canal+", "monthly"], ["Free Mobile", "monthly"], ["WeTransfer", "weekly"], ["Strava", "monthly"],
   ];
 
   it("finds every subscription in /samples and nothing else", async () => {
@@ -108,7 +108,7 @@ describe("recurring detection on the samples", () => {
   it("finds the bank-only subscriptions from one CSV without any other source", async () => {
     const { transactions } = await parseSample("bank-n26.csv");
     const { groups } = detectRecurring(transactions.filter((t) => !cleanLabel(t.rawLabel).startsWith("TRANSFER")), byLabel);
-    expect(groups.map((g) => g.key)).toEqual(["BASIC-FIT FRANCE", "NETFLIX.COM", "PAYPAL * PAYPAL", "PAYPAL *UBER PAYPAL", "SPOTIFY"]);
+    expect(groups.map((g) => g.key)).toEqual(["BASIC-FIT FRANCE", "NETFLIX.COM", "PAYPAL * PAYPAL", "PAYPAL *UBER PAYPAL", "SPOTIFY", "WETRANSFER.COM"]);
     const netflix = groups.find((g) => g.key === "NETFLIX.COM")!;
     expect(netflix.priceChanges).toHaveLength(1);
     expect(groups.find((g) => g.key === "SPOTIFY")!.missedPayments).toBe(1);

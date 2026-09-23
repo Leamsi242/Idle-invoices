@@ -51,6 +51,9 @@ export interface RecurringGroup {
   merchant?: string;
 }
 
+/** How the user pays, which decides how to cancel. */
+export type Channel = "apple" | "google" | "paypal" | "direct-debit" | "card";
+
 export interface DetectedSubscription extends RecurringGroup {
   serviceName: string;
   category?: string;
@@ -63,4 +66,9 @@ export interface DetectedSubscription extends RecurringGroup {
   usage?: Usage;
   status: Status;
   matchedSources: Source[];
+  channel: Channel;
+  trialCharge?: { date: string; amount: number }; // a small first charge before the full price
+  totalPaid: number; // everything paid so far, trial charge included
+  nextCharge: string; // expected date of the next charge
+  isNew: boolean; // first charged recently
 }

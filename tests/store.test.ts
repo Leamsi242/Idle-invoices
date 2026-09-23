@@ -31,7 +31,7 @@ describe("store", () => {
   it("stores transactions, subscriptions and matches, with labels encrypted at rest", async () => {
     const session = randomUUID();
     const counts = await uploadAll(session);
-    expect(counts.subscriptions).toBe(14);
+    expect(counts.subscriptions).toBe(16);
     expect(await prisma.match.count({ where: { sessionId: session } })).toBe(counts.matches);
     const raw = await prisma.transaction.findFirst({ where: { sessionId: session, source: "paypal" } });
     expect(raw!.rawLabel.startsWith("v1:")).toBe(true);
@@ -80,7 +80,7 @@ describe("store", () => {
     for (const model of [prisma.upload, prisma.transaction, prisma.subscription, prisma.match, prisma.descriptor] as unknown as { count: (q: object) => Promise<number> }[]) {
       expect(await model.count({ where: { sessionId: a } })).toBe(0);
     }
-    expect(await prisma.subscription.count({ where: { sessionId: b } })).toBe(14);
+    expect(await prisma.subscription.count({ where: { sessionId: b } })).toBe(16);
   });
 
   it("purges sessions older than the retention period", async () => {

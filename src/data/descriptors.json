@@ -339,5 +339,35 @@
     "serviceName": "Zoom",
     "category": "productivity",
     "cancellationUrl": "https://zoom.us/billing"
+  },
+  {
+    "pattern": "WETRANSFER",
+    "serviceName": "WeTransfer",
+    "category": "software",
+    "cancellationUrl": "https://wetransfer.com/account"
+  },
+  {
+    "pattern": "NORTON",
+    "serviceName": "Norton",
+    "category": "security",
+    "cancellationUrl": "https://my.norton.com/"
+  },
+  {
+    "pattern": "MCAFEE",
+    "serviceName": "McAfee",
+    "category": "security",
+    "cancellationUrl": "https://home.mcafee.com/"
+  },
+  {
+    "pattern": "SCRIBD",
+    "serviceName": "Scribd",
+    "category": "books",
+    "cancellationUrl": "https://www.scribd.com/account-settings/payment-management"
+  },
+  {
+    "pattern": "PERPLEXITY",
+    "serviceName": "Perplexity Pro",
+    "category": "productivity",
+    "cancellationUrl": "https://www.perplexity.ai/settings/account"
   }
 ]
