@@ -1,19 +1,19 @@
 import { simpleParser } from "mailparser";
 import type { Frequency, NormalizedTransaction } from "../types";
 import { detectCurrency, parseAmount } from "../amount";
-import { parseDate } from "../dates";
+import { addDays, addMonths, parseDate } from "../dates";
 import { makeTx } from "./common";
 
-const MONEY_SRC = String.raw`(?:€|EUR|\$|USD|£|GBP)\s?\d[\d\s.,]*\d|\d[\d\s.,]*\d\s?(?:€|EUR|\$|USD|£|GBP)`;
+const MONEY_SRC = String.raw`(?:€|EUR|\$|USD|£|GBP)\s?\d[\d\s.,]*\d|\d[\d\s.,]*\d\s?(?:€|EUR|euros?\b|\$|USD|£|GBP)`;
 const MONEY = new RegExp(MONEY_SRC);
 // Dates as written in receipts: "14 September 2026", "26 déc. 2026", "September 14, 2026", "14/09/2026".
-const DATE_SRC = String.raw`\d{1,2}(?:er)?\s+[A-Za-zéûè]+\.?\s+\d{4}|[A-Z][a-z]+\.?\s+\d{1,2},?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{4}`;
+const DATE_SRC = String.raw`\d{1,2}(?:er)?\s+[A-Za-zéûè]+\.?\s+\d{4}|[A-Z][a-z]+\.?\s+\d{1,2},?\s+\d{4}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4}`;
 
 export function detectFrequency(text: string): Frequency | undefined {
-  if (/\b(annual|yearly|per year|a year|every year|\/\s?year|\/\s?yr|12 months|annuel|par an|chaque année|\/\s?an)\b/i.test(text)) return "yearly";
+  if (/\b(annual|yearly|per year|a year|every year|\/\s?year|\/\s?yr|12 months|12 mois|annuel\w*|par an|chaque année|\/\s?an|1Y)\b|\(1 year\)/i.test(text)) return "yearly";
   if (/\b(quarterly|every 3 months|trimestriel)\b/i.test(text)) return "quarterly";
-  if (/\b(weekly|per week|every week|\/\s?week|hebdomadaire|par semaine|chaque semaine|\/\s?semaine)\b/i.test(text)) return "weekly";
-  if (/\b(monthly|per month|a month|every month|\/\s?month|\/\s?mo|mensuel\w*|par mois|chaque mois|tous les mois|\/\s?mois)\b/i.test(text)) return "monthly";
+  if (/\b(weekly|per week|every week|\/\s?week|hebdomadaire|par semaine|chaque semaine|\/\s?semaine)|\(1 week\)/i.test(text)) return "weekly";
+  if (/\b(monthly|per month|a month|every month|\/\s?month|\/\s?mo|mensuel\w*|mensualit\w*|par mois|chaque mois|tous les mois|\/\s?mois)|\(1 month\)/i.test(text)) return "monthly";
   return undefined;
 }
 
@@ -24,7 +24,7 @@ const money = (s: string) => {
 
 function pickAmount(text: string): { amount: number; currency: string } | null {
   const lines = text.split(/\r?\n/);
-  const preferred = lines.filter((l) => /total|amount|montant|charged|prix|price|paiement|payé|paid|réglé/i.test(l));
+  const preferred = lines.filter((l) => /total|amount|montant|charged|prix|price|paiement|payé|paid|réglé|mensualit|débité|prélèvement/i.test(l));
   for (const line of [...preferred, ...lines]) {
     const m = line.match(MONEY);
     const found = m && money(m[0]);
@@ -73,6 +73,9 @@ function paypal(subject: string, body: string): Extracted {
 }
 
 function merchantFrom(name: string | undefined, address: string | undefined, subject: string): string {
+  // Paddle: "Le reçu de la transaction pour votre abonnement CleanShot Cloud Pro Monthly", "Your Enhancv subscription receipt".
+  const paddle = subject.match(/pour votre abonnement\s+(.+)$/i)?.[1] ?? subject.match(/^your (.+?) subscription receipt/i)?.[1];
+  if (paddle) return clean(paddle.replace(/\s+(?:Pro\s+)?(?:Monthly|Yearly|Annual|Quarterly|Weekly)$/i, ""));
   const stripeLike = subject.match(/(?:your receipt from|reçu de|votre reçu de)\s+(.+?)(?:\s*[#[(]|$)/i)?.[1];
   if (stripeLike && !/paypal/i.test(stripeLike)) return clean(stripeLike.replace(/,?\s+(?:Limited|Ltd|Inc|PBC|SAS|BV|B\.V\.)\b.*$/i, ""));
   if (name) return name.replace(/["']/g, "").replace(/\b(team|billing|receipts?|no-?reply|service clients?)\b/gi, "").trim() || "Unknown";
@@ -81,8 +84,14 @@ function merchantFrom(name: string | undefined, address: string | undefined, sub
 }
 
 /** Trial terms, renewal date and announced price, e.g. PDF Guru, Google One, WeTransfer. */
-export function nextCharge(text: string): { date?: string; amount?: number } {
+export function nextCharge(text: string, baseDate?: string): { date?: string; amount?: number } {
   const t = flat(text);
+  // Amazon Channels: "Ce prix mensuel vous sera facturé pendant 2 mois. Après cela, … 11,99 €".
+  const intro = t.match(new RegExp(String.raw`pendant (\d+) mois\.? Après cela[^€$£\d]*(${MONEY_SRC})`, "i"));
+  if (intro && baseDate) return { date: addMonths(baseDate, +intro[1]), amount: parseAmount(intro[2]) ?? undefined };
+  // "À l'issue de votre essai gratuit de 30 jours, … débité de 9,99 €", "7-day free trial … then €9.99".
+  const trialDays = t.match(new RegExp(String.raw`(?:essai gratuit de|essai de|(\d+)-day free trial)\s*(\d+)?\s*(?:jours)?[^€$£]{0,160}?(${MONEY_SRC})`, "i"));
+  const days = trialDays ? +(trialDays[1] ?? trialDays[2] ?? 0) : 0;
   const patterns: [RegExp, number, number | null][] = [
     // "On September 14, 2026, and every month thereafter, you will be automatically charged €49.99"
     [new RegExp(String.raw`On (${DATE_SRC}),? and every \w+ thereafter,? you will be (?:automatically )?charged (${MONEY_SRC})`, "i"), 1, 2],
@@ -97,7 +106,7 @@ export function nextCharge(text: string): { date?: string; amount?: number } {
     // "renouvelé le 21 juil. 2026", "renews on …", "Next billing date: …", "prochain prélèvement le …"
     // Cancellation notices: "sera annulé le 18 août 2026", "This will take effect on 29 September 2026".
     [new RegExp(String.raw`(?:sera annulé le|prendra fin le|prendront fin le|take effect on|access until|accès jusqu'au)\s+(${DATE_SRC})`, "i"), 1, null],
-    [new RegExp(String.raw`(?:renouvelé le|renouvellement le|renews?(?: automatically)? on|will renew on|next (?:renewal|payment|billing)(?: date)?(?: on)?|prochain (?:paiement|prélèvement)(?: le)?|prochaine échéance(?: le)?)\s*:?\s*(${DATE_SRC})`, "i"), 1, null],
+    [new RegExp(String.raw`(?:renouvelé le|renouvellement le|se renouvellera(?: automatiquement)? le|(?:will )?automatically renew on|renews?(?: automatically)? on|will renew on|next (?:renewal|payment|billing)(?: date)?(?: on)?|prochain (?:paiement|prélèvement)(?: le)?|prochaine échéance(?: le)?)\s*:?\s*(${DATE_SRC})`, "i"), 1, null],
   ];
   for (const [re, dateIdx, amountIdx] of patterns) {
     const m = t.match(re);
@@ -106,10 +115,11 @@ export function nextCharge(text: string): { date?: string; amount?: number } {
     const amount = amountIdx ? parseAmount(m[amountIdx]) ?? undefined : undefined;
     if (date) return { date, amount: amount && amount > 0 ? amount : undefined };
   }
+  if (days > 0 && baseDate && trialDays) return { date: addDays(baseDate, days), amount: parseAmount(trialDays[3]) ?? undefined };
   return {};
 }
 
-const SKIP = /paiement en 4x|payer en plusieurs fois|échéance de votre paiement|4x sans frais|pay in 4|\bvous avez envoyé un paiement\b|you sent money|remboursement|refund|information de paiement|échec de (?:votre )?paiement|payment failed|a échoué/i;
+const SKIP = /échec du renouvellement|renewal failed|paiement en 4x|payer en plusieurs fois|échéance de votre paiement|4x sans frais|pay in 4|\bvous avez envoyé un paiement\b|you sent money|remboursement|refund|information de paiement|échec de (?:votre )?paiement|payment failed|a échoué/i;
 // No trailing \b: "é" is not a word character for JavaScript regexes.
 const CANCELLED = /\b(has been cancel+ed|cancel+ation confirmed|you(?:'ve| have) cancel+ed|a été (?:annulé|résilié)|sera annulé|avez résilié|résiliation|prendront bientôt fin|subscription (?:has )?ended|will be cancel+ed)(?![a-z])/i;
 
@@ -148,7 +158,7 @@ export function receiptToTransaction(r: ReceiptFields): NormalizedTransaction | 
 
   const isCancellation = CANCELLED.test(r.subject) || (CANCELLED.test(r.body.slice(0, 600)) && !MONEY.test(r.body.slice(0, 600)));
   if (!isCancellation && SKIP.test(r.subject)) return null;
-  const next = nextCharge(all);
+  const next = nextCharge(all, r.date);
 
   if (isCancellation) {
     return makeTx({ date: r.date, amount: 0, currency: "EUR", rawLabel: `EMAIL ${merchant}: ${r.subject}`, source: "email", merchant, isCancellation: true, nextChargeDate: next.date });
@@ -198,7 +208,7 @@ export function parseReceiptText(text: string, merchantHint?: string): Normalize
 }
 
 const RECEIPT_WORDS = /\b(receipt|invoice|facture|reçu|recu de paiement|order confirmation|confirmation de (?:votre )?(?:commande|paiement)|payment (?:received|confirmation|to)|paiement|your (?:subscription|plan|membership)|votre abonnement|renews?|renewal|renouvel\w*|trial|essai|charged|débité|prélèvement|billing|facturation|total)\b/i;
-const MARKETING = /\b(\d+\s?% off|% de réduction|promo code|code promo|limited time|offre limitée|sale ends|black friday|webinar|newsletter)\b/i;
+const MARKETING = /(\d+\s?% off|-\s?\d+\s?%|% de réduction|promo code|code promo|limited time|offre limitée|sale ends|black friday|webinar|newsletter|réactivez votre essai|essai offert|accédez gratuitement)/i;
 
 /**
  * Keeps receipts, billing and cancellation emails, drops newsletters and promotions that

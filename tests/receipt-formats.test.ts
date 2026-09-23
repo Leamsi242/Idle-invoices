@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectFrequency, nextCharge, parseReceiptText } from "@/lib/parsers/email";
+import { detectFrequency, looksLikeReceipt, nextCharge, parseReceiptText } from "@/lib/parsers/email";
 
 // Synthetic receipts written in the formats seen in a real mailbox (no personal data).
 const googlePlayWeekly = `From: Google Play <googleplay-noreply@google.com>
@@ -138,5 +138,39 @@ describe("a mailbox on its own (no bank statement)", () => {
     expect(upcomingTrials(mailbox, "2026-09-23")).toEqual([
       expect.objectContaining({ kind: "price-increase", serviceName: "Google One", previousAmount: 49.99, amount: 99.99, startsCharging: "2026-12-26" }),
     ]);
+  });
+});
+
+describe("formats found in older emails", () => {
+  const r = (from: string, subject: string, date: string, body: string) => parseReceiptText(`From: ${from}\nSubject: ${subject}\nDate: ${date}\n\n${body}`);
+
+  it("Paddle receipts in French and English", () => {
+    expect(r("Paddle <help@paddle.example>", "Le reçu de la transaction pour votre abonnement CleanShot Cloud Pro Monthly", "30 June 2024", "Montant réglé 12,00 $US")).toMatchObject({ merchant: "CleanShot Cloud", amount: 12, currency: "USD", frequency: "monthly" });
+    expect(r("Paddle <help@paddle.example>", "Your Enhancv subscription receipt", "5 May 2024", "Amount Paid €48.98\nQuarterly Pro")).toMatchObject({ merchant: "Enhancv", amount: 48.98, frequency: "quarterly" });
+  });
+
+  it("Stripe receipts with a weekly item and renewal reminders without amount", () => {
+    expect(r("Teal Labs <invoice+statements@stripe.example>", "Your receipt from Teal Labs, Inc. #1234-5678", "5 May 2024", "Receipt from Teal Labs, Inc. $9.00 Paid May 5, 2024\nTeal+ (1 Week) Qty 1 $9.00")).toMatchObject({ merchant: "Teal Labs", amount: 9, frequency: "weekly" });
+    expect(nextCharge("Your subscription will automatically renew on October 28, 2023. Your card ending in 0000 will be charged")).toEqual({ date: "2023-10-28", amount: undefined });
+  });
+
+  it("Amazon Channels introductory price and trial", () => {
+    const intro = r("Amazon <digital-no-reply@amazon.example>", "Votre abonnement OCS a commencé", "4 July 2021", "Vous avez été débité de 5,99 € (TTC). Ce prix mensuel vous sera facturé pendant 2 mois. Après cela, vous serez débité de 11,99 € par mois.");
+    expect(intro).toMatchObject({ amount: 5.99, frequency: "monthly", nextChargeDate: "2021-09-04", nextChargeAmount: 11.99 });
+    const trial = r("Amazon <digital-no-reply@amazon.example>", "Votre abonnement PASS WARNER a commencé", "28 March 2023", "À l'issue de votre essai gratuit de 30 jours, vous serez débité de 9,99 € (TTC) par mois.");
+    expect(trial).toMatchObject({ isTrial: true, nextChargeDate: "2023-04-27", nextChargeAmount: 9.99 });
+  });
+
+  it("Cdiscount, Amazon Prime, gym and Babbel wording", () => {
+    expect(r("Cdiscount <no-reply@servicenotification.example>", "Cdiscount à volonté : prolongement de votre abonnement", "4 March 2025", "Votre abonnement sera automatiquement renouvelé le 09/04/2025 avec un prélèvement unique de 29 euros.")).toMatchObject({ amount: 29, nextChargeDate: "2025-04-09" });
+    expect(nextCharge("votre abonnement Amazon Prime se renouvellera automatiquement le 17 octobre 2025")).toEqual({ date: "2025-10-17", amount: undefined });
+    expect(r("ON AIR <club@fitness.example>", "Votre échéancier", "4 October 2024", "Mensualité | 29.95 €\nDate de prélèvement | 04")).toMatchObject({ amount: 29.95, frequency: "monthly" });
+    expect(r("Babbel <sales@babbel.example>", "Votre facture Babbel", "9 February 2021", "Babbel Polonais 1Y (PREMIUM-POL-1Y) : 59,99 €")).toMatchObject({ amount: 59.99, frequency: "yearly" });
+  });
+
+  it("ignores promotions, trial invitations and failed renewals", () => {
+    expect(looksLikeReceipt("Babbel à Vie -60 %", "Total 199 €")).toBe(false);
+    expect(looksLikeReceipt("Ismael, réactivez votre essai Premium", "0 €")).toBe(false);
+    expect(r("Huawei <no-reply@huawei.example>", "Échec du renouvellement du package Cloud Argent", "24 July 2022", "Montant 0,99 €")).toBeNull();
   });
 });
