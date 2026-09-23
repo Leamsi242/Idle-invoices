@@ -56,21 +56,23 @@ export function flagSubscriptions(subs: DetectedSubscription[], ctx: FlagContext
   });
 }
 
-export interface Report {
+type ReportItem = Pick<DetectedSubscription, "status" | "yearlyCost" | "needsLabel" | "currency">;
+
+export interface Report<T extends ReportItem = DetectedSubscription> {
   totalYearly: number;
   potentialSavings: number;
-  forgotten: DetectedSubscription[];
-  idle: DetectedSubscription[];
-  active: DetectedSubscription[];
-  cancelled: DetectedSubscription[];
-  needsLabel: DetectedSubscription[];
+  forgotten: T[];
+  idle: T[];
+  active: T[];
+  cancelled: T[];
+  needsLabel: T[];
   currency: string;
 }
 
 /** Bundles are one subscription, so their parts are never counted twice. */
-export function buildReport(subs: DetectedSubscription[]): Report {
+export function buildReport<T extends ReportItem>(subs: T[]): Report<T> {
   const live = subs.filter((s) => s.status !== "cancelled");
-  const sum = (xs: DetectedSubscription[]) => Math.round(xs.reduce((t, s) => t + s.yearlyCost, 0) * 100) / 100;
+  const sum = (xs: T[]) => Math.round(xs.reduce((t, s) => t + s.yearlyCost, 0) * 100) / 100;
   const idle = subs.filter((s) => s.status === "idle");
   return {
     totalYearly: sum(live),

@@ -137,15 +137,15 @@ export async function listSubscriptions(sessionId: string): Promise<StoredSubscr
   });
 }
 
-export async function getReport(sessionId: string): Promise<Report & { uploads: number }> {
+export async function getReport(sessionId: string): Promise<Report<StoredSubscription> & { uploads: number }> {
   const subs = await listSubscriptions(sessionId);
   const uploads = await prisma.upload.count({ where: { sessionId } });
-  // buildReport only reads summary fields, so stored subscriptions can stand in for detected ones.
-  return { ...buildReport(subs as unknown as DetectedSubscription[]), uploads };
+  return { ...buildReport(subs), uploads };
 }
 
-export async function setUsage(sessionId: string, subscriptionId: string, usage: Usage) {
-  const { count } = await prisma.subscription.updateMany({ where: { id: subscriptionId, sessionId }, data: { usage } });
+/** Row ids change on every recompute, so answers are keyed by the subscription's label key. */
+export async function setUsage(sessionId: string, labelKey: string, usage: Usage) {
+  const { count } = await prisma.subscription.updateMany({ where: { labelKey, sessionId }, data: { usage } });
   if (count === 0) throw new Error("Subscription not found");
   await recompute(sessionId);
 }

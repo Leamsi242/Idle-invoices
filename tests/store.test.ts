@@ -46,7 +46,7 @@ describe("store", () => {
     await uploadAll(session);
     const subs = await listSubscriptions(session);
     const gym = subs.find((s) => s.serviceName === "Basic-Fit")!;
-    await setUsage(session, gym.id, "no");
+    await setUsage(session, gym.key, "no");
     const unknown = subs.find((s) => s.needsLabel)!;
     await saveLabel(session, unknown.key, "FocusFlow");
     await recompute(session);
@@ -61,7 +61,7 @@ describe("store", () => {
     const a = randomUUID();
     await uploadAll(a);
     const [sub] = await listSubscriptions(a);
-    await expect(setUsage(randomUUID(), sub.id, "no")).rejects.toThrow();
+    await expect(setUsage(randomUUID(), sub.key, "no")).rejects.toThrow();
   });
 
   it("deletes everything for one session and nothing else", async () => {
