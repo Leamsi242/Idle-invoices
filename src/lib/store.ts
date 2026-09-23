@@ -4,6 +4,7 @@ import type { DescriptorEntry, DetectedSubscription, Frequency, NormalizedTransa
 import { analyze } from "./engine/pipeline";
 import { buildReport, type Report } from "./engine/flags";
 import { descriptorFromAnswer } from "./engine/descriptors";
+import { maskSensitive } from "./mask";
 
 /** Data older than this is purged automatically (see the privacy page). */
 export const RETENTION_DAYS = 30;
@@ -18,7 +19,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
  */
 export async function saveUpload(sessionId: string, fileName: string, source: Source, txs: NormalizedTransaction[]) {
   return prisma.$transaction(async (db) => {
-    const upload = await db.upload.create({ data: { sessionId, sourceType: source, fileName: fileName.slice(0, 200), deletedAt: new Date() } });
+    const upload = await db.upload.create({ data: { sessionId, sourceType: source, fileName: maskSensitive(fileName).slice(0, 200), deletedAt: new Date() } });
     if (txs.length) {
       await db.transaction.createMany({
         data: txs.map((t) => ({

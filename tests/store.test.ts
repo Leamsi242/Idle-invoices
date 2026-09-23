@@ -41,6 +41,12 @@ describe("store", () => {
     expect(uploads.every((u) => u.deletedAt !== null)).toBe(true);
   });
 
+  it("masks account numbers in stored file names", async () => {
+    const session = randomUUID();
+    const upload = await saveUpload(session, "statement FR14 2004 1010 0505 0001 3M02 606.csv", "bank", []);
+    expect(upload.fileName).toBe("statement IBAN ••••2606.csv");
+  });
+
   it("keeps 'Still using this?' answers and user labels across recomputes", async () => {
     const session = randomUUID();
     await uploadAll(session);

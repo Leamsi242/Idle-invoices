@@ -5,6 +5,7 @@ import { purgeExpired, recompute, saveUpload } from "@/lib/store";
 import { maskSensitive } from "@/lib/mask";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const MAX_FILES = 20;
 // Vercel limits request bodies to 4.5 MB; keep each file well under that.
@@ -17,6 +18,12 @@ const parseJson = <T,>(value: FormDataEntryValue | null, fallback: T): T => {
     return fallback;
   }
 };
+
+/** Only our own, user-facing messages go back to the browser; internal errors stay generic. */
+function userMessage(e: unknown): string {
+  if (e instanceof Error && /ANTHROPIC_API_KEY|paste the text/.test(e.message)) return e.message;
+  return "Could not read this file. Try a CSV export, or check that it is a statement, PayPal export, receipt or app store list.";
+}
 
 export async function POST(req: Request) {
   const form = await req.formData();
@@ -46,7 +53,7 @@ export async function POST(req: Request) {
       results.push({ fileName: file.name, source: parsed.source, count: parsed.transactions.length });
     } catch (e) {
       if (e instanceof NeedsMappingError) needsMapping.push({ fileName: file.name, headers: e.headers, preview: e.preview.map((r) => r.map(maskSensitive)) });
-      else errors.push({ fileName: file.name, error: e instanceof Error ? e.message : "Could not read this file." });
+      else errors.push({ fileName: file.name, error: userMessage(e) });
     } finally {
       data.fill(0);
     }
@@ -59,7 +66,7 @@ export async function POST(req: Request) {
       await saveUpload(sessionId, `pasted ${hint} text`, parsed.source, parsed.transactions);
       results.push({ fileName: "Pasted text", source: parsed.source, count: parsed.transactions.length });
     } catch (e) {
-      errors.push({ fileName: "Pasted text", error: e instanceof Error ? e.message : "Could not read the text." });
+      errors.push({ fileName: "Pasted text", error: userMessage(e) });
     }
   }
 

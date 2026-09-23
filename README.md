@@ -1,5 +1,111 @@
 # Subscription Detective
 
-Finds the subscriptions you forgot you pay for. See [SPEC.md](SPEC.md).
+"You're paying for things you forgot you have."
 
-Setup and usage instructions are completed as the prototype is built.
+Upload bank statements, a PayPal export, receipts and app store lists. The app finds recurring charges, unmasks the ones hidden behind PayPal, Apple, Google, Stripe, Paddle or Klarna, flags the ones you probably forgot, and asks "Still using this?" to work out what you could stop paying for. The full product spec is in [SPEC.md](SPEC.md).
+
+## Run it locally
+
+Requirements: Node.js 20.19 or later (22 recommended).
+
+```bash
+npm install                        # also generates the Prisma client
+cp .env.example .env
+# put a key in .env:  DATA_ENCRYPTION_KEY="$(openssl rand -base64 32)"
+npx prisma db push                 # creates prisma/dev.db (SQLite)
+npm run dev                        # http://localhost:3000
+```
+
+Then upload the files in [`samples/`](samples) to see a full report. Optional: set `ANTHROPIC_API_KEY` to read app store screenshots (without it, paste the text of the list instead).
+
+## Run the tests
+
+```bash
+npm test            # Vitest: parsers, engine, storage, privacy checks (59 tests)
+npm run typecheck
+```
+
+The tests create a throwaway database in `prisma/test.db` and run the whole engine on the sample files. To regenerate the samples: `node scripts/generate-samples.ts`.
+
+## How it works
+
+```
+Uploaded files
+  -> parsers (src/lib/parsers)        one NormalizedTransaction format, numbers masked
+  -> reconcile (engine/reconcile.ts)  vague bank charge = record with same amount and currency within 3 days
+  -> detect (engine/recurring.ts)     same label, amount within 10%, weekly / monthly / quarterly / yearly
+  -> label (engine/descriptors.ts)    55 known services (src/data/descriptors.json) + the user's answers
+  -> flag (engine/flags.ts)           possibly forgotten, idle, cancelled, bundles
+  -> report
+```
+
+| Source | Accepted formats |
+| --- | --- |
+| Bank statements | CSV from N26, Revolut, French banks (Débit / Crédit), UK banks (Debit / Credit Amount); any other CSV through the column-mapping screen; PDF statements with one line per operation |
+| PayPal | Activity download CSV (English or French headers) |
+| Receipts | `.eml` files or pasted text |
+| Apple / Google Play | Pasted text of the subscriptions screen, or a screenshot (read by Claude) |
+
+### Decisions worth knowing
+
+- **Reconciliation runs before grouping.** Several services can hide behind the same `PAYPAL *` label; grouping first would merge them. Charges that were not matched directly inherit the merchant found for the same label and amount (for example every Notion charge after the one matched to the receipt).
+- **Yearly plans seen once.** Twelve months of statements often show a yearly charge only once. Such a charge counts as a yearly subscription when a receipt or app store list says the plan is yearly (Duolingo in the samples). Two yearly charges 360 to 370 days apart are detected without help (Amazon Prime).
+- **Minimum evidence.** Weekly, monthly and quarterly need 3 charges; yearly needs 2. A price change is only accepted after at least 2 charges at the old price, so two unrelated purchases at the same shop are not mistaken for a subscription.
+- **App store lists** show the next renewal, not past charges, so the parser projects the last 12 months of charges back from the renewal date to reconcile them with `APPLE.COM/BILL` lines.
+- **"No receipt email"** is only used as a reason when the user uploaded at least one receipt; otherwise every subscription would be flagged.
+- **"Possibly forgotten" vs "idle".** Answering "Yes" to "Still using this?" clears the forgotten flag; "Rarely" or "No" makes it idle and adds its yearly cost to the potential savings. A subscription with no charge for 1.5 periods is shown as stopped and left out of the total.
+- **Bundles** (Apple One, Canal+) list their included services and count once. A service paid separately while also in a bundle gets "Already included in ..." (iCloud+ and Netflix in the samples).
+- **No accounts in version 1.** Each browser gets a random session id in an httpOnly cookie; every row carries it.
+- The cancellation links in the descriptor map are starting points (account or help pages). Check them before relying on them.
+
+## Privacy and security
+
+What the code does for each point of the spec's "Privacy and security" section:
+
+| Rule | Where |
+| --- | --- |
+| Delete uploaded files right after parsing | Files are read into memory only, wiped (`fill(0)`) after parsing and never written to disk (`api/upload/route.ts`; `tests/privacy.test.ts` fails if any file-writing call appears). The `Upload` row is created with `deletedAt` already set. |
+| "Delete everything" button | On the report and privacy pages; `DELETE /api/data` erases every row of the session in all five tables and clears the cookie. Data is also purged automatically 30 days after the last upload. |
+| Mask account numbers, IBANs and card numbers during parsing | `lib/mask.ts`, applied by `makeTx()` in every parser and to stored file names. |
+| Encrypt the database at rest | Labels, merchants, plans and subscription details are encrypted with AES-256-GCM before storage (`lib/crypto.ts`, key in `DATA_ENCRYPTION_KEY`). Dates and amounts are not. For production, also use a database with disk encryption (Turso and managed Postgres provide it). |
+| HTTPS everywhere | HSTS and other security headers in `next.config.ts`; the session cookie is `Secure` in production; Vercel serves HTTPS only. |
+| Minimum data to the Claude API | Only a screenshot, in `lib/parsers/screenshot.ts` (the only file importing the SDK; checked by a test). Statements are never sent. |
+| Plain-language privacy page | `/privacy` |
+| GDPR review and security audit | Still to do before any public launch. |
+
+Known gaps for later: no rate limiting on the upload route, no Content-Security-Policy header yet, and `npm audit` reports two advisories inside Prisma's own dependencies (`mysql2`, not used at runtime, and `deepmerge-ts`, used by the Prisma config loader) whose only fix today is a forced upgrade to a Prisma release candidate.
+
+## Deploy on Vercel
+
+A SQLite file does not survive on Vercel (each function has its own temporary disk), so use a hosted libSQL database. [Turso](https://turso.tech) has a free tier and works with the same schema.
+
+1. Create the database and apply the schema:
+   ```bash
+   turso db create subscription-detective
+   npm run db:sql                                  # writes prisma/schema.sql
+   turso db shell subscription-detective < prisma/schema.sql
+   turso db show subscription-detective --url      # libsql://...
+   turso db tokens create subscription-detective
+   ```
+2. Import the repository in Vercel (framework: Next.js, no other settings needed) and set these environment variables:
+   - `DATABASE_URL`: the `libsql://...` URL
+   - `DATABASE_AUTH_TOKEN`: the token
+   - `DATA_ENCRYPTION_KEY`: `openssl rand -base64 32` (keep it safe: losing it makes stored data unreadable)
+   - `ANTHROPIC_API_KEY`: optional, for screenshots
+3. Deploy (`vercel --prod` or a push). The build runs `prisma generate && next build`.
+
+Vercel limits request bodies to 4.5 MB, so the app accepts files up to 4 MB each; upload large statements in several goes.
+
+## Project layout
+
+```
+samples/                 fake test data (no real personal data)
+scripts/                 sample generator
+prisma/schema.prisma     data model (Upload, Transaction, Subscription, Match, Descriptor)
+src/lib/parsers/         one parser per source, plus file-type detection
+src/lib/engine/          reconcile, detect, label, flag, pipeline
+src/data/descriptors.json
+src/lib/store.ts         database access, recompute, delete everything, retention
+src/app/                 pages (upload, review, report, privacy) and API routes
+tests/                   Vitest suites
+```
