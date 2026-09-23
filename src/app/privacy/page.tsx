@@ -14,6 +14,7 @@ export default function Privacy() {
         <ul className="list-disc space-y-1 pl-5">
           <li>For each payment: its date, amount, currency and description. Nothing else.</li>
           <li>The subscriptions we found, and your answers to &quot;Still using this?&quot; and &quot;What is this charge?&quot;.</li>
+          <li>Free trials you asked us to track (name, end date, price). Calendar reminders are created on your phone, not by us.</li>
           <li>The names of the files you uploaded, so you know what was read.</li>
         </ul>
       </section>
@@ -33,6 +34,11 @@ export default function Privacy() {
           <li>Payment descriptions are encrypted in the database (AES-256).</li>
           <li>All traffic uses HTTPS.</li>
           <li>There are no accounts: your data is linked to a random identifier stored in a cookie in this browser only.</li>
+          <li>
+            If you scan Gmail, we get read-only access for the length of the scan. We only open emails from the last year whose subject
+            mentions a receipt, invoice, subscription, renewal or trial, keep the amount, merchant and date of real receipts, and revoke our
+            access right after. Your emails are never stored.
+          </li>
           <li>
             If you upload a screenshot of your app store subscriptions, only that image is sent to Claude (Anthropic&apos;s AI) to read the
             text. Your statements are never sent.

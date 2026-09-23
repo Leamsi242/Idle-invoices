@@ -26,7 +26,12 @@ function pickAmount(text: string): { amount: number; currency: string } | null {
   return null;
 }
 
-function merchantFrom(name: string | undefined, address: string | undefined): string {
+function merchantFrom(name: string | undefined, address: string | undefined, subject = ""): string {
+  // PayPal sends receipts on behalf of the merchant: "Receipt for your payment to Uber BV".
+  if (/paypal/i.test(`${name} ${address}`)) {
+    const m = subject.match(/(?:payment to|paiement (?:à|a)|envoyé (?:à|a)|sent to)\s+(.+?)\s*$/i);
+    if (m) return m[1].replace(/[.!]+$/, "").trim();
+  }
   if (name) return name.replace(/["']/g, "").replace(/\b(team|billing|receipts?|no-?reply)\b/gi, "").trim();
   const domain = address?.split("@")[1]?.split(".").slice(-2, -1)[0] ?? "unknown";
   return domain.charAt(0).toUpperCase() + domain.slice(1);
@@ -58,7 +63,7 @@ export async function parseEml(raw: Buffer | string): Promise<NormalizedTransact
   const from = mail.from?.value[0];
   const body = mail.text ?? (typeof mail.html === "string" ? mail.html.replace(/<[^>]+>/g, " ") : "");
   return receiptToTransaction({
-    merchant: merchantFrom(from?.name, from?.address),
+    merchant: merchantFrom(from?.name, from?.address, mail.subject ?? ""),
     subject: mail.subject ?? "",
     date: (mail.date ?? new Date()).toISOString().slice(0, 10),
     body,
@@ -71,5 +76,17 @@ export function parseReceiptText(text: string, merchantHint?: string): Normalize
   const subject = text.match(/^Subject:\s*(.+)$/im)?.[1]?.trim() ?? text.split(/\r?\n/).find((l) => l.trim())?.trim() ?? "";
   const dateLine = text.match(/^Date:\s*(.+)$/im)?.[1];
   const date = (dateLine && (parseDate(dateLine) ?? (Date.parse(dateLine) ? new Date(dateLine).toISOString().slice(0, 10) : null))) || new Date().toISOString().slice(0, 10);
-  return receiptToTransaction({ merchant: merchantHint ?? merchantFrom(from?.[1], from?.[2]), subject, date, body: text });
+  return receiptToTransaction({ merchant: merchantHint ?? merchantFrom(from?.[1], from?.[2], subject), subject, date, body: text });
+}
+
+const RECEIPT_WORDS = /\b(receipt|invoice|facture|reçu|recu de paiement|order confirmation|confirmation de (?:commande|paiement)|payment (?:received|confirmation|to)|paiement|your (?:subscription|plan|membership)|votre abonnement|renews?|renewal|renouvel\w*|trial|essai|charged|débité|prélèvement|billing|facturation|total)\b/i;
+const MARKETING = /\b(\d+\s?% off|% de réduction|promo code|code promo|limited time|offre limitée|sale ends|black friday|webinar|newsletter)\b/i;
+
+/**
+ * Keeps receipts and billing emails, drops newsletters and promotions that merely mention a
+ * price. Used when scanning a whole mailbox, where most emails are not receipts.
+ */
+export function looksLikeReceipt(subject: string, body: string): boolean {
+  const text = `${subject}\n${body.slice(0, 4000)}`;
+  return RECEIPT_WORDS.test(text) && !MARKETING.test(subject) && MONEY.test(text);
 }

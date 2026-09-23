@@ -20,7 +20,9 @@ export async function getOrCreateSessionId(): Promise<string> {
   (await cookies()).set(SESSION_COOKIE, id, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    // "lax" so the cookie comes back with the redirect from Google after a Gmail scan.
+    // API writes are POST/DELETE with JSON bodies, which lax cookies do not follow cross-site.
+    sameSite: "lax",
     path: "/",
     maxAge: 30 * 86_400,
   });

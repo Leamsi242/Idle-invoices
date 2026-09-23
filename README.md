@@ -21,7 +21,7 @@ Then upload the files in [`samples/`](samples) to see a full report. Optional: s
 ## Run the tests
 
 ```bash
-npm test            # Vitest: parsers, engine, storage, privacy checks (63 tests)
+npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks (81 tests)
 npm run typecheck
 ```
 
@@ -43,7 +43,7 @@ Uploaded files
 | --- | --- |
 | Bank statements | CSV from N26, Revolut, French banks (Débit / Crédit), UK banks (Debit / Credit Amount); any other CSV through the column-mapping screen; PDF statements with one line per operation |
 | PayPal | Activity download CSV (English or French headers) |
-| Receipts | `.eml` files or pasted text |
+| Receipts | `.eml` files, pasted text, or a one-time Gmail scan |
 | Apple / Google Play | Pasted text of the subscriptions screen, or a screenshot (read by Claude) |
 
 ### Decisions worth knowing
@@ -55,6 +55,10 @@ Uploaded files
 - **"No receipt email"** is only used as a reason when the user uploaded at least one receipt; otherwise every subscription would be flagged.
 - **"Possibly forgotten" vs "idle".** Answering "Yes" to "Still using this?" clears the forgotten flag; "Rarely" or "No" makes it idle and adds its yearly cost to the potential savings. A subscription with no charge for 1.5 periods is shown as stopped and left out of the total.
 - **Free trials not yet charged** (for example "Free trial, then €69.99/year" in an app store list) are shown at the top of the report with the date of the first charge, so the user can cancel in time (Calm in the samples).
+- **Trials that keep charging.** A subscription first charged in the last 60 days is marked "New" and shown in a "Started recently" banner (only when the statements go back at least 30 days before it, so everything is not "new" on a short statement). Weekly billing is flagged with its monthly cost ("about €43.29 a month"), and a small first charge (at most half the price, up to 35 days before) is shown as a paid trial. A known service (in the descriptor map) is accepted after 2 charges instead of 3, so a converted trial is caught after its first renewal. In the samples: WeTransfer at €9.99 a week and Strava after a €1 trial.
+- **Reminders.** On the Trials page the user notes a free trial they just started; the report lists it with the trial found in app store lists. Every trial and every subscription has a button that downloads a calendar reminder (.ics): 2 days before a trial ends, 3 days before a renewal, at 9:00. It works with any phone calendar and needs no account or email address.
+- **How to cancel** depends on how the user pays: Apple and Google Play subscriptions can only be cancelled in the store, PayPal payments also need the automatic payment stopped, and direct debits can be backed by revoking the SEPA mandate. The report shows these steps plus the service's account page, the next charge date and the amount paid so far.
+- **Duplicates.** The same service charged under two labels at the same time is flagged "Charged twice".
 - **Bundles** (Apple One, Canal+) list their included services and count once. A service paid separately while also in a bundle gets "Already included in ..." (iCloud+ and Netflix in the samples).
 - **No accounts in version 1.** Each browser gets a random session id in an httpOnly cookie; every row carries it.
 - The cancellation links in the descriptor map are starting points (account or help pages). Check them before relying on them.
@@ -71,12 +75,25 @@ What the code does for each point of the spec's "Privacy and security" section:
 | Encrypt the database at rest | Labels, merchants, plans and subscription details are encrypted with AES-256-GCM before storage (`lib/crypto.ts`, key in `DATA_ENCRYPTION_KEY`). Dates and amounts are not. For production, also use a database with disk encryption (Turso and managed Postgres provide it). |
 | HTTPS everywhere | HSTS, Content-Security-Policy and other security headers in `next.config.ts`; the session cookie is `Secure` in production; Vercel serves HTTPS only. |
 | Minimum data to the Claude API | Only a screenshot, in `lib/parsers/screenshot.ts` (the only file importing the SDK; checked by a test). Statements are never sent. |
-| Plain-language privacy page | `/privacy` |
+| Plain-language privacy page | `/privacy` (also covers the Gmail scan) |
 | GDPR review and security audit | Still to do before any public launch. |
 
 The upload route is rate limited (20 uploads per 10 minutes per IP address), since screenshots call the Claude API.
 
 Known gaps for later: the rate limiter and the CSP are prototype-grade (the limiter keeps its counters in memory, per server instance, and the CSP allows inline scripts because Next.js needs them without a nonce setup), and `npm audit` reports two advisories inside Prisma's own dependencies (`mysql2`, not used at runtime, and `deepmerge-ts`, used by the Prisma config loader) whose only fix today is a forced upgrade to a Prisma release candidate.
+
+## Gmail scan (optional)
+
+The upload page shows "Scan my Gmail receipts" when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set. The scan:
+
+- asks Google for `gmail.readonly` only, without a refresh token (`access_type=online`), with PKCE and a state check;
+- searches the last year for emails whose subject mentions a receipt, invoice, payment, subscription, renewal or trial (at most 300);
+- keeps only the ones that read as receipts (amount plus billing words, no promotions), with the same fields as an uploaded `.eml` (merchant, amount, date, plan, frequency, trial), and discards the emails themselves;
+- never stores the access token and revokes it as soon as the scan ends.
+
+Setup in [Google Cloud console](https://console.cloud.google.com/): create a project, enable the Gmail API, configure the OAuth consent screen (External, **Testing** mode) and add each tester's Gmail address as a test user (up to 100), then create an OAuth client of type "Web application" with the redirect URI `https://<your-domain>/api/gmail/callback` (and `http://localhost:3000/api/gmail/callback` for local runs).
+
+`gmail.readonly` is a restricted scope: in Testing mode it works for the listed test users (Google shows an "unverified app" warning), which is enough for the 20 to 30 testers of the validation plan. A public launch needs Google's verification and a yearly third-party security assessment (CASA).
 
 ## Deploy on Vercel
 
@@ -95,6 +112,7 @@ A SQLite file does not survive on Vercel (each function has its own temporary di
    - `DATABASE_AUTH_TOKEN`: the token
    - `DATA_ENCRYPTION_KEY`: `openssl rand -base64 32` (keep it safe: losing it makes stored data unreadable)
    - `ANTHROPIC_API_KEY`: optional, for screenshots
+   - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`: optional, for the Gmail scan
 3. Deploy (`vercel --prod` or a push). The build runs `prisma generate && next build`.
 
 Vercel limits request bodies to 4.5 MB, so the app accepts files up to 4 MB each; upload large statements in several goes.
