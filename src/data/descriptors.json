@@ -1,0 +1,343 @@
+[
+  {
+    "pattern": "NETFLIX",
+    "serviceName": "Netflix",
+    "category": "streaming",
+    "cancellationUrl": "https://www.netflix.com/cancelplan"
+  },
+  {
+    "pattern": "SPOTIFY",
+    "serviceName": "Spotify",
+    "category": "music",
+    "cancellationUrl": "https://www.spotify.com/account/subscription/"
+  },
+  {
+    "pattern": "DISNEY",
+    "serviceName": "Disney+",
+    "category": "streaming",
+    "cancellationUrl": "https://www.disneyplus.com/account/subscription"
+  },
+  {
+    "pattern": "AMAZON PRIME",
+    "serviceName": "Amazon Prime",
+    "category": "shopping",
+    "cancellationUrl": "https://www.amazon.fr/gp/primecentral"
+  },
+  {
+    "pattern": "APPLE ONE",
+    "serviceName": "Apple One",
+    "category": "bundle",
+    "cancellationUrl": "https://support.apple.com/HT202039",
+    "bundle": [
+      "Apple Music",
+      "Apple TV+",
+      "Apple Arcade",
+      "iCloud+"
+    ]
+  },
+  {
+    "pattern": "ICLOUD",
+    "serviceName": "iCloud+",
+    "category": "cloud storage",
+    "cancellationUrl": "https://support.apple.com/HT202039"
+  },
+  {
+    "pattern": "APPLE MUSIC",
+    "serviceName": "Apple Music",
+    "category": "music",
+    "cancellationUrl": "https://support.apple.com/HT202039"
+  },
+  {
+    "pattern": "APPLE TV",
+    "serviceName": "Apple TV+",
+    "category": "streaming",
+    "cancellationUrl": "https://support.apple.com/HT202039"
+  },
+  {
+    "pattern": "APPLE ARCADE",
+    "serviceName": "Apple Arcade",
+    "category": "gaming",
+    "cancellationUrl": "https://support.apple.com/HT202039"
+  },
+  {
+    "pattern": "YOUTUBE",
+    "serviceName": "YouTube Premium",
+    "category": "streaming",
+    "cancellationUrl": "https://www.youtube.com/paid_memberships"
+  },
+  {
+    "pattern": "GOOGLE ONE",
+    "serviceName": "Google One",
+    "category": "cloud storage",
+    "cancellationUrl": "https://one.google.com/settings"
+  },
+  {
+    "pattern": "DEEZER",
+    "serviceName": "Deezer",
+    "category": "music",
+    "cancellationUrl": "https://www.deezer.com/account/subscription"
+  },
+  {
+    "pattern": "CANAL",
+    "serviceName": "Canal+",
+    "category": "streaming",
+    "cancellationUrl": "https://www.canalplus.com/espace-client",
+    "bundle": [
+      "Netflix",
+      "Max",
+      "Paramount+"
+    ]
+  },
+  {
+    "pattern": "HBO MAX",
+    "serviceName": "Max",
+    "category": "streaming",
+    "cancellationUrl": "https://www.max.com/account"
+  },
+  {
+    "pattern": "PARAMOUNT",
+    "serviceName": "Paramount+",
+    "category": "streaming",
+    "cancellationUrl": "https://www.paramountplus.com/account/"
+  },
+  {
+    "pattern": "DAZN",
+    "serviceName": "DAZN",
+    "category": "streaming",
+    "cancellationUrl": "https://www.dazn.com/myaccount"
+  },
+  {
+    "pattern": "CRUNCHYROLL",
+    "serviceName": "Crunchyroll",
+    "category": "streaming",
+    "cancellationUrl": "https://www.crunchyroll.com/account/membership"
+  },
+  {
+    "pattern": "AUDIBLE",
+    "serviceName": "Audible",
+    "category": "books",
+    "cancellationUrl": "https://www.audible.com/account/overview"
+  },
+  {
+    "pattern": "KINDLE UNLIMITED",
+    "serviceName": "Kindle Unlimited",
+    "category": "books",
+    "cancellationUrl": "https://www.amazon.com/kindle-dbs/ku/ku-central"
+  },
+  {
+    "pattern": "XBOX",
+    "serviceName": "Xbox Game Pass",
+    "category": "gaming",
+    "cancellationUrl": "https://account.microsoft.com/services"
+  },
+  {
+    "pattern": "PLAYSTATION",
+    "serviceName": "PlayStation Plus",
+    "category": "gaming",
+    "cancellationUrl": "https://store.playstation.com/subscriptions"
+  },
+  {
+    "pattern": "NINTENDO",
+    "serviceName": "Nintendo Switch Online",
+    "category": "gaming",
+    "cancellationUrl": "https://accounts.nintendo.com"
+  },
+  {
+    "pattern": "MICROSOFT 365",
+    "serviceName": "Microsoft 365",
+    "category": "productivity",
+    "cancellationUrl": "https://account.microsoft.com/services"
+  },
+  {
+    "pattern": "ADOBE",
+    "serviceName": "Adobe Creative Cloud",
+    "category": "productivity",
+    "cancellationUrl": "https://account.adobe.com/plans"
+  },
+  {
+    "pattern": "DROPBOX",
+    "serviceName": "Dropbox",
+    "category": "cloud storage",
+    "cancellationUrl": "https://www.dropbox.com/account/plan"
+  },
+  {
+    "pattern": "NOTION",
+    "serviceName": "Notion",
+    "category": "productivity",
+    "cancellationUrl": "https://www.notion.com/help/upgrade-or-downgrade-your-plan"
+  },
+  {
+    "pattern": "CANVA",
+    "serviceName": "Canva",
+    "category": "productivity",
+    "cancellationUrl": "https://www.canva.com/settings/billing-and-teams"
+  },
+  {
+    "pattern": "OPENAI",
+    "serviceName": "ChatGPT Plus",
+    "category": "productivity",
+    "cancellationUrl": "https://chatgpt.com/"
+  },
+  {
+    "pattern": "ANTHROPIC",
+    "serviceName": "Claude",
+    "category": "productivity",
+    "cancellationUrl": "https://claude.ai/settings/billing"
+  },
+  {
+    "pattern": "DUOLINGO",
+    "serviceName": "Duolingo",
+    "category": "education",
+    "cancellationUrl": "https://www.duolingo.com/settings/subscription"
+  },
+  {
+    "pattern": "BABBEL",
+    "serviceName": "Babbel",
+    "category": "education",
+    "cancellationUrl": "https://my.babbel.com/"
+  },
+  {
+    "pattern": "HEADSPACE",
+    "serviceName": "Headspace",
+    "category": "wellbeing",
+    "cancellationUrl": "https://www.headspace.com/subscriptions"
+  },
+  {
+    "pattern": "CALM",
+    "serviceName": "Calm",
+    "category": "wellbeing",
+    "cancellationUrl": "https://www.calm.com/profile/manage-subscription"
+  },
+  {
+    "pattern": "STRAVA",
+    "serviceName": "Strava",
+    "category": "fitness",
+    "cancellationUrl": "https://www.strava.com/account"
+  },
+  {
+    "pattern": "BASIC FIT",
+    "serviceName": "Basic-Fit",
+    "category": "fitness",
+    "cancellationUrl": "https://my.basic-fit.com/"
+  },
+  {
+    "pattern": "UBER",
+    "serviceName": "Uber One",
+    "category": "transport",
+    "cancellationUrl": "https://www.uber.com/uber-one/"
+  },
+  {
+    "pattern": "UBER EATS",
+    "serviceName": "Uber Eats",
+    "category": "food",
+    "cancellationUrl": "https://www.ubereats.com/"
+  },
+  {
+    "pattern": "DELIVEROO",
+    "serviceName": "Deliveroo Plus",
+    "category": "food",
+    "cancellationUrl": "https://deliveroo.fr/fr/plus"
+  },
+  {
+    "pattern": "FREE MOBILE",
+    "serviceName": "Free Mobile",
+    "category": "telecom",
+    "cancellationUrl": "https://mobile.free.fr/account/"
+  },
+  {
+    "pattern": "ORANGE",
+    "serviceName": "Orange",
+    "category": "telecom",
+    "cancellationUrl": "https://espace-client.orange.fr"
+  },
+  {
+    "pattern": "SFR",
+    "serviceName": "SFR",
+    "category": "telecom",
+    "cancellationUrl": "https://www.sfr.fr/mon-espace-client/"
+  },
+  {
+    "pattern": "BOUYGUES",
+    "serviceName": "Bouygues Telecom",
+    "category": "telecom",
+    "cancellationUrl": "https://www.bouyguestelecom.fr/mon-compte"
+  },
+  {
+    "pattern": "LE MONDE",
+    "serviceName": "Le Monde",
+    "category": "news",
+    "cancellationUrl": "https://www.lemonde.fr/compte/"
+  },
+  {
+    "pattern": "NYTIMES",
+    "serviceName": "The New York Times",
+    "category": "news",
+    "cancellationUrl": "https://myaccount.nytimes.com/seg/subscription"
+  },
+  {
+    "pattern": "MEDIUM",
+    "serviceName": "Medium",
+    "category": "news",
+    "cancellationUrl": "https://medium.com/me/settings/membership"
+  },
+  {
+    "pattern": "LINKEDIN",
+    "serviceName": "LinkedIn Premium",
+    "category": "career",
+    "cancellationUrl": "https://www.linkedin.com/premium/manage/"
+  },
+  {
+    "pattern": "TINDER",
+    "serviceName": "Tinder",
+    "category": "dating",
+    "cancellationUrl": "https://help.tinder.com"
+  },
+  {
+    "pattern": "NORDVPN",
+    "serviceName": "NordVPN",
+    "category": "security",
+    "cancellationUrl": "https://my.nordaccount.com/dashboard/nordvpn/"
+  },
+  {
+    "pattern": "1PASSWORD",
+    "serviceName": "1Password",
+    "category": "security",
+    "cancellationUrl": "https://my.1password.com/"
+  },
+  {
+    "pattern": "GRAMMARLY",
+    "serviceName": "Grammarly",
+    "category": "productivity",
+    "cancellationUrl": "https://account.grammarly.com/subscription"
+  },
+  {
+    "pattern": "SETAPP",
+    "serviceName": "Setapp",
+    "category": "software",
+    "cancellationUrl": "https://my.setapp.com/subscription"
+  },
+  {
+    "pattern": "TWITCH",
+    "serviceName": "Twitch",
+    "category": "streaming",
+    "cancellationUrl": "https://www.twitch.tv/subscriptions"
+  },
+  {
+    "pattern": "PATREON",
+    "serviceName": "Patreon",
+    "category": "creators",
+    "cancellationUrl": "https://www.patreon.com/settings/memberships"
+  },
+  {
+    "pattern": "GITHUB",
+    "serviceName": "GitHub",
+    "category": "software",
+    "cancellationUrl": "https://github.com/settings/billing"
+  },
+  {
+    "pattern": "ZOOM",
+    "serviceName": "Zoom",
+    "category": "productivity",
+    "cancellationUrl": "https://zoom.us/billing"
+  }
+]
