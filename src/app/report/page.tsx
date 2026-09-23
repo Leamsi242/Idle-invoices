@@ -3,6 +3,10 @@ import { getSessionId } from "@/lib/session";
 import { getReport, type StoredSubscription } from "@/lib/store";
 import { money, FREQUENCY_LABEL } from "@/lib/format";
 import { DeleteEverythingButton } from "@/components/Questions";
+import { ReminderButton } from "@/components/Reminders";
+import { TrialList } from "@/components/TrialList";
+import { renewalReminder } from "@/lib/ics";
+import { cancellationSteps } from "@/lib/cancel-guide";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +24,11 @@ function Card({ s }: { s: StoredSubscription }) {
         {money(s.currentAmount, s.currency)} {FREQUENCY_LABEL[s.frequency]} · since {s.firstSeen} · last {s.lastSeen}
         {unmasked.length > 0 && <> · unmasked via {unmasked.join(", ")}</>}
       </p>
+      {s.status !== "cancelled" && (
+        <p className="text-sm text-slate-600">
+          Next charge around <strong>{s.nextCharge}</strong> · paid so far {money(s.totalPaid, s.currency)}
+        </p>
+      )}
       {s.priceChanges.length > 0 && (
         <p className="text-sm text-amber-700">
           Price went up: {s.priceChanges.map((p) => `${money(p.from, s.currency)} to ${money(p.to, s.currency)} on ${p.date}`).join("; ")}
@@ -31,12 +40,23 @@ function Card({ s }: { s: StoredSubscription }) {
           {s.forgottenReasons.map((r) => <li key={r} className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">{r}</li>)}
         </ul>
       )}
-      <div className="flex items-center justify-between text-sm">
+      {s.status !== "cancelled" && (
+        <details className="rounded-lg bg-slate-50 p-3 text-sm">
+          <summary className="cursor-pointer font-medium text-brand">How to cancel</summary>
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-slate-700">
+            {cancellationSteps(s.channel, s.serviceName).map((step) => <li key={step}>{step}</li>)}
+          </ol>
+          {s.cancellationUrl ? (
+            <a href={s.cancellationUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block font-medium text-brand underline">{s.serviceName} account page ↗</a>
+          ) : (
+            <p className="mt-2 text-slate-500">No cancellation link for this service yet.</p>
+          )}
+        </details>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <span className="text-slate-500">Confidence {Math.round(s.confidence * 100)}%</span>
-        {s.cancellationUrl ? (
-          <a href={s.cancellationUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-brand underline">How to cancel ↗</a>
-        ) : (
-          <span className="text-slate-400">No cancellation link yet</span>
+        {s.status !== "cancelled" && (
+          <ReminderButton reminder={renewalReminder(s.serviceName, s.nextCharge, money(s.currentAmount, s.currency), s.cancellationUrl)} label="Remind me before it renews" />
         )}
       </div>
     </article>
@@ -65,6 +85,7 @@ export default async function Report() {
     );
   }
   const r = report;
+  const recent = [...r.forgotten, ...r.active, ...r.idle].filter((s) => s.isNew && s.usage !== "yes");
   const unanswered = [...r.forgotten, ...r.active].filter((s) => !s.usage).length;
   return (
     <div className="space-y-6">
@@ -84,23 +105,13 @@ export default async function Report() {
           {unanswered} subscriptions still need a &quot;Still using this?&quot; answer. <Link href="/review" className="underline">Answer now</Link> to see your full savings.
         </p>
       )}
-      {r.trials.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="font-semibold">Free trials about to start charging <span className="text-slate-400">({r.trials.length})</span></h2>
-          {r.trials.map((t) => (
-            <article key={t.serviceName} className="space-y-1 rounded-xl border border-amber-300 bg-amber-50 p-4">
-              <div className="flex items-baseline justify-between gap-2">
-                <h3 className="font-medium">{t.serviceName}</h3>
-                <span className="whitespace-nowrap font-semibold">{money(t.amount, t.currency)}{t.frequency ? ` ${FREQUENCY_LABEL[t.frequency]}` : ""}</span>
-              </div>
-              <p className="text-sm text-amber-900">First charge on {t.startsCharging}. Cancel before then if you don&apos;t want it.</p>
-              {t.cancellationUrl && (
-                <a href={t.cancellationUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-brand underline">How to cancel ↗</a>
-              )}
-            </article>
-          ))}
-        </section>
+      {recent.length > 0 && (
+        <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          <strong>Started recently:</strong> {recent.map((s) => `${s.serviceName} (${money(s.currentAmount, s.currency)} ${FREQUENCY_LABEL[s.frequency]})`).join(", ")}.
+          Trials often turn into paid plans without warning: check you meant to keep {recent.length > 1 ? "them" : "it"}.
+        </p>
       )}
+      <TrialList trials={r.trials} />
       <Section title="Idle: you said you don't use these" subs={r.idle} note="Cancelling these is your potential saving." />
       <Section title="Possibly forgotten" subs={r.forgotten} />
       <Section title="Active" subs={r.active} />

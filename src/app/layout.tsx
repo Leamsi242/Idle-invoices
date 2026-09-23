@@ -13,6 +13,7 @@ const nav = [
   { href: "/", label: "Upload" },
   { href: "/review", label: "Review" },
   { href: "/report", label: "Report" },
+  { href: "/trials", label: "Trials" },
   { href: "/privacy", label: "Privacy" },
 ];
 
@@ -23,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="border-b border-slate-200 bg-white">
           <div className="mx-auto flex max-w-2xl items-center justify-between gap-2 px-4 py-3">
             <Link href="/" className="font-semibold text-brand">🔍 Subscription Detective</Link>
-            <nav className="flex gap-3 text-sm text-slate-600">
+            <nav className="flex flex-wrap justify-end gap-x-3 gap-y-1 text-sm text-slate-600">
               {nav.map((n) => (
                 <Link key={n.href} href={n.href} className="hover:text-brand">{n.label}</Link>
               ))}

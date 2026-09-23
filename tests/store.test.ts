@@ -77,7 +77,7 @@ describe("store", () => {
     await uploadAll(b);
     await saveLabel(a, "PADDLE.NET* FOCUSFLOW", "FocusFlow");
     await deleteEverything(a);
-    for (const model of [prisma.upload, prisma.transaction, prisma.subscription, prisma.match, prisma.descriptor] as unknown as { count: (q: object) => Promise<number> }[]) {
+    for (const model of [prisma.upload, prisma.transaction, prisma.subscription, prisma.match, prisma.descriptor, prisma.trackedTrial] as unknown as { count: (q: object) => Promise<number> }[]) {
       expect(await model.count({ where: { sessionId: a } })).toBe(0);
     }
     expect(await prisma.subscription.count({ where: { sessionId: b } })).toBe(16);

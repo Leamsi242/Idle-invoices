@@ -3,7 +3,7 @@ import { decrypt, decryptOptional, encrypt, encryptOptional } from "./crypto";
 import type { DescriptorEntry, DetectedSubscription, Frequency, NormalizedTransaction, Source, Status, Usage } from "./types";
 import { analyze } from "./engine/pipeline";
 import { buildReport, type Report } from "./engine/flags";
-import { descriptorFromAnswer } from "./engine/descriptors";
+import { descriptorFromAnswer, findDescriptor } from "./engine/descriptors";
 import { maskSensitive } from "./mask";
 import { upcomingTrials, type UpcomingTrial } from "./engine/trials";
 
@@ -106,6 +106,11 @@ export async function recompute(sessionId: string) {
           matchedSources: s.matchedSources,
           merchant: s.merchant,
           chargeCount: s.transactions.length,
+          channel: s.channel,
+          trialCharge: s.trialCharge,
+          totalPaid: s.totalPaid,
+          nextCharge: s.nextCharge,
+          isNew: s.isNew,
         })),
       })),
     }),
@@ -139,13 +144,58 @@ export async function listSubscriptions(sessionId: string): Promise<StoredSubscr
   });
 }
 
-export async function getReport(sessionId: string, today = new Date().toISOString().slice(0, 10)): Promise<Report<StoredSubscription> & { uploads: number; trials: UpcomingTrial[] }> {
-  const [subs, uploads, txs] = await Promise.all([
+export type ReportTrial = UpcomingTrial & { id?: string; tracked: boolean };
+
+export async function getReport(sessionId: string, today = new Date().toISOString().slice(0, 10)): Promise<Report<StoredSubscription> & { uploads: number; trials: ReportTrial[] }> {
+  const [subs, uploads, txs, tracked] = await Promise.all([
     listSubscriptions(sessionId),
     prisma.upload.count({ where: { sessionId } }),
     loadTransactions(sessionId),
+    listTrackedTrials(sessionId),
   ]);
-  return { ...buildReport(subs), uploads, trials: upcomingTrials(txs, today) };
+  const found: ReportTrial[] = upcomingTrials(txs, today).map((t) => ({ ...t, tracked: false }));
+  const trials = [...tracked.filter((t) => t.startsCharging >= today), ...found.filter((f) => !tracked.some((t) => t.serviceName === f.serviceName))]
+    .sort((a, b) => a.startsCharging.localeCompare(b.startsCharging));
+  return { ...buildReport(subs), uploads, trials };
+}
+
+// --- Free trials the user tracks by hand -------------------------------------------------
+
+export interface TrialInput { serviceName: string; endsOn: string; priceAfter?: number; currency?: string; frequency?: Frequency }
+
+export async function addTrackedTrial(sessionId: string, t: TrialInput) {
+  return prisma.trackedTrial.create({
+    data: {
+      sessionId,
+      serviceName: encrypt(t.serviceName.trim().slice(0, 100)),
+      endsOn: day(t.endsOn),
+      priceAfter: t.priceAfter ?? null,
+      currency: t.currency ?? "EUR",
+      frequency: t.frequency ?? null,
+    },
+  });
+}
+
+export async function listTrackedTrials(sessionId: string): Promise<ReportTrial[]> {
+  const rows = await prisma.trackedTrial.findMany({ where: { sessionId }, orderBy: { endsOn: "asc" } });
+  return rows.map((r) => {
+    const serviceName = decrypt(r.serviceName);
+    const d = findDescriptor([serviceName]);
+    return {
+      id: r.id,
+      tracked: true,
+      serviceName: d?.serviceName ?? serviceName,
+      amount: r.priceAfter ?? 0,
+      currency: r.currency,
+      frequency: (r.frequency as Frequency | null) ?? undefined,
+      startsCharging: iso(r.endsOn),
+      cancellationUrl: d?.cancellationUrl,
+    };
+  });
+}
+
+export async function removeTrackedTrial(sessionId: string, id: string) {
+  await prisma.trackedTrial.deleteMany({ where: { id, sessionId } });
 }
 
 /** Row ids change on every recompute, so answers are keyed by the subscription's label key. */
@@ -174,6 +224,7 @@ export async function deleteEverything(sessionId: string) {
     prisma.transaction.deleteMany({ where: { sessionId } }),
     prisma.upload.deleteMany({ where: { sessionId } }),
     prisma.descriptor.deleteMany({ where: { sessionId } }),
+    prisma.trackedTrial.deleteMany({ where: { sessionId } }),
   ]);
 }
 
@@ -181,6 +232,8 @@ export async function deleteEverything(sessionId: string) {
 export async function purgeExpired(now = new Date()) {
   const cutoff = new Date(now.getTime() - RETENTION_DAYS * 86_400_000);
   const recent = await prisma.upload.findMany({ where: { uploadedAt: { gte: cutoff } }, select: { sessionId: true }, distinct: ["sessionId"] });
+  // Tracked trials count as activity too, and expire 30 days after their end date.
+  await prisma.trackedTrial.deleteMany({ where: { endsOn: { lt: cutoff } } });
   const stale = await prisma.upload.findMany({
     where: { uploadedAt: { lt: cutoff }, sessionId: { notIn: recent.map((r) => r.sessionId) } },
     select: { sessionId: true },

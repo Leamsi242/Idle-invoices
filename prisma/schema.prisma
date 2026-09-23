@@ -87,3 +87,17 @@ model Descriptor {
 
   @@unique([sessionId, pattern])
 }
+
+// A free trial the user told us about ("I just started a trial, it ends on ..."), so we can remind them.
+model TrackedTrial {
+  id          String   @id @default(cuid())
+  sessionId   String
+  serviceName String // encrypted
+  endsOn      DateTime
+  priceAfter  Float?
+  currency    String   @default("EUR")
+  frequency   String?
+  createdAt   DateTime @default(now())
+
+  @@index([sessionId])
+}
