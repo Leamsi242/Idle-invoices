@@ -5,6 +5,7 @@ import { analyze } from "./engine/pipeline";
 import { buildReport, type Report } from "./engine/flags";
 import { descriptorFromAnswer } from "./engine/descriptors";
 import { maskSensitive } from "./mask";
+import { upcomingTrials, type UpcomingTrial } from "./engine/trials";
 
 /** Data older than this is purged automatically (see the privacy page). */
 export const RETENTION_DAYS = 30;
@@ -138,10 +139,13 @@ export async function listSubscriptions(sessionId: string): Promise<StoredSubscr
   });
 }
 
-export async function getReport(sessionId: string): Promise<Report<StoredSubscription> & { uploads: number }> {
-  const subs = await listSubscriptions(sessionId);
-  const uploads = await prisma.upload.count({ where: { sessionId } });
-  return { ...buildReport(subs), uploads };
+export async function getReport(sessionId: string, today = new Date().toISOString().slice(0, 10)): Promise<Report<StoredSubscription> & { uploads: number; trials: UpcomingTrial[] }> {
+  const [subs, uploads, txs] = await Promise.all([
+    listSubscriptions(sessionId),
+    prisma.upload.count({ where: { sessionId } }),
+    loadTransactions(sessionId),
+  ]);
+  return { ...buildReport(subs), uploads, trials: upcomingTrials(txs, today) };
 }
 
 /** Row ids change on every recompute, so answers are keyed by the subscription's label key. */

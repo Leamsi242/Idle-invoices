@@ -164,12 +164,14 @@ describe("app store lists", () => {
     expect(appleOne.at(-1)!.date).toBe("2025-10-17");
   });
 
-  it("reads the Google list; trials have no past charges yet", () => {
+  it("reads the Google list; a trial becomes one record on the day it starts charging", () => {
     const entries = parseAppStoreList(readSample("google-subscriptions.txt").toString());
     expect(entries).toHaveLength(2);
     expect(entries[1]).toMatchObject({ service: "Calm", amount: 69.99, frequency: "yearly", isTrial: true, renewalDate: "2027-03-05" });
     const txs = appStoreEntriesToTransactions(entries, "google", TODAY);
-    expect(txs.every((t) => t.merchant === "Google One")).toBe(true);
+    expect(txs.filter((t) => t.merchant === "Google One")).toHaveLength(12);
+    const calm = txs.filter((t) => t.merchant === "Calm");
+    expect(calm).toEqual([expect.objectContaining({ date: "2027-03-05", amount: 69.99, isTrial: true, frequency: "yearly" })]);
     expect(parseText(readSample("google-subscriptions.txt").toString(), { today: TODAY }).source).toBe("google");
   });
 });

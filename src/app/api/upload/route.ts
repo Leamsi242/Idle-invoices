@@ -3,6 +3,7 @@ import { NeedsMappingError, parseFile, parseText, type ColumnMapping } from "@/l
 import { getOrCreateSessionId } from "@/lib/session";
 import { purgeExpired, recompute, saveUpload } from "@/lib/store";
 import { maskSensitive } from "@/lib/mask";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -10,6 +11,9 @@ export const maxDuration = 60;
 const MAX_FILES = 20;
 // Vercel limits request bodies to 4.5 MB; keep each file well under that.
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
+// Each upload can call the Claude API (screenshots), so cap how often one visitor can post.
+const UPLOADS_PER_WINDOW = 20;
+const WINDOW_MS = 10 * 60 * 1000;
 
 const parseJson = <T,>(value: FormDataEntryValue | null, fallback: T): T => {
   try {
@@ -26,6 +30,11 @@ function userMessage(e: unknown): string {
 }
 
 export async function POST(req: Request) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const limit = rateLimit(`upload:${ip}`, UPLOADS_PER_WINDOW, WINDOW_MS);
+  if (!limit.ok) {
+    return NextResponse.json({ error: "Too many uploads. Please wait a few minutes." }, { status: 429, headers: { "Retry-After": String(limit.retryAfter) } });
+  }
   const form = await req.formData();
   const files = form.getAll("files").filter((f): f is File => f instanceof File);
   const hints = parseJson<Record<string, "apple" | "google" | "email">>(form.get("hints"), {});

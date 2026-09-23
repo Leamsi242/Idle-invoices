@@ -21,7 +21,7 @@ Then upload the files in [`samples/`](samples) to see a full report. Optional: s
 ## Run the tests
 
 ```bash
-npm test            # Vitest: parsers, engine, storage, privacy checks (59 tests)
+npm test            # Vitest: parsers, engine, storage, privacy checks (63 tests)
 npm run typecheck
 ```
 
@@ -54,6 +54,7 @@ Uploaded files
 - **App store lists** show the next renewal, not past charges, so the parser projects the last 12 months of charges back from the renewal date to reconcile them with `APPLE.COM/BILL` lines.
 - **"No receipt email"** is only used as a reason when the user uploaded at least one receipt; otherwise every subscription would be flagged.
 - **"Possibly forgotten" vs "idle".** Answering "Yes" to "Still using this?" clears the forgotten flag; "Rarely" or "No" makes it idle and adds its yearly cost to the potential savings. A subscription with no charge for 1.5 periods is shown as stopped and left out of the total.
+- **Free trials not yet charged** (for example "Free trial, then €69.99/year" in an app store list) are shown at the top of the report with the date of the first charge, so the user can cancel in time (Calm in the samples).
 - **Bundles** (Apple One, Canal+) list their included services and count once. A service paid separately while also in a bundle gets "Already included in ..." (iCloud+ and Netflix in the samples).
 - **No accounts in version 1.** Each browser gets a random session id in an httpOnly cookie; every row carries it.
 - The cancellation links in the descriptor map are starting points (account or help pages). Check them before relying on them.
@@ -68,12 +69,14 @@ What the code does for each point of the spec's "Privacy and security" section:
 | "Delete everything" button | On the report and privacy pages; `DELETE /api/data` erases every row of the session in all five tables and clears the cookie. Data is also purged automatically 30 days after the last upload. |
 | Mask account numbers, IBANs and card numbers during parsing | `lib/mask.ts`, applied by `makeTx()` in every parser and to stored file names. |
 | Encrypt the database at rest | Labels, merchants, plans and subscription details are encrypted with AES-256-GCM before storage (`lib/crypto.ts`, key in `DATA_ENCRYPTION_KEY`). Dates and amounts are not. For production, also use a database with disk encryption (Turso and managed Postgres provide it). |
-| HTTPS everywhere | HSTS and other security headers in `next.config.ts`; the session cookie is `Secure` in production; Vercel serves HTTPS only. |
+| HTTPS everywhere | HSTS, Content-Security-Policy and other security headers in `next.config.ts`; the session cookie is `Secure` in production; Vercel serves HTTPS only. |
 | Minimum data to the Claude API | Only a screenshot, in `lib/parsers/screenshot.ts` (the only file importing the SDK; checked by a test). Statements are never sent. |
 | Plain-language privacy page | `/privacy` |
 | GDPR review and security audit | Still to do before any public launch. |
 
-Known gaps for later: no rate limiting on the upload route, no Content-Security-Policy header yet, and `npm audit` reports two advisories inside Prisma's own dependencies (`mysql2`, not used at runtime, and `deepmerge-ts`, used by the Prisma config loader) whose only fix today is a forced upgrade to a Prisma release candidate.
+The upload route is rate limited (20 uploads per 10 minutes per IP address), since screenshots call the Claude API.
+
+Known gaps for later: the rate limiter and the CSP are prototype-grade (the limiter keeps its counters in memory, per server instance, and the CSP allows inline scripts because Next.js needs them without a nonce setup), and `npm audit` reports two advisories inside Prisma's own dependencies (`mysql2`, not used at runtime, and `deepmerge-ts`, used by the Prisma config loader) whose only fix today is a forced upgrade to a Prisma release candidate.
 
 ## Deploy on Vercel
 

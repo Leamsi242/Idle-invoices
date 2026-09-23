@@ -84,6 +84,23 @@ export default async function Report() {
           {unanswered} subscriptions still need a &quot;Still using this?&quot; answer. <Link href="/review" className="underline">Answer now</Link> to see your full savings.
         </p>
       )}
+      {r.trials.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-semibold">Free trials about to start charging <span className="text-slate-400">({r.trials.length})</span></h2>
+          {r.trials.map((t) => (
+            <article key={t.serviceName} className="space-y-1 rounded-xl border border-amber-300 bg-amber-50 p-4">
+              <div className="flex items-baseline justify-between gap-2">
+                <h3 className="font-medium">{t.serviceName}</h3>
+                <span className="whitespace-nowrap font-semibold">{money(t.amount, t.currency)}{t.frequency ? ` ${FREQUENCY_LABEL[t.frequency]}` : ""}</span>
+              </div>
+              <p className="text-sm text-amber-900">First charge on {t.startsCharging}. Cancel before then if you don&apos;t want it.</p>
+              {t.cancellationUrl && (
+                <a href={t.cancellationUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-brand underline">How to cancel ↗</a>
+              )}
+            </article>
+          ))}
+        </section>
+      )}
       <Section title="Idle: you said you don't use these" subs={r.idle} note="Cancelling these is your potential saving." />
       <Section title="Possibly forgotten" subs={r.forgotten} />
       <Section title="Active" subs={r.active} />

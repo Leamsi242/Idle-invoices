@@ -55,12 +55,28 @@ const PERIOD_MONTHS: Record<Frequency, number> = { weekly: 0, monthly: 1, quarte
 /**
  * App store lists show the current price and next renewal, not past charges. To reconcile
  * them with bank statements we project the charges of the last 12 months backwards from the
- * renewal date. Entries still in a free trial have no past charges.
+ * renewal date. An entry still in a free trial has no past charge: it becomes a single
+ * trial record dated on the day it starts charging, so the report can warn about it.
  */
 export function appStoreEntriesToTransactions(entries: AppStoreEntry[], source: "apple" | "google", today = new Date().toISOString().slice(0, 10)): NormalizedTransaction[] {
   const out: NormalizedTransaction[] = [];
   for (const e of entries) {
-    if (e.isTrial) continue;
+    if (e.isTrial) {
+      if (e.renewalDate) {
+        out.push(makeTx({
+          date: e.renewalDate,
+          amount: e.amount,
+          currency: e.currency,
+          rawLabel: `${source.toUpperCase()} ${e.service} (free trial)`,
+          source,
+          merchant: e.service,
+          plan: e.plan,
+          frequency: e.frequency,
+          isTrial: true,
+        }));
+      }
+      continue;
+    }
     const anchor = e.renewalDate ?? today;
     const earliest = addMonths(anchor, -12);
     for (let k = 1; k <= 60; k++) {
