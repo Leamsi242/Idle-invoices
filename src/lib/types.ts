@@ -18,6 +18,11 @@ export interface NormalizedTransaction {
   plan?: string;
   frequency?: Frequency; // stated by the source (receipt, app store list)
   isTrial?: boolean;
+  /** Next charge announced by the source: end of a trial, renewal, price change. */
+  nextChargeDate?: string;
+  nextChargeAmount?: number;
+  /** An email saying the subscription was cancelled (amount 0, evidence only). */
+  isCancellation?: boolean;
 }
 
 export interface MatchResult {
@@ -71,4 +76,6 @@ export interface DetectedSubscription extends RecurringGroup {
   totalPaid: number; // everything paid so far, trial charge included
   nextCharge: string; // expected date of the next charge
   isNew: boolean; // first charged recently
+  cancelledOn?: string; // date of a cancellation email
+  endsOn?: string; // access ends on (from the cancellation email)
 }

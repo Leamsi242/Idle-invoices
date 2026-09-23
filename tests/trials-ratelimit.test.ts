@@ -9,7 +9,7 @@ describe("upcoming free trials", () => {
   it("finds the Calm trial in the Google list, with its first charge date and cancel link", async () => {
     const trials = upcomingTrials(await loadAllSamples(), TODAY);
     expect(trials).toEqual([
-      { serviceName: "Calm", amount: 69.99, currency: "EUR", frequency: "yearly", startsCharging: "2027-03-05", cancellationUrl: "https://www.calm.com/profile/manage-subscription" },
+      { kind: "trial", serviceName: "Calm", amount: 69.99, currency: "EUR", frequency: "yearly", startsCharging: "2027-03-05", cancellationUrl: "https://www.calm.com/profile/manage-subscription" },
     ]);
   });
 

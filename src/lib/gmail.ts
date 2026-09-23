@@ -4,17 +4,19 @@ import { looksLikeReceipt, parseEml } from "./parsers/email";
 
 /**
  * One-time, read-only Gmail scan (SPEC.md lists inbox connection for later; this is the
- * prototype version). The access token lives only for the duration of the scan: it is never
+ * prototype version). It covers the whole mailbox, newest first, up to MAX_MESSAGES emails.
+ * The access token lives only for the duration of the scan: it is never
  * stored, and it is revoked as soon as the scan ends. Only the fields of receipts we recognise
  * are kept, exactly as for uploaded .eml files.
  */
 export const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 
-// Subjects of receipts, invoices and billing emails, in English and French, over the last year.
+// Subjects of receipts, invoices, billing, trial and cancellation emails, in English and French,
+// over the whole mailbox (Gmail returns the newest first).
 export const GMAIL_QUERY =
-  "newer_than:1y -in:spam -in:trash subject:(receipt OR invoice OR facture OR reçu OR payment OR paiement OR subscription OR abonnement OR renewal OR renouvellement OR trial OR essai OR membership OR billing OR facturation)";
+  "-in:spam -in:trash subject:(receipt OR invoice OR facture OR reçu OR payment OR paiement OR subscription OR abonnement OR renewal OR renouvellement OR trial OR essai OR membership OR billing OR facturation OR commande OR annulé OR cancelled OR canceled OR résiliation)";
 
-export const MAX_MESSAGES = 300;
+export const MAX_MESSAGES = 500;
 
 export function gmailConfigured(): boolean {
   return !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
@@ -56,6 +58,7 @@ export async function scanGmail(token: string, f: Fetch = fetch): Promise<ScanRe
           const mail = await simpleParser(raw);
           const body = mail.text ?? (typeof mail.html === "string" ? mail.html.replace(/<[^>]+>/g, " ") : "");
           if (!looksLikeReceipt(mail.subject ?? "", body)) return null;
+          // Receipts and cancellation notices (amount 0, used as evidence that a subscription stopped).
           return await parseEml(raw);
         } finally {
           raw.fill(0);

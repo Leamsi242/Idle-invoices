@@ -369,5 +369,47 @@
     "serviceName": "Perplexity Pro",
     "category": "productivity",
     "cancellationUrl": "https://www.perplexity.ai/settings/account"
+  },
+  {
+    "pattern": "PDF GURU",
+    "serviceName": "PDF Guru",
+    "category": "software",
+    "cancellationUrl": "https://pdfguru.com"
+  },
+  {
+    "pattern": "PDFGURU",
+    "serviceName": "PDF Guru",
+    "category": "software",
+    "cancellationUrl": "https://pdfguru.com"
+  },
+  {
+    "pattern": "COURSERA",
+    "serviceName": "Coursera Plus",
+    "category": "education",
+    "cancellationUrl": "https://www.coursera.org"
+  },
+  {
+    "pattern": "EVERNOTE",
+    "serviceName": "Evernote",
+    "category": "productivity",
+    "cancellationUrl": "https://evernote.com"
+  },
+  {
+    "pattern": "CLEANSHOT",
+    "serviceName": "CleanShot Cloud",
+    "category": "software",
+    "cancellationUrl": "https://cleanshot.com"
+  },
+  {
+    "pattern": "HINGE",
+    "serviceName": "Hinge",
+    "category": "dating",
+    "cancellationUrl": "https://hinge.co"
+  },
+  {
+    "pattern": "CDISCOUNT A VOLONTE",
+    "serviceName": "Cdiscount à volonté",
+    "category": "shopping",
+    "cancellationUrl": "https://www.cdiscount.com"
   }
 ]

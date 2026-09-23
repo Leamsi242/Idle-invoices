@@ -35,6 +35,9 @@ export async function saveUpload(sessionId: string, fileName: string, source: So
           plan: encryptOptional(t.plan),
           frequency: t.frequency ?? null,
           isTrial: t.isTrial ?? false,
+          isCancellation: t.isCancellation ?? false,
+          nextChargeDate: t.nextChargeDate ? day(t.nextChargeDate) : null,
+          nextChargeAmount: t.nextChargeAmount ?? null,
         })),
       });
     }
@@ -55,6 +58,9 @@ export async function loadTransactions(sessionId: string): Promise<NormalizedTra
     plan: decryptOptional(r.plan),
     frequency: (r.frequency as Frequency | null) ?? undefined,
     isTrial: r.isTrial,
+    isCancellation: r.isCancellation,
+    nextChargeDate: r.nextChargeDate ? iso(r.nextChargeDate) : undefined,
+    nextChargeAmount: r.nextChargeAmount ?? undefined,
   }));
 }
 
@@ -71,7 +77,7 @@ export async function recompute(sessionId: string) {
     prisma.subscription.findMany({ where: { sessionId }, select: { labelKey: true, usage: true } }),
   ]);
   const usage = Object.fromEntries(previous.filter((p) => p.usage).map((p) => [p.labelKey, p.usage as Usage]));
-  const { subscriptions, matches } = analyze(txs, { userDescriptors, usage });
+  const { subscriptions, matches } = analyze(txs, { userDescriptors, usage, today: new Date().toISOString().slice(0, 10) });
 
   await prisma.$transaction([
     prisma.match.deleteMany({ where: { sessionId } }),
@@ -111,6 +117,8 @@ export async function recompute(sessionId: string) {
           totalPaid: s.totalPaid,
           nextCharge: s.nextCharge,
           isNew: s.isNew,
+          cancelledOn: s.cancelledOn,
+          endsOn: s.endsOn,
         })),
       })),
     }),
@@ -183,6 +191,7 @@ export async function listTrackedTrials(sessionId: string): Promise<ReportTrial[
     const d = findDescriptor([serviceName]);
     return {
       id: r.id,
+      kind: "trial" as const,
       tracked: true,
       serviceName: d?.serviceName ?? serviceName,
       amount: r.priceAfter ?? 0,

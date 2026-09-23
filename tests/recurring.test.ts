@@ -90,6 +90,8 @@ describe("recurring detection on the samples", () => {
     ["Basic-Fit", "monthly"], ["Duolingo", "yearly"], ["Apple One", "monthly"], ["iCloud+", "monthly"],
     ["Notion", "monthly"], ["Paddle.Net* Focusflow", "monthly"], ["Deezer", "monthly"], ["Amazon Prime", "yearly"],
     ["Canal+", "monthly"], ["Free Mobile", "monthly"], ["WeTransfer", "weekly"], ["Strava", "monthly"],
+    // Only in the Google Play list (paid with a card we have no statement for).
+    ["Google One", "monthly"],
   ];
 
   it("finds every subscription in /samples and nothing else", async () => {

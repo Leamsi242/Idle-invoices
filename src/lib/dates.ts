@@ -3,6 +3,7 @@ const MONTHS: Record<string, number> = {
   apr: 4, april: 4, avril: 4, may: 5, mai: 5, jun: 6, june: 6, juin: 6, jul: 7, july: 7, juillet: 7,
   aug: 8, august: 8, aout: 8, août: 8, sep: 9, sept: 9, september: 9, septembre: 9, oct: 10, october: 10,
   octobre: 10, nov: 11, november: 11, novembre: 11, dec: 12, december: 12, decembre: 12, décembre: 12,
+  janv: 1, févr: 2, fév: 2, fevr: 2, avr: 4, juil: 7, déc: 12,
 };
 
 export type DateOrder = "DMY" | "MDY" | "YMD";

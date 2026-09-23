@@ -35,7 +35,7 @@ export function flagSubscriptions(subs: DetectedSubscription[], ctx: FlagContext
 
   return subs.map((s) => {
     const related = recordsFor(s, ctx.records);
-    const reasons: string[] = [];
+    const reasons: string[] = [...s.forgottenReasons];
     if (s.frequency === "yearly") reasons.push("Billed once a year, easy to forget between renewals");
     if (monthlyEquivalent(s) < SMALL_MONTHLY_AMOUNT) reasons.push("Small charge, under €10 a month");
     if (related.some((r) => r.isTrial)) reasons.push("Started as a free trial");
@@ -54,8 +54,12 @@ export function flagSubscriptions(subs: DetectedSubscription[], ctx: FlagContext
 
     const usage = ctx.usage[s.key] ?? s.usage;
     const overdue = daysBetween(s.lastSeen, ctx.dataEnd) > PERIOD_DAYS[s.frequency] * 1.5 + 3;
+    // A cancellation email sent after the last charges ends the subscription.
+    const cancellation = related
+      .filter((r) => r.isCancellation && daysBetween(s.lastSeen, r.date) >= -PERIOD_DAYS[s.frequency])
+      .sort((a, b) => b.date.localeCompare(a.date))[0];
     let status: Status = "active";
-    if (overdue) status = "cancelled";
+    if (overdue || cancellation) status = "cancelled";
     else if (usage === "no" || usage === "rarely") status = "idle";
     else if (reasons.length > 0 && usage !== "yes") status = "forgotten";
 
@@ -66,6 +70,8 @@ export function flagSubscriptions(subs: DetectedSubscription[], ctx: FlagContext
       forgottenReasons: reasons,
       includedIn: bundle?.serviceName,
       isNew,
+      cancelledOn: cancellation?.date,
+      endsOn: cancellation?.nextChargeDate,
       yearlyCost: Math.round(s.currentAmount * PER_YEAR[s.frequency] * 100) / 100,
     };
   });

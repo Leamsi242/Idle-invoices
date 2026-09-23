@@ -33,7 +33,8 @@ describe("Gmail scan", () => {
   it("pages through the search results with the receipts query", async () => {
     const calls: string[] = [];
     expect(await listMessageIds("token-123", fakeGmail(calls))).toEqual(["m1", "m2", "m3", "m4", "m5"]);
-    expect(decodeURIComponent(calls[0])).toContain("newer_than:1y");
+    expect(decodeURIComponent(calls[0])).toContain("subject:(receipt");
+    expect(decodeURIComponent(calls[0])).not.toContain("newer_than");
   });
 
   it("keeps receipts only, with the merchant behind PayPal", async () => {

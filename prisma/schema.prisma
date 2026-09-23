@@ -36,6 +36,9 @@ model Transaction {
   plan      String? // encrypted; plan name from a receipt or app store list
   frequency String? // billing frequency stated by the source (receipts, app store lists)
   isTrial   Boolean  @default(false)
+  isCancellation   Boolean   @default(false) // email saying the subscription was cancelled
+  nextChargeDate   DateTime? // announced next charge: end of trial, renewal, price change
+  nextChargeAmount Float?
 
   bankMatches         Match[] @relation("bankTx")
   intermediaryMatches Match[] @relation("intermediaryTx")

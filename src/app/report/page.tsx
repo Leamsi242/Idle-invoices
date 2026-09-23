@@ -35,6 +35,9 @@ function Card({ s }: { s: StoredSubscription }) {
         </p>
       )}
       {s.bundle && <p className="text-sm text-slate-600">Bundle, counted once: {s.bundle.join(", ")}</p>}
+      {s.cancelledOn && (
+        <p className="text-sm text-slate-600">Cancelled on {s.cancelledOn}{s.endsOn ? `, access ends on ${s.endsOn}` : ""}.</p>
+      )}
       {s.forgottenReasons.length > 0 && (
         <ul className="flex flex-wrap gap-1">
           {s.forgottenReasons.map((r) => <li key={r} className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">{r}</li>)}
