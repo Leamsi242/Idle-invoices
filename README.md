@@ -21,7 +21,7 @@ Then upload the files in [`samples/`](samples) to see a full report. Optional: s
 ## Run the tests
 
 ```bash
-npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks (81 tests)
+npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks (97 tests)
 npm run typecheck
 ```
 
@@ -58,7 +58,9 @@ Uploaded files
 - **Trials that keep charging.** A subscription first charged in the last 60 days is marked "New" and shown in a "Started recently" banner (only when the statements go back at least 30 days before it, so everything is not "new" on a short statement). Weekly billing is flagged with its monthly cost ("about €43.29 a month"), and a small first charge (at most half the price, up to 35 days before) is shown as a paid trial. A known service (in the descriptor map) is accepted after 2 charges instead of 3, so a converted trial is caught after its first renewal. In the samples: WeTransfer at €9.99 a week and Strava after a €1 trial.
 - **Reminders.** On the Trials page the user notes a free trial they just started; the report lists it with the trial found in app store lists. Every trial and every subscription has a button that downloads a calendar reminder (.ics): 2 days before a trial ends, 3 days before a renewal, at 9:00. It works with any phone calendar and needs no account or email address.
 - **How to cancel** depends on how the user pays: Apple and Google Play subscriptions can only be cancelled in the store, PayPal payments also need the automatic payment stopped, and direct debits can be backed by revoking the SEPA mandate. The report shows these steps plus the service's account page, the next charge date and the amount paid so far.
-- **Duplicates.** The same service charged under two labels at the same time is flagged "Charged twice".
+- **A mailbox is enough on its own.** Receipts that no bank line accounts for become charges themselves (one per payment: a PayPal receipt and the merchant's own email for the same payment count once). The parser reads the formats met in a real mailbox: Google Play order confirmations (the real app is only named in the body), PayPal receipts in French and English, Stripe and Paddle receipts, Amazon Channels introductory prices, renewal reminders. Cancellation emails are kept as evidence and end a subscription; instalment plans, transfers to people, refunds and failed payments are ignored.
+- **Trials that converted without a cancellation** ("On September 14 you will be charged €49.99 every month", no cancellation email since) are reported as probably charging, with the amount to look for on the statement. Announced price increases ("€49.99 the first year, then €99.99") appear in the "Coming up" section with a reminder.
+- **Duplicates.** The same service paid twice over the same period (two accounts, or the app store and the website) is flagged "Charged twice".
 - **Bundles** (Apple One, Canal+) list their included services and count once. A service paid separately while also in a bundle gets "Already included in ..." (iCloud+ and Netflix in the samples).
 - **No accounts in version 1.** Each browser gets a random session id in an httpOnly cookie; every row carries it.
 - The cancellation links in the descriptor map are starting points (account or help pages). Check them before relying on them.

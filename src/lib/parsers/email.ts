@@ -159,12 +159,23 @@ export function receiptToTransaction(r: ReceiptFields): NormalizedTransaction | 
   const isCancellation = CANCELLED.test(r.subject) || (CANCELLED.test(r.body.slice(0, 600)) && !MONEY.test(r.body.slice(0, 600)));
   if (!isCancellation && SKIP.test(r.subject)) return null;
   const next = nextCharge(all, r.date);
+  // The service is often named in the subject: "Votre abonnement à CleanShot a été annulé",
+  // "Your Insider subscription has been cancelled", "Votre abonnement PASS WARNER a commencé".
+  const named =
+    r.subject.match(/abonnement (?:à |au |a )?(.+?) (?:a été|sera) (?:annulé|résilié)/i)?.[1] ??
+    r.subject.match(/résilié votre abonnement (.+?)(?:\s*!|$)/i)?.[1] ??
+    r.subject.match(/^your (.+?) subscription (?:has been|was|is) cancel/i)?.[1] ??
+    r.subject.match(/votre abonnement (.+?) a commencé/i)?.[1];
+  if (named && !/google play|paypal/i.test(merchant) && !/^(?:votre|your)$/i.test(named)) merchant = clean(named.split(/[:–-]/)[0]);
 
   if (isCancellation) {
     return makeTx({ date: r.date, amount: 0, currency: "EUR", rawLabel: `EMAIL ${merchant}: ${r.subject}`, source: "email", merchant, isCancellation: true, nextChargeDate: next.date });
   }
 
   amount ??= pickAmount(r.body) ?? pickAmount(r.subject);
+  // "À l'issue de votre essai gratuit … débité de 9,99 €": nothing is paid today.
+  const freeTrial = /free trial|essai gratuit/i.test(all) && next.amount !== undefined && amount && Math.abs(next.amount - amount.amount) < 0.005;
+  if (freeTrial && amount) amount = { ...amount, amount: 0 };
   // Keep the payment platform in the label: it decides how to cancel.
   const via = /paypal/i.test(sender) ? "PAYPAL " : /google ?play/i.test(sender) ? "GOOGLE PLAY " : /apple|itunes/i.test(sender) ? "APPLE.COM " : "";
   if (!amount) return null;

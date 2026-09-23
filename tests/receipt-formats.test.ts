@@ -86,7 +86,7 @@ describe("real-world receipt formats", () => {
 
   it("turns cancellation emails into evidence records", () => {
     const tx = parseReceiptText("From: WeTransfer <noreply@wetransfer.example>\nSubject: Your WeTransfer Ultimate subscription has been cancelled\nDate: 22 September 2026\n\nThis will take effect on 29 September 2026.")!;
-    expect(tx).toMatchObject({ isCancellation: true, amount: 0, merchant: "WeTransfer" });
+    expect(tx).toMatchObject({ isCancellation: true, amount: 0, merchant: "WeTransfer Ultimate", nextChargeDate: "2026-09-29" });
     const play = parseReceiptText("From: Google Play <googleplay-noreply@google.com>\nSubject: Votre abonnement à Tinder - appli de rencontre sera annulé\nDate: 14 August 2026\n\nVotre abonnement à Tinder - appli de rencontre, proposé par Google Commerce Limited sur Google Play, sera annulé le 18 août 2026.")!;
     expect(play).toMatchObject({ isCancellation: true, merchant: "Tinder" });
   });

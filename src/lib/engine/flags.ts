@@ -48,8 +48,9 @@ export function flagSubscriptions(subs: DetectedSubscription[], ctx: FlagContext
     // "New" only means something if the statements go back far enough to show it was not there before.
     const isNew = !!ctx.dataStart && daysBetween(s.firstSeen, ctx.dataEnd) <= NEW_WITHIN_DAYS && daysBetween(ctx.dataStart, s.firstSeen) >= 30;
     if (isNew) reasons.push(`New: first charged on ${s.firstSeen}, check you meant to keep it`);
-    const stillCharging = (o: DetectedSubscription) => daysBetween(o.lastSeen, ctx.dataEnd) <= PERIOD_DAYS[o.frequency] * 1.5 + 3;
-    const twin = stillCharging(s) && subs.find((o) => o !== s && o.serviceName === s.serviceName && stillCharging(o));
+    // Same service paid twice over the same period (two accounts, or the app store and the website).
+    const covers = (o: DetectedSubscription, date: string) => date >= o.firstSeen && daysBetween(o.lastSeen, date) <= PERIOD_DAYS[o.frequency];
+    const twin = subs.find((o) => o !== s && o.serviceName === s.serviceName && (covers(o, s.firstSeen) || covers(s, o.firstSeen)));
     if (twin) reasons.push("Charged twice: two accounts or a duplicate subscription?");
 
     const usage = ctx.usage[s.key] ?? s.usage;

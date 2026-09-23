@@ -45,7 +45,10 @@ function receiptOnlyCharges(transactions: NormalizedTransaction[], matched: Set<
     .sort((a, b) => SOURCE_PRIORITY[a.source] - SOURCE_PRIORITY[b.source] || a.date.localeCompare(b.date));
   const kept: NormalizedTransaction[] = [];
   for (const r of candidates) {
-    const duplicate = kept.some((k) => sameName(k.merchant!, r.merchant!) && Math.abs(k.amount - r.amount) < 0.005 && Math.abs(daysBetween(k.date, r.date)) <= 3);
+    // Only across senders (a PayPal receipt and the merchant's own email, or the PayPal export):
+    // two purchases of the same price from the same sender are two purchases.
+    const sender = (t: NormalizedTransaction) => `${t.source}:${t.rawLabel.split(":")[0].split(" ").slice(0, 2).join(" ")}`;
+    const duplicate = kept.some((k) => sender(k) !== sender(r) && sameName(k.merchant!, r.merchant!) && Math.abs(k.amount - r.amount) < 0.005 && Math.abs(daysBetween(k.date, r.date)) <= 3);
     if (!duplicate) kept.push(r);
   }
   return kept;
@@ -101,7 +104,14 @@ export function analyze(transactions: NormalizedTransaction[], opts: AnalyzeOpti
       if (evidence) {
         groups.push(toGroup(left.key, left.txs, "yearly", 0, 0.6));
         unused.delete(left);
+        continue;
       }
+    }
+    // One receipt that announces its next renewal ("renouvelé le 19 oct.") is a subscription.
+    if (left.txs.length === 1 && first.frequency && !first.isTrial && first.nextChargeDate && first.nextChargeDate > first.date) {
+      groups.push(toGroup(left.key, left.txs, first.frequency, 0, 0.5));
+      unused.delete(left);
+      continue;
     }
     // A subscription that started recently has only 2 charges. Accept it early when the
     // service is a known subscription, so a forgotten trial is caught after one renewal.
@@ -119,6 +129,8 @@ export function analyze(transactions: NormalizedTransaction[], opts: AnalyzeOpti
   const converted: { group: RecurringGroup; reason: string }[] = [];
   for (const r of records) {
     if (!r.isTrial || !r.merchant || !r.nextChargeDate || !r.nextChargeAmount || r.nextChargeAmount <= r.amount || r.nextChargeDate > today) continue;
+    // Only recent conversions are worth a "check your statement"; older ones would show up in the charges.
+    if (daysBetween(r.nextChargeDate, today) > 90) continue;
     const cancelled = records.some((c) => c.isCancellation && c.merchant && sameName(c.merchant, r.merchant!) && c.date >= r.date);
     const known = groups.some((g) => g.merchant && sameName(g.merchant, r.merchant!));
     if (cancelled || known) continue;
