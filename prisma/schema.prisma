@@ -1,0 +1,90 @@
+// Data model from SPEC.md, "Tech stack and data model".
+// Every row carries the anonymous sessionId so "Delete everything" can erase one user's data.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Upload {
+  id         String        @id @default(cuid())
+  sessionId  String
+  sourceType String // bank, paypal, apple, google, email
+  fileName   String
+  uploadedAt DateTime      @default(now())
+  deletedAt  DateTime? // set as soon as the raw file has been parsed and discarded
+  transactions Transaction[]
+
+  @@index([sessionId])
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  sessionId String
+  uploadId  String
+  upload    Upload   @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  date      DateTime
+  amount    Float // positive = money out (a charge), negative = refund or income
+  currency  String
+  rawLabel  String // encrypted at rest (AES-256-GCM), already masked
+  source    String // bank, paypal, apple, google, email
+  merchant  String? // encrypted; real merchant when the source reveals it
+  plan      String? // encrypted; plan name from a receipt or app store list
+  frequency String? // billing frequency stated by the source (receipts, app store lists)
+  isTrial   Boolean  @default(false)
+
+  bankMatches         Match[] @relation("bankTx")
+  intermediaryMatches Match[] @relation("intermediaryTx")
+
+  @@index([sessionId])
+}
+
+model Subscription {
+  id            String   @id @default(cuid())
+  sessionId     String
+  serviceName   String
+  category      String?
+  frequency     String // weekly, monthly, quarterly, yearly
+  averageAmount Float
+  currentAmount Float
+  currency      String
+  yearlyCost    Float
+  firstSeen     DateTime
+  lastSeen      DateTime
+  status        String // active, idle, forgotten, cancelled
+  confidence    Float
+  usage         String? // answer to "Still using this?": yes, rarely, no
+  labelKey      String // cleaned label the group was built from
+  details       String // JSON: forgotten reasons, bundle parts, price history, cancellation URL
+
+  @@index([sessionId])
+  @@unique([sessionId, labelKey, frequency])
+}
+
+model Match {
+  id                   String      @id @default(cuid())
+  sessionId            String
+  bankTransactionId    String
+  bankTransaction      Transaction @relation("bankTx", fields: [bankTransactionId], references: [id], onDelete: Cascade)
+  intermediaryTransactionId String
+  intermediaryTransaction   Transaction @relation("intermediaryTx", fields: [intermediaryTransactionId], references: [id], onDelete: Cascade)
+  confidence           Float
+  candidateCount       Int
+
+  @@index([sessionId])
+}
+
+model Descriptor {
+  id              String  @id @default(cuid())
+  sessionId       String // user-provided labels are private to the session that answered them
+  pattern         String
+  serviceName     String
+  category        String?
+  cancellationUrl String?
+
+  @@unique([sessionId, pattern])
+}
