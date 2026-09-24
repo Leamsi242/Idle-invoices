@@ -50,7 +50,11 @@ export function flagSubscriptions(subs: DetectedSubscription[], ctx: FlagContext
     if (isNew) reasons.push(`New: first charged on ${s.firstSeen}, check you meant to keep it`);
     // Same service paid twice over the same period (two accounts, or the app store and the website).
     const covers = (o: DetectedSubscription, date: string) => date >= o.firstSeen && daysBetween(o.lastSeen, date) <= PERIOD_DAYS[o.frequency];
-    const twin = subs.find((o) => o !== s && o.serviceName === s.serviceName && (covers(o, s.firstSeen) || covers(s, o.firstSeen)));
+    // Not for unnamed charges ("PAYPAL"): they are different services until the user names them.
+    // Two lines of the same operator at different prices are two lines, not a duplicate: same price
+    // or a different payment channel (the app store and the website) is what looks like one.
+    const similar = (o: DetectedSubscription) => o.channel !== s.channel || Math.abs(o.currentAmount - s.currentAmount) <= 0.25 * Math.max(o.currentAmount, s.currentAmount);
+    const twin = !s.needsLabel && subs.find((o) => o !== s && !o.needsLabel && o.serviceName === s.serviceName && similar(o) && (covers(o, s.firstSeen) || covers(s, o.firstSeen)));
     if (twin) reasons.push("Charged twice: two accounts or a duplicate subscription?");
 
     const usage = ctx.usage[s.key] ?? s.usage;

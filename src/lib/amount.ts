@@ -25,7 +25,7 @@ export function parseAmount(input: string | number | null | undefined): number |
 export const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export function detectCurrency(text: string, fallback = "EUR"): string {
-  if (/€|\bEUR\b/i.test(text)) return "EUR";
+  if (/€|\bEUR(?:OS?)?\b|\beuros?\b/i.test(text)) return "EUR";
   if (/£|\bGBP\b/i.test(text)) return "GBP";
   if (/\$|\bUSD\b/i.test(text)) return "USD";
   if (/\bCHF\b/i.test(text)) return "CHF";

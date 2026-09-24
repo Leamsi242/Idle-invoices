@@ -88,7 +88,7 @@ describe("recurring detection on the samples", () => {
   const EXPECTED = [
     ["Netflix", "monthly"], ["Spotify", "monthly"], ["Uber One", "monthly"], ["Disney+", "monthly"],
     ["Basic-Fit", "monthly"], ["Duolingo", "yearly"], ["Apple One", "monthly"], ["iCloud+", "monthly"],
-    ["Notion", "monthly"], ["Paddle.Net* Focusflow", "monthly"], ["Deezer", "monthly"], ["Amazon Prime", "yearly"],
+    ["Notion", "monthly"], ["Focusflow", "monthly"], ["Deezer", "monthly"], ["Amazon Prime", "yearly"],
     ["Canal+", "monthly"], ["Free Mobile", "monthly"], ["WeTransfer", "weekly"], ["Strava", "monthly"],
     // Only in the Google Play list (paid with a card we have no statement for).
     ["Google One", "monthly"],
@@ -114,5 +114,31 @@ describe("recurring detection on the samples", () => {
     const netflix = groups.find((g) => g.key === "NETFLIX.COM")!;
     expect(netflix.priceChanges).toHaveLength(1);
     expect(groups.find((g) => g.key === "SPOTIFY")!.missedPayments).toBe(1);
+  });
+});
+
+describe("statements with many different payments under one label", () => {
+  it("finds the exact-amount subscription hidden among other PayPal payments", () => {
+    const noise = ["2026-05-08", "2026-05-12", "2026-05-20", "2026-06-03", "2026-06-15", "2026-06-28", "2026-07-06", "2026-07-19", "2026-08-10"]
+      .map((d, i) => tx(d, [22.07, 22.56, 23.23, 23.59, 24.4, 22.9, 23.1, 24.8, 22.3][i], "PRLV SEPA PAYPAL EUROPE S.A.R.L"));
+    const adobe = ["2026-05-04", "2026-06-02", "2026-07-01", "2026-08-04"].map((d) => tx(d, 23.99, "PRLV SEPA PAYPAL EUROPE S.A.R.L"));
+    const { groups } = detectRecurring([...noise, ...adobe], byLabel);
+    expect(groups.map((g) => [g.currentAmount, g.transactions.length])).toEqual([[23.99, 4]]);
+  });
+
+  it("still joins yearly price steps of the same exact-amount series", () => {
+    const txs = [...monthlySeries("2023-01-03", 12, 84.1, "NAVIGO ANNUEL"), ...monthlySeries("2024-01-03", 12, 86.4, "NAVIGO ANNUEL")];
+    const { groups } = detectRecurring(txs, byLabel);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].priceChanges).toEqual([{ date: "2024-01-03", from: 84.1, to: 86.4 }]);
+  });
+});
+
+describe("overlapping uploads", () => {
+  it("counts a bank line present in two statements once, but keeps same-day twins within one", async () => {
+    const { dedupeUploads } = await import("@/lib/engine/pipeline");
+    const a = [tx("2026-06-02", 23.99, "PAYPAL", "bank", { uploadId: "u1" }), tx("2026-06-02", 5.99, "PAYPAL", "bank", { uploadId: "u1" }), tx("2026-06-02", 5.99, "PAYPAL", "bank", { uploadId: "u1" })];
+    const b = [tx("2026-06-02", 23.99, "PAYPAL", "bank", { uploadId: "u2" }), tx("2026-06-02", 5.99, "PAYPAL", "bank", { uploadId: "u2" })];
+    expect(dedupeUploads([...a, ...b]).map((t) => t.amount).sort()).toEqual([23.99, 5.99, 5.99]);
   });
 });

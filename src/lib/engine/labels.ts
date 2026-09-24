@@ -19,9 +19,19 @@ export function cleanLabel(raw: string): string {
     .trim();
 }
 
-/** Transfers, cash withdrawals and card top-ups are recurring sometimes, but never subscriptions. */
+/**
+ * Transfers, cash withdrawals and card top-ups are recurring sometimes, but never subscriptions.
+ * Neither are loan instalments, taxes, co-ownership charges or the monthly settlement of a
+ * credit card (its own charges are on the card statement).
+ */
 export function isExcludedLabel(cleaned: string): boolean {
-  return /^(TRANSFER|VIR|VIREMENT|RETRAIT|ATM|CASH|REMISE|TOP-?UP)\b/.test(cleaned);
+  return (
+    /^(TRANSFER|VIR|VIREMENT|RETRAIT|ATM|CASH|REMISE|TOP-?UP|ECH PRET|ECHEANCE PRET|COTIS ASS PRET)\b/.test(cleaned) ||
+    /\b(DGFIP|FINANCES PUBLIQ\w*|IMPOTS?|TRESOR PUBLIC|TIMBRE FISCAL|SDC|SYNDIC|AMERICAN EXPRESS|AMEX|FRANFINANCE|COFIDIS|CETELEM|SOFINCO|IMPAYE)\b/.test(cleaned) ||
+    // Instalment plans (buy now, pay later) repeat monthly but are one purchase: PayPal's "4X" is
+    // debited as "PAYPAL (EUROPE) S.A R", card payments as "PAYPAL *PAIEMENT".
+    /PAYPAL EUROPE S\.A R\b|PAYPAL \*PAIEMENT|\b(ONEY|ALMA|FLOA|PAIEMENT EN \dX|\dX CB)\b/.test(cleaned)
+  );
 }
 
 export interface Intermediary { id: string; pattern: RegExp; sources: Source[] }
@@ -47,4 +57,14 @@ export function sameName(a: string, b: string): boolean {
   const y = ` ${nameKey(b)} `;
   if (x.trim() === "" || y.trim() === "") return false;
   return x.includes(y) || y.includes(x);
+}
+
+// Cities that card payments put before the merchant ("LUXEMBOURG PAYPAL *JOTFORM", "DUBLIN GOOGLE YOUTUBE").
+const BILLING_CITIES = /^(?:LUXEMBOURG|DUBLIN|CORK|AMSTERDAM|LONDON|LONDRES|PARIS|BORDEAUX CEDE\w*|BERLIN|BARCELONA|MADRID|STOCKHOLM|SAN FRANCISCO|INTERNET|WWW)\s+/;
+
+/** A readable name for an unknown label: "LUXEMBOURG PAYPAL *JOTFORM" gives "JOTFORM". */
+export function displayLabel(cleaned: string): string {
+  const s = cleaned.replace(BILLING_CITIES, "").replace(/^PAIEMENTS?\s+/, "");
+  const behind = s.match(/^(?:PAYPAL|GOOGLE|APPLE\.COM\/BILL|PADDLE\.NET|STRIPE)\s*\*\s*(.+)$/);
+  return (behind ? behind[1] : s).replace(/\.(?:COM|NET|C|N)$/, "").trim() || cleaned;
 }

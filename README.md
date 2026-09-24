@@ -21,7 +21,7 @@ Then upload the files in [`samples/`](samples) to see a full report. Optional: s
 ## Run the tests
 
 ```bash
-npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks (97 tests)
+npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks (101 tests)
 npm run typecheck
 ```
 
@@ -41,7 +41,7 @@ Uploaded files
 
 | Source | Accepted formats |
 | --- | --- |
-| Bank statements | CSV from N26, Revolut, French banks (Débit / Crédit), UK banks (Debit / Credit Amount); any other CSV through the column-mapping screen; PDF statements with one line per operation |
+| Bank statements | CSV from N26, Revolut, French banks (Débit / Crédit), UK banks (Debit / Credit Amount); any other CSV through the column-mapping screen; PDF statements with one line per operation, including those with a single unsigned amount column and the card merchant on the next line (Crédit Mutuel, CIC) |
 | PayPal | Activity download CSV (English or French headers) |
 | Receipts | `.eml` files, pasted text, or a one-time Gmail scan |
 | Apple / Google Play | Pasted text of the subscriptions screen, or a screenshot (read by Claude) |
@@ -50,6 +50,8 @@ Uploaded files
 
 - **Reconciliation runs before grouping.** Several services can hide behind the same `PAYPAL *` label; grouping first would merge them. Charges that were not matched directly inherit the merchant found for the same label and amount (for example every Notion charge after the one matched to the receipt).
 - **Yearly plans seen once.** Twelve months of statements often show a yearly charge only once. Such a charge counts as a yearly subscription when a receipt or app store list says the plan is yearly (Duolingo in the samples). Two yearly charges 360 to 370 days apart are detected without help (Amazon Prime).
+- **Noisy labels.** Every PayPal debit can carry the same label ("PRLV SEPA PAYPAL EUROPE S.A.R.L"). Series at exactly the same amount that repeat regularly are looked for first, so a €23.99 subscription is found among a hundred other PayPal payments; price steps between such series are joined afterwards. Unknown merchants whose amount keeps moving by more than 5% (a bakery, taxis) are not subscriptions. Loan instalments, taxes, co-ownership charges, credit card settlements and instalment plans (PayPal 4X, Oney, Alma) are left out.
+- **Overlapping statements.** The same bank line found in two uploads counts once; identical lines inside one statement (two €5.99 payments the same day) are kept.
 - **Minimum evidence.** Weekly, monthly and quarterly need 3 charges; yearly needs 2. A price change is only accepted after at least 2 charges at the old price, so two unrelated purchases at the same shop are not mistaken for a subscription.
 - **App store lists** show the next renewal, not past charges, so the parser projects the last 12 months of charges back from the renewal date to reconcile them with `APPLE.COM/BILL` lines.
 - **"No receipt email"** is only used as a reason when the user uploaded at least one receipt; otherwise every subscription would be flagged.

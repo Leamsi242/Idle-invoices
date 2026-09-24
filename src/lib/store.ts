@@ -49,6 +49,7 @@ export async function loadTransactions(sessionId: string): Promise<NormalizedTra
   const rows = await prisma.transaction.findMany({ where: { sessionId }, orderBy: { date: "asc" } });
   return rows.map((r) => ({
     id: r.id,
+    uploadId: r.uploadId,
     date: iso(r.date),
     amount: r.amount,
     currency: r.currency,

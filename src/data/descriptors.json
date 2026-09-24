@@ -411,5 +411,77 @@
     "serviceName": "Cdiscount à volonté",
     "category": "shopping",
     "cancellationUrl": "https://www.cdiscount.com"
+  },
+  {
+    "pattern": "NAVIGO",
+    "serviceName": "Navigo",
+    "category": "transport",
+    "cancellationUrl": "https://www.iledefrance-mobilites.fr"
+  },
+  {
+    "pattern": "ENGIE",
+    "serviceName": "Engie",
+    "category": "energy",
+    "cancellationUrl": "https://particuliers.engie.fr"
+  },
+  {
+    "pattern": "EDF",
+    "serviceName": "EDF",
+    "category": "energy",
+    "cancellationUrl": "https://particulier.edf.fr"
+  },
+  {
+    "pattern": "GYMLIB",
+    "serviceName": "Gymlib",
+    "category": "fitness",
+    "cancellationUrl": "https://gymlib.com"
+  },
+  {
+    "pattern": "RMC SPORT",
+    "serviceName": "RMC Sport",
+    "category": "streaming",
+    "cancellationUrl": "https://www.rmcsport.tv"
+  },
+  {
+    "pattern": "JOTFORM",
+    "serviceName": "Jotform",
+    "category": "software",
+    "cancellationUrl": "https://www.jotform.com/myaccount/billing"
+  },
+  {
+    "pattern": "XMIND",
+    "serviceName": "Xmind",
+    "category": "software",
+    "cancellationUrl": "https://xmind.app"
+  },
+  {
+    "pattern": "ASPIEGEL",
+    "serviceName": "Huawei Cloud",
+    "category": "cloud storage",
+    "cancellationUrl": "https://cloud.huawei.com"
+  },
+  {
+    "pattern": "INSIDER",
+    "serviceName": "Insider",
+    "category": "news",
+    "cancellationUrl": "https://www.businessinsider.com"
+  },
+  {
+    "pattern": "FREE TELECOM",
+    "serviceName": "Free",
+    "category": "telecom",
+    "cancellationUrl": "https://subscribe.free.fr/login/"
+  },
+  {
+    "pattern": "EUROCOMPTE",
+    "serviceName": "Crédit Mutuel Eurocompte",
+    "category": "bank fees",
+    "cancellationUrl": "https://www.creditmutuel.fr"
+  },
+  {
+    "pattern": "COTIS EUC",
+    "serviceName": "Crédit Mutuel Eurocompte",
+    "category": "bank fees",
+    "cancellationUrl": "https://www.creditmutuel.fr"
   }
 ]

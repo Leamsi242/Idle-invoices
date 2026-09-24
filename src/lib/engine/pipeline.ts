@@ -1,5 +1,5 @@
 import type { Channel, DescriptorEntry, DetectedSubscription, MatchResult, NormalizedTransaction, RecurringGroup, Usage } from "../types";
-import { cleanLabel, findIntermediary, isExcludedLabel, nameKey, sameName } from "./labels";
+import { cleanLabel, displayLabel, findIntermediary, isExcludedLabel, nameKey, sameName } from "./labels";
 import { reconcile } from "./reconcile";
 import { detectRecurring, regularity, toGroup, PER_YEAR } from "./recurring";
 import { findDescriptor } from "./descriptors";
@@ -61,7 +61,27 @@ function receiptOnlyCharges(transactions: NormalizedTransaction[], matched: Set<
  * label would otherwise be grouped together. Charges not matched directly inherit the
  * merchant found for the same label and amount.
  */
-export function analyze(transactions: NormalizedTransaction[], opts: AnalyzeOptions = {}): Analysis {
+/**
+ * The same bank line in two uploads (overlapping statements, a file uploaded twice) counts once.
+ * Within one upload, identical lines are real: two €5.99 payments on the same day.
+ */
+export function dedupeUploads(transactions: NormalizedTransaction[]): NormalizedTransaction[] {
+  const key = (t: NormalizedTransaction) => `${t.source}|${t.date}|${t.rawLabel}|${t.amount}`;
+  const best = new Map<string, NormalizedTransaction[]>();
+  const byUpload = new Map<string, Map<string, NormalizedTransaction[]>>();
+  for (const t of transactions) {
+    const u = t.uploadId ?? "";
+    const local = byUpload.get(u) ?? new Map<string, NormalizedTransaction[]>();
+    local.set(key(t), [...(local.get(key(t)) ?? []), t]);
+    byUpload.set(u, local);
+  }
+  for (const local of byUpload.values()) for (const [k, v] of local) if ((best.get(k)?.length ?? 0) < v.length) best.set(k, v);
+  const keep = new Set([...best.values()].flat().map((t) => t.id));
+  return transactions.filter((t) => keep.has(t.id));
+}
+
+export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {}): Analysis {
+  const transactions = dedupeUploads(input);
   const matches = reconcile(transactions);
   const merchantOf = new Map(matches.map((m) => [m.bankTransactionId, m.merchant]));
   const matchedSources = new Map<string, NormalizedTransaction>();
@@ -140,8 +160,21 @@ export function analyze(transactions: NormalizedTransaction[], opts: AnalyzeOpti
     groups.push(group);
   }
 
+  // Unknown merchants whose amount keeps moving (a bakery, a taxi) are regular spending, not a
+  // subscription. Known services are kept: foreign-currency plans move a little every month.
+  const steady = (g: RecurringGroup) => {
+    if (g.merchant || findDescriptor([cleanLabel(g.transactions[0].rawLabel)], userDescriptors)) return true;
+    const amounts = g.transactions.map((t) => t.amount);
+    const range = (Math.max(...amounts) - Math.min(...amounts)) / Math.min(...amounts);
+    const wiggles = g.priceChanges.filter((p) => Math.abs(p.to - p.from) / p.from > 0.01).length;
+    return !(range > 0.05 && wiggles >= 2);
+  };
+  for (let i = groups.length - 1; i >= 0; i--) if (!steady(groups[i])) groups.splice(i, 1);
+
   const labelled = groups.map((g) => {
-    const trial = [...unused].find(
+    // No trial guess behind a bare intermediary label: any small PayPal payment would qualify.
+    const bare = !g.merchant && !!findIntermediary(cleanLabel(g.transactions[0].rawLabel));
+    const trial = bare ? undefined : [...unused].find(
       (l) => l.key === g.key && l.txs.length === 1 && l.txs[0].amount <= g.transactions[0].amount * TRIAL_MAX_RATIO &&
         daysBetween(l.txs[0].date, g.firstSeen) > 0 && daysBetween(l.txs[0].date, g.firstSeen) <= TRIAL_MAX_DAYS_BEFORE,
     );
@@ -186,7 +219,7 @@ function label(
   const cleaned = cleanLabel(g.transactions[0].rawLabel);
   const descriptor = findDescriptor([g.merchant, cleaned], userDescriptors);
   const hidden = !g.merchant && !!findIntermediary(cleaned);
-  const serviceName = descriptor?.serviceName ?? (g.merchant ? g.merchant : titleCase(cleaned));
+  const serviceName = descriptor?.serviceName ?? (g.merchant ? g.merchant : titleCase(displayLabel(cleaned)));
   const sources = new Set(g.transactions.map((t) => matchedSources.get(t.id)?.source ?? (t.source !== "bank" ? t.source : undefined)).filter((s) => !!s));
   const paid = g.transactions.reduce((sum, t) => sum + t.amount, 0) + (trial?.amount ?? 0);
   return {

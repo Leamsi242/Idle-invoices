@@ -30,7 +30,7 @@ describe("trials that keep charging", () => {
   });
 
   it("flags the same service charged on two accounts", () => {
-    const { subscriptions } = analyze([...monthlySeries("2026-01-05", 6, 13.49, "NETFLIX.COM"), ...monthlySeries("2026-01-20", 6, 7.99, "CB NETFLIX INTERNATIONAL")]);
+    const { subscriptions } = analyze([...monthlySeries("2026-01-05", 6, 13.49, "NETFLIX.COM"), ...monthlySeries("2026-01-20", 6, 13.49, "CB NETFLIX INTERNATIONAL")]);
     expect(subscriptions).toHaveLength(2);
     for (const s of subscriptions) expect(s.forgottenReasons).toContain("Charged twice: two accounts or a duplicate subscription?");
   });

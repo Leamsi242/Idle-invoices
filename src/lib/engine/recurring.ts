@@ -5,7 +5,7 @@ import { round2 } from "../amount";
 /** Interval windows in days (SPEC.md, "Detect recurring charges"). */
 export const WINDOWS: Record<Frequency, [number, number]> = {
   weekly: [6, 8],
-  monthly: [27, 33],
+  monthly: [26, 35], // banks post a few days late around weekends and holidays
   quarterly: [85, 97],
   yearly: [360, 370],
 };
@@ -139,7 +139,16 @@ export function detectRecurring(
   const groups: RecurringGroup[] = [];
   const leftovers: { key: string; txs: NormalizedTransaction[] }[] = [];
   for (const [key, txs] of byKey) {
-    for (const cluster of mergePriceChanges(amountClusters(txs))) {
+    // 1. Series at exactly the same amount that are regular on their own: a subscription hidden
+    //    among many different payments under the same label ("PAYPAL EUROPE S.A.R.L").
+    const exact = new Map<number, NormalizedTransaction[]>();
+    for (const t of txs) exact.set(Math.round(t.amount * 100), [...(exact.get(Math.round(t.amount * 100)) ?? []), t]);
+    const series = exact.size > 1 ? [...exact.values()].map((s) => s.sort((a, b) => a.date.localeCompare(b.date))).filter((s) => s.length >= 2 && regularity(datesOf(s))) : [];
+    const taken = new Set(series.flat().map((t) => t.id));
+    // 2. The rest, with amounts within 10% of each other; then join series that follow each
+    //    other as price changes (Navigo 84.10 then 86.40 then 88.80).
+    const rest = txs.filter((t) => !taken.has(t.id));
+    for (const cluster of mergePriceChanges([...series, ...amountClusters(rest)])) {
       const reg = regularity(datesOf(cluster));
       if (reg) groups.push(toGroup(key, cluster, reg.frequency, reg.missed));
       else leftovers.push({ key, txs: cluster });

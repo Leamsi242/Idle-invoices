@@ -21,6 +21,8 @@ export interface NormalizedTransaction {
   /** Next charge announced by the source: end of a trial, renewal, price change. */
   nextChargeDate?: string;
   nextChargeAmount?: number;
+  /** The upload the transaction came from, to spot the same statement uploaded twice. */
+  uploadId?: string;
   /** An email saying the subscription was cancelled (amount 0, evidence only). */
   isCancellation?: boolean;
 }

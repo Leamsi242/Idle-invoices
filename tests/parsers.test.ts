@@ -175,3 +175,26 @@ describe("app store lists", () => {
     expect(parseText(readSample("google-subscriptions.txt").toString(), { today: TODAY }).source).toBe("google");
   });
 });
+
+describe("PDF statements with an unsigned amount column (Crédit Mutuel style)", () => {
+  const text = [
+    "Date \tDate valeur \tOpération \tDébit EUROS \tCrédit EUROS",
+    "C/C EUROCOMPTE CONFORT N° 00000000000 en euros (GD)",
+    "01/07/2026 01/07/2026 PRLV SEPA PAYPAL EUROPE S.A.R.L \t23,99",
+    "01/07/2026 01/07/2026 PAIEMENT MOB 2906 9,54 \tUSD \t8,40",
+    "FAMILY DOLLAR \tCARTE 0000",
+    "06/07/2026 06/07/2026 VIR PAYPAL EUROPE S.A.R.L. E \t199,99",
+    "22/07/2026 22/07/2026 PAIEMENT CB 1907 1499,00 USD \t1.312,15",
+    "SOLDE CREDITEUR AU 30/06/2026 \t5.736,12",
+  ].join("\n");
+
+  it("reads euros, merchant continuation lines, foreign amounts and credits by label", () => {
+    const txs = parseBankStatementText(text);
+    expect(txs.map((t) => [t.date, t.rawLabel, t.amount, t.currency])).toEqual([
+      ["2026-07-01", "PRLV SEPA PAYPAL EUROPE S.A.R.L", 23.99, "EUR"],
+      ["2026-07-01", "PAIEMENT MOB 2906 FAMILY DOLLAR CARTE 0000", 8.4, "EUR"],
+      ["2026-07-06", "VIR PAYPAL EUROPE S.A.R.L. E", -199.99, "EUR"],
+      ["2026-07-22", "PAIEMENT CB 1907", 1312.15, "EUR"],
+    ]);
+  });
+});
