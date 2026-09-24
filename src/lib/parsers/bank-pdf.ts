@@ -2,6 +2,7 @@ import type { NormalizedTransaction } from "../types";
 import { detectCurrency, parseAmount } from "../amount";
 import { parseDate } from "../dates";
 import { makeTx } from "./common";
+import { isAmexStatement, parseAmexStatementText } from "./amex-pdf";
 
 // "06/10/2025  [07/10/2025]  PRLV SEPA CANAL+   -34,99 [EUR]"
 const LINE = /^(\d{2}[/.-]\d{2}[/.-]\d{2,4})\s+(?:\d{2}[/.-]\d{2}[/.-]\d{2,4}\s+)?(.+?)\s+([+\-−]?\s?\d[\d\s.,]*[.,]\d{2})\s?(-|€|EUR|USD|GBP)?$/;
@@ -47,12 +48,17 @@ export function parseBankStatementText(text: string): NormalizedTransaction[] {
   return out.map((t) => makeTx({ date: t.date, amount: t.amount, currency, rawLabel: t.label, source: "bank" }));
 }
 
+/** Text of any PDF statement: American Express has its own layout. */
+export function parseStatementText(text: string): NormalizedTransaction[] {
+  return isAmexStatement(text) ? parseAmexStatementText(text).transactions : parseBankStatementText(text);
+}
+
 export async function parseBankPdf(data: Uint8Array): Promise<NormalizedTransaction[]> {
   const { PDFParse } = await import("pdf-parse");
   const parser = new PDFParse({ data });
   try {
     const { text } = await parser.getText();
-    return parseBankStatementText(text);
+    return parseStatementText(text);
   } finally {
     await parser.destroy();
   }

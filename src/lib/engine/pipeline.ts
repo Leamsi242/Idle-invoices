@@ -24,6 +24,7 @@ const titleCase = (s: string) => s.toLowerCase().replace(/(^|[\s*./-])([a-z])/g,
 /** A trial charge is small (at most half the full price) and comes shortly before the first full charge. */
 const TRIAL_MAX_RATIO = 0.5;
 const TRIAL_MAX_DAYS_BEFORE = 35;
+const PAID_TRIAL_MAX = 2; // "1 € for 7 days"
 const SOURCE_PRIORITY: Record<string, number> = { paypal: 0, apple: 1, google: 1, email: 2 };
 
 /**
@@ -109,8 +110,35 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
   };
   const withMerchant = charges.map((t) => ({ ...t, merchant: t.merchant ?? inferMerchant(t) }));
 
-  const { groups, leftovers } = detectRecurring(withMerchant, (t) => (t.merchant ? nameKey(t.merchant) : cleanLabel(t.rawLabel)));
+  const baseKey = (t: NormalizedTransaction) => (t.merchant ? nameKey(t.merchant) : cleanLabel(t.rawLabel));
+  const isKnown = (key: string) => !!findDescriptor([key], userDescriptors);
+  let { groups, leftovers } = detectRecurring(withMerchant, baseKey, isKnown);
+
+  // Card processors change the label from one month to the next ("NETFLIX.COM AMSTERDAM",
+  // "NETFLIX.COM 521525 NL"). When a known service shows under several labels, detect again on
+  // all its charges together, under its most common label, and keep that when it explains more
+  // charges (two accounts of the same service stay two subscriptions).
+  const byService = new Map<string, { txs: NormalizedTransaction[]; keys: Map<string, number> }>();
+  for (const t of withMerchant) {
+    const key = baseKey(t);
+    const service = key && t.amount > 0 ? findDescriptor([key], userDescriptors)?.serviceName : undefined;
+    if (!service) continue;
+    const entry = byService.get(service) ?? { txs: [] as NormalizedTransaction[], keys: new Map<string, number>() };
+    entry.txs.push(t);
+    entry.keys.set(key, (entry.keys.get(key) ?? 0) + 1);
+    byService.set(service, entry);
+  }
+  const covered = (gs: RecurringGroup[]) => gs.reduce((n, g) => n + g.transactions.length, 0);
+  for (const { txs, keys } of byService.values()) {
+    if (keys.size < 2) continue;
+    const main = [...keys].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0];
+    const again = detectRecurring(txs, () => main, () => true);
+    if (covered(again.groups) <= covered(groups.filter((g) => keys.has(g.key)))) continue;
+    groups = [...groups.filter((g) => !keys.has(g.key)), ...again.groups];
+    leftovers = [...leftovers.filter((l) => !keys.has(l.key)), ...again.leftovers];
+  }
   const unused = new Set(leftovers);
+  const converted: { group: RecurringGroup; reason: string }[] = [];
 
   for (const left of leftovers) {
     const first = left.txs[0];
@@ -133,6 +161,20 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
       unused.delete(left);
       continue;
     }
+    // A paid trial followed by one full-price charge of a known service (PDF Guru: 0.99, then
+    // 49.99 a week later): the trial has converted. The billing period is a guess (monthly).
+    // Only token amounts count as a trial, so two meals from a delivery app are not one.
+    if (left.txs.length === 1 && isKnown(left.key)) {
+      const trial = leftovers.find(
+        (l) => l !== left && l.key === left.key && l.txs.length === 1 && l.txs[0].amount <= Math.min(PAID_TRIAL_MAX, first.amount * TRIAL_MAX_RATIO) &&
+          daysBetween(l.txs[0].date, first.date) > 0 && daysBetween(l.txs[0].date, first.date) <= TRIAL_MAX_DAYS_BEFORE,
+      );
+      if (trial) {
+        groups.push(toGroup(left.key, left.txs, "monthly", 0, 0.4));
+        unused.delete(left);
+        continue;
+      }
+    }
     // A subscription that started recently has only 2 charges. Accept it early when the
     // service is a known subscription, so a forgotten trial is caught after one renewal.
     if (left.txs.length === 2 && findDescriptor([first.merchant, cleanLabel(first.rawLabel)], userDescriptors)) {
@@ -146,7 +188,6 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
 
   // A trial that should have converted by now and was never cancelled: probably charging.
   const today = opts.today ?? charges.reduce((max, t) => (t.date > max ? t.date : max), "");
-  const converted: { group: RecurringGroup; reason: string }[] = [];
   for (const r of records) {
     if (!r.isTrial || !r.merchant || !r.nextChargeDate || !r.nextChargeAmount || r.nextChargeAmount <= r.amount || r.nextChargeDate > today) continue;
     // Only recent conversions are worth a "check your statement"; older ones would show up in the charges.
@@ -165,6 +206,10 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
   const steady = (g: RecurringGroup) => {
     if (g.merchant || findDescriptor([cleanLabel(g.transactions[0].rawLabel)], userDescriptors)) return true;
     const amounts = g.transactions.map((t) => t.amount);
+    // Price steps (165, 165, 180, 180, 192, 192): every price but the last is paid at least twice.
+    const runs: number[] = [];
+    amounts.forEach((a, i) => (i > 0 && Math.abs(a - amounts[i - 1]) <= amounts[i - 1] * 0.01 ? runs[runs.length - 1]++ : runs.push(1)));
+    if (runs.length > 1 && runs.slice(0, -1).every((r) => r >= 2)) return true;
     const range = (Math.max(...amounts) - Math.min(...amounts)) / Math.min(...amounts);
     const wiggles = g.priceChanges.filter((p) => Math.abs(p.to - p.from) / p.from > 0.01).length;
     return !(range > 0.05 && wiggles >= 2);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseSample, readSample, TODAY } from "./helpers";
 import { NeedsMappingError, parseBankCsv, previewCsv } from "@/lib/parsers/bank-csv";
-import { parseBankStatementText } from "@/lib/parsers/bank-pdf";
+import { parseBankStatementText, parseStatementText } from "@/lib/parsers/bank-pdf";
 import { parsePaypalCsv } from "@/lib/parsers/paypal-csv";
 import { parseReceiptText } from "@/lib/parsers/email";
 import { appStoreEntriesToTransactions, parseAppStoreList } from "@/lib/parsers/app-store";
@@ -196,5 +196,61 @@ describe("PDF statements with an unsigned amount column (Crédit Mutuel style)",
       ["2026-07-06", "VIR PAYPAL EUROPE S.A.R.L. E", -199.99, "EUR"],
       ["2026-07-22", "PAIEMENT CB 1907", 1312.15, "EUR"],
     ]);
+  });
+});
+
+describe("American Express statement", () => {
+  // Text as pdf-parse extracts it: dates, descriptions and amounts come as separate blocks.
+  const recent = [
+    "JEAN DUPONT xxxx-xxxxxx-11111 20/09/26 20/10/26", "0,00 - 50,00 + 1 066,97 = 1 016,97", "Relevé de compte",
+    "7 sept 7 sept", "8 sept 9 sept", "12 sept 12 sept", "CR", "20 août 20 août", "Page 1 / 2",
+    "SPL*Support.PDFGuru.com Nicosia", "PARIS SAINT GERMAIN PARIS", "REMBOURSEMENT", "ELECTROLUX SENLIS",
+    "1 016,97", "Opérations pour JEAN DUPONT", "0,99", "19,90", "50,00", "1 030,08",
+    "Total des dépenses pour JEAN DUPONT 1 016,97", "American Express", "-- 1 of 2 --",
+    "JEAN DUPONT xxxx-xxxxxx-11111 20/09/26 20/10/26", "3 sept 4 sept", "Page 2 / 2",
+    "ANTHROPIC* CLAUDE SUB DUBLIN", "16,00", "-- 2 of 2 --",
+  ].join("\n");
+  const older = [
+    "64,99", "Opérations pour JEAN DUPONT", "106,90", "9,00", "Total des dépenses pour JEAN DUPONT 115,90", "115,90 EUR",
+    "AMERICAN EXPRESS CARTE FRANCE", "Relevé de compte",
+    "au minimum 3 ou 4 jours après le rejet notifié par votre banque.",
+    "PRELEVEMENT AUTOMATIQUE ENREGISTRE-MERCI", "WWW.CDISCOUNT.COM/ATOS BORDEAUX CEDEX", "WWW.CDISCOUNT.COM/ATOS BORDEAUX CEDEX",
+    "01 47 77 74 54,", "7j/7, 24h/24", "American Express",
+    "24 déc 24 déc CR", "8 jan 9 jan", "8 jan 9 jan", "Page 1 / 1",
+    "JEAN DUPONT xxxx-xxxxxx-11111 20/01/20 20/02/20", "64,99 - 64,99 + 115,90 = 115,90",
+  ].join("\n");
+
+  it("detects the format", async () => {
+    const { isAmexStatement } = await import("@/lib/parsers/amex-pdf");
+    expect(isAmexStatement(recent)).toBe(true);
+    expect(isAmexStatement("RELEVE DE COMPTE CREDIT MUTUEL")).toBe(false);
+  });
+
+  it("pairs dates, descriptions and amounts, with credits and last year's dates", async () => {
+    const { parseAmexStatementText } = await import("@/lib/parsers/amex-pdf");
+    const { transactions, check } = parseAmexStatementText(recent);
+    expect(transactions.map((t) => [t.date, t.amount, t.rawLabel])).toEqual([
+      ["2026-09-07", 0.99, "AMEX SPL*Support.PDFGuru.com Nicosia"],
+      ["2026-09-08", 19.9, "AMEX PARIS SAINT GERMAIN PARIS"],
+      ["2026-09-12", -50, "AMEX REMBOURSEMENT"],
+      ["2026-08-20", 1030.08, "AMEX ELECTROLUX SENLIS"],
+      ["2026-09-03", 16, "AMEX ANTHROPIC* CLAUDE SUB DUBLIN"],
+    ]);
+    expect(check).toEqual({ statementDate: "2026-09-20", expectedDebits: 1066.97, parsedDebits: 1066.97 });
+  });
+
+  it("reads the older layout, amounts first", async () => {
+    const { parseAmexStatementText } = await import("@/lib/parsers/amex-pdf");
+    const { transactions, check } = parseAmexStatementText(older);
+    expect(transactions.map((t) => [t.date, t.amount, t.rawLabel])).toEqual([
+      ["2019-12-24", -64.99, "AMEX PRELEVEMENT AUTOMATIQUE ENREGISTRE-MERCI"],
+      ["2020-01-08", 106.9, "AMEX WWW.CDISCOUNT.COM/ATOS BORDEAUX CEDEX"],
+      ["2020-01-08", 9, "AMEX WWW.CDISCOUNT.COM/ATOS BORDEAUX CEDEX"],
+    ]);
+    expect(check?.parsedDebits).toBe(115.9);
+  });
+
+  it("is used for PDF statements", () => {
+    expect(parseStatementText(older)).toHaveLength(3);
   });
 });

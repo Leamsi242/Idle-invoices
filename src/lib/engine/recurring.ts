@@ -16,6 +16,7 @@ export const PER_YEAR: Record<Frequency, number> = { weekly: 52, monthly: 12, qu
 
 const AMOUNT_TOLERANCE = 0.1; // "similar amount (within 10%)"
 const MAX_PRICE_CHANGE = 0.6; // a larger jump is treated as a different charge
+const MAX_PLAN_CHANGE = 2; // a known service can change plan (Claude Pro at 108 to Max at 216)
 
 interface Regularity { frequency: Frequency; missed: number }
 
@@ -61,7 +62,7 @@ const datesOf = (txs: NormalizedTransaction[]) => txs.map((t) => t.date);
  * Joins a cluster with the one that follows it in time when together they form a regular
  * series: that is a price increase (or decrease), e.g. Netflix going from 13.49 to 15.99.
  */
-function mergePriceChanges(clusters: NormalizedTransaction[][]): NormalizedTransaction[][] {
+function mergePriceChanges(clusters: NormalizedTransaction[][], maxChange = MAX_PRICE_CHANGE): NormalizedTransaction[][] {
   let merged = true;
   let list = [...clusters].sort((a, b) => a[0].date.localeCompare(b[0].date));
   while (merged) {
@@ -71,11 +72,14 @@ function mergePriceChanges(clusters: NormalizedTransaction[][]): NormalizedTrans
         if (i === j) continue;
         const a = list[i];
         const b = list[j];
-        // The earlier price must be an established series, not a lone purchase.
-        if (a.length < 2 || a.at(-1)!.date >= b[0].date) continue;
+        if (a.at(-1)!.date >= b[0].date) continue;
         const from = a.at(-1)!.amount;
-        const to = b[0].amount;
-        if (Math.abs(to - from) / from > MAX_PRICE_CHANGE) continue;
+        const change = Math.abs(b[0].amount - from) / from;
+        // The earlier price must be an established series, not a lone purchase (unless it is
+        // a prorated first charge, close to the price that follows).
+        if (a.length < 2 && change > AMOUNT_TOLERANCE) continue;
+        // A plan change must be confirmed by a second charge at the new price.
+        if (change > maxChange || (change > MAX_PRICE_CHANGE && b.length < 2)) continue;
         const joined = [...a, ...b];
         if (!regularity(datesOf(joined))) continue;
         list = list.filter((_, k) => k !== i && k !== j);
@@ -123,11 +127,13 @@ export function toGroup(key: string, txs: NormalizedTransaction[], frequency: Fr
  * Step 1 of the core logic. Groups charges by key (cleaned label, or real merchant once
  * reconciled) and similar amount, then keeps the groups whose intervals are regular.
  * Returns the recurring groups and the leftover charges, still keyed, for the extra rules in
- * the pipeline (yearly plans seen once, new subscriptions, paid trials).
+ * the pipeline (yearly plans seen once, new subscriptions, paid trials). For keys of known
+ * services (`isKnown`), a plan change may double or triple the price.
  */
 export function detectRecurring(
   charges: NormalizedTransaction[],
   keyOf: (tx: NormalizedTransaction) => string,
+  isKnown: (key: string) => boolean = () => false,
 ): { groups: RecurringGroup[]; leftovers: { key: string; txs: NormalizedTransaction[] }[] } {
   const byKey = new Map<string, NormalizedTransaction[]>();
   for (const tx of charges) {
@@ -148,7 +154,7 @@ export function detectRecurring(
     // 2. The rest, with amounts within 10% of each other; then join series that follow each
     //    other as price changes (Navigo 84.10 then 86.40 then 88.80).
     const rest = txs.filter((t) => !taken.has(t.id));
-    for (const cluster of mergePriceChanges([...series, ...amountClusters(rest)])) {
+    for (const cluster of mergePriceChanges([...series, ...amountClusters(rest)], isKnown(key) ? MAX_PLAN_CHANGE : MAX_PRICE_CHANGE)) {
       const reg = regularity(datesOf(cluster));
       if (reg) groups.push(toGroup(key, cluster, reg.frequency, reg.missed));
       else leftovers.push({ key, txs: cluster });

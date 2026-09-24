@@ -1,6 +1,6 @@
 import type { Source } from "../types";
 
-const PREFIXES = /^(CB|CARTE|ACHAT CB|PAIEMENT PAR CARTE|PAIEMENT CB|PRLV SEPA|PRLV|PRELEVEMENT|PRÉLÈVEMENT|DD|POS|CARD PAYMENT TO|CARD PAYMENT|DIRECT DEBIT)\s+/;
+const PREFIXES = /^(AMEX|CB|CARTE|ACHAT CB|PAIEMENT PAR CARTE|PAIEMENT CB|PRLV SEPA|PRLV|PRELEVEMENT|PRÉLÈVEMENT|DD|POS|CARD PAYMENT TO|CARD PAYMENT|DIRECT DEBIT)\s+/;
 
 /**
  * Cleans a bank label so that the same merchant always gives the same key:
@@ -66,5 +66,8 @@ const BILLING_CITIES = /^(?:LUXEMBOURG|DUBLIN|CORK|AMSTERDAM|LONDON|LONDRES|PARI
 export function displayLabel(cleaned: string): string {
   const s = cleaned.replace(BILLING_CITIES, "").replace(/^PAIEMENTS?\s+/, "");
   const behind = s.match(/^(?:PAYPAL|GOOGLE|APPLE\.COM\/BILL|PADDLE\.NET|STRIPE)\s*\*\s*(.+)$/);
-  return (behind ? behind[1] : s).replace(/\.(?:COM|NET|C|N)$/, "").trim() || cleaned;
+  const name = (behind ? behind[1] : s).replace(/\s*G\.CO[ /]HELPPAY.*$/, "").replace(/\.(?:COM|NET|C|N)$/, "").trim();
+  // "GOOGLE*GOOGLE PLAY APPS G.CO HELPPAY": the app is not named.
+  if (/^GOOGLE PLAY(?: AP\w*)?$/.test(name)) return "GOOGLE PLAY";
+  return name || cleaned;
 }

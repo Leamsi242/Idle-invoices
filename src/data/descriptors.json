@@ -185,6 +185,12 @@
     "cancellationUrl": "https://claude.ai/settings/billing"
   },
   {
+    "pattern": "CLAUDE.AI",
+    "serviceName": "Claude",
+    "category": "productivity",
+    "cancellationUrl": "https://claude.ai/settings/billing"
+  },
+  {
     "pattern": "DUOLINGO",
     "serviceName": "Duolingo",
     "category": "education",
@@ -483,5 +489,11 @@
     "serviceName": "Crédit Mutuel Eurocompte",
     "category": "bank fees",
     "cancellationUrl": "https://www.creditmutuel.fr"
+  },
+  {
+    "pattern": "COTISATION - MERCI POUR VOTRE CONFIANCE",
+    "serviceName": "American Express card fee",
+    "category": "bank fees",
+    "cancellationUrl": "https://www.americanexpress.com/fr-fr/"
   }
 ]
