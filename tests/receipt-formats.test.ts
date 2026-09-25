@@ -170,7 +170,7 @@ describe("formats found in older emails", () => {
 
   it("ignores promotions, trial invitations and failed renewals", () => {
     expect(looksLikeReceipt("Babbel à Vie -60 %", "Total 199 €")).toBe(false);
-    expect(looksLikeReceipt("Ismael, réactivez votre essai Premium", "0 €")).toBe(false);
+    expect(looksLikeReceipt("Alex, réactivez votre essai Premium", "0 €")).toBe(false);
     expect(r("Huawei <no-reply@huawei.example>", "Échec du renouvellement du package Cloud Argent", "24 July 2022", "Montant 0,99 €")).toBeNull();
   });
 });
