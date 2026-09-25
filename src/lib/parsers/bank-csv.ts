@@ -77,10 +77,40 @@ function findLayout(row: string[]): BankLayout | undefined {
   return BANK_LAYOUTS.find((l) => l.required.every((h) => cells.has(norm(h))));
 }
 
+/**
+ * Recognises the usual column names of any other bank ("Date", "Libellé", "Débit", "Crédit";
+ * "Booking date", "Description", "Amount") so that most exports need no mapping screen.
+ */
+function guessLayout(row: string[], data: string[][]): BankLayout | undefined {
+  const heads = row.map(norm);
+  const find = (re: RegExp, not?: RegExp) => row.find((_, i) => re.test(heads[i]) && !(not && not.test(heads[i])));
+  const date =
+    find(/^date.*(operation|transaction|achat|booking)|^(operation|transaction|booking) date/) ?? find(/^date\b|\bdate$/, /valeur|value|comptab/);
+  const label = find(/libell|description|intitule|detail|payee|beneficiaire|merchant|commercant|wording|^label$|^narrative$/);
+  const debit = find(/^(debit|montant debit|debit amount|paid out|money out)\b/);
+  const credit = find(/^(credit|montant credit|credit amount|paid in|money in)\b/);
+  const amount = debit && credit ? undefined : find(/^(montant|amount|somme)\b/);
+  if (!date || !label || !(amount || (debit && credit))) return undefined;
+  const values = data.map((r) => r[row.indexOf(date)] ?? "").filter(Boolean);
+  const dateOrder: DateOrder = values.some((v) => /^\d{4}[-/]/.test(v)) ? "YMD" : values.some((v) => /^\d{1,2}[/.-](1[3-9]|2\d|3[01])[/.-]/.test(v)) ? "MDY" : "DMY";
+  const amounts = amount ? data.map((r) => parseAmount(r[row.indexOf(amount)] ?? "")).filter((a): a is number => a !== null && a !== 0) : [];
+  const currency = find(/^(devise|currency)$/);
+  return {
+    id: "guessed",
+    name: "Bank statement",
+    required: [],
+    mapping: { date, label: [label], amount, debit, credit, currency, defaultCurrency: "EUR", dateOrder, chargesAreNegative: !amount || amounts.some((a) => a < 0) },
+  };
+}
+
 /** Finds the header row, skipping preamble lines such as "Account: ..." that some banks add. */
 function locateHeader(rows: string[][]): { index: number; layout?: BankLayout } {
   for (let i = 0; i < Math.min(rows.length, 20); i++) {
     const layout = findLayout(rows[i]);
+    if (layout) return { index: i, layout };
+  }
+  for (let i = 0; i < Math.min(rows.length, 20); i++) {
+    const layout = guessLayout(rows[i], rows.slice(i + 1, i + 30));
     if (layout) return { index: i, layout };
   }
   const index = rows.findIndex((r) => r.filter(Boolean).length >= 3 && r.every((c) => !/^-?[\d\s.,]+$/.test(c) || !c));
@@ -89,7 +119,7 @@ function locateHeader(rows: string[][]): { index: number; layout?: BankLayout } 
 
 export function looksLikeBankCsv(text: string): boolean {
   const rows = readRows(text).slice(0, 20);
-  return rows.some((r) => findLayout(r));
+  return rows.some((r, i) => findLayout(r) || guessLayout(r, rows.slice(i + 1)));
 }
 
 export function parseBankCsv(text: string, mapping?: ColumnMapping): NormalizedTransaction[] {

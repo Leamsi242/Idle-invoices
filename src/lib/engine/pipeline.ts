@@ -155,9 +155,11 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
         continue;
       }
     }
-    // One receipt that announces its next renewal ("renouvelé le 19 oct.") is a subscription.
-    if (left.txs.length === 1 && first.frequency && !first.isTrial && first.nextChargeDate && first.nextChargeDate > first.date) {
-      groups.push(toGroup(left.key, left.txs, first.frequency, 0, 0.5));
+    // One receipt that announces its next renewal ("renouvelé le 19 oct.") is a subscription,
+    // whether it stands alone or explains a bank charge.
+    const receipt = matchedSources.get(first.id) ?? first;
+    if (left.txs.length === 1 && receipt.frequency && !receipt.isTrial && receipt.nextChargeDate && receipt.nextChargeDate > first.date) {
+      groups.push(toGroup(left.key, left.txs, receipt.frequency, 0, 0.5));
       unused.delete(left);
       continue;
     }

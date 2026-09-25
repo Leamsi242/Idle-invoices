@@ -72,6 +72,24 @@
     "cancellationUrl": "https://one.google.com/settings"
   },
   {
+    "pattern": "GOOGLE AI PRO",
+    "serviceName": "Google One",
+    "category": "cloud storage",
+    "cancellationUrl": "https://one.google.com/settings"
+  },
+  {
+    "pattern": "GOOGLE AI PREMIUM",
+    "serviceName": "Google One",
+    "category": "cloud storage",
+    "cancellationUrl": "https://one.google.com/settings"
+  },
+  {
+    "pattern": "GOOGLE AI ULTRA",
+    "serviceName": "Google One",
+    "category": "cloud storage",
+    "cancellationUrl": "https://one.google.com/settings"
+  },
+  {
     "pattern": "DEEZER",
     "serviceName": "Deezer",
     "category": "music",

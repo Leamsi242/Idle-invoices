@@ -77,6 +77,13 @@ describe("bank CSV parser", () => {
     expect(uk[0]).toMatchObject({ date: "2026-01-05", amount: 10.99, currency: "GBP", rawLabel: "NETFLIX.COM" });
   });
 
+  it("recognises usual column names without the mapping screen", () => {
+    const card = "Date;Libellé;Débit;Crédit\n14/07/2026;GOOGLE*GOOGLE PLAY APPS G.CO HELPPAY;19,99;\n24/07/2026;PRELEVEMENT AUTOMATIQUE ENREGISTRE-MERCI;;742,24";
+    expect(parseBankCsv(card).map((t) => [t.date, t.amount])).toEqual([["2026-07-14", 19.99], ["2026-07-24", -742.24]]);
+    const english = "Booking date,Description,Amount\n2026-07-01,SPOTIFY,-10.99\n2026-07-02,SALARY,2000.00";
+    expect(parseBankCsv(english).map((t) => [t.date, t.amount])).toEqual([["2026-07-01", 10.99], ["2026-07-02", -2000]]);
+  });
+
   it("asks for a column mapping on an unknown layout, then uses it", () => {
     const csv = "Booking day;Text;Value;Curr\n05.01.2026;NETFLIX.COM;-10,99;EUR\n06.01.2026;Salary;2000,00;EUR";
     expect(() => parseBankCsv(csv)).toThrow(NeedsMappingError);

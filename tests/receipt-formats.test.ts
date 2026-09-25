@@ -174,3 +174,32 @@ describe("formats found in older emails", () => {
     expect(r("Huawei <no-reply@huawei.example>", "Échec du renouvellement du package Cloud Argent", "24 July 2022", "Montant 0,99 €")).toBeNull();
   });
 });
+
+describe("more store formats", () => {
+  it("reads a plan billed every 3 months", () => {
+    const r = parseReceiptText(`From: Google Play <googleplay-noreply@google.com>
+Subject: Confirmation de votre commande Google Play du 17 oct. 2025
+Date: 17 October 2025
+
+Vous avez souscrit un abonnement auprès de Google Commerce Limited sur
+Google Play. Votre abonnement sera automatiquement renouvelé le 17 janv.
+2026, sauf si vous le résiliez avant.
+Article Prix
+3 Month HingeX Membership (Hinge Dating App: Match & Date) de Hinge, Inc.
+69,99 € pour 3 mois
+Montant total : 69,99 € pour 3 mois`)!;
+    expect([r.merchant, r.plan, r.amount, r.frequency, r.nextChargeDate]).toEqual(["Hinge Dating App", "3 Month HingeX Membership", 69.99, "quarterly", "2026-01-17"]);
+  });
+
+  it("names the service behind a PayPal payment to Google from the item line", () => {
+    const r = parseReceiptText(`From: PayPal <service@paypal.fr>
+Subject: Reçu pour votre paiement à Google Payment Irela...
+Date: 3 December 2025
+
+| Vous avez payé 21,99 € EUR à Google Payment Irela.... |
+| Marchand | Google Payment Irela... noreply+support@goog... |
+| Google AI Pro (2 TB)... Qté : 1 | 21,99 € |
+| Total | 21,99 € EUR |`)!;
+    expect([r.merchant, r.plan, r.amount]).toEqual(["Google AI Pro", "Google AI Pro (2 TB)", 21.99]);
+  });
+});

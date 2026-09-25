@@ -54,14 +54,16 @@ export function flagSubscriptions(subs: DetectedSubscription[], ctx: FlagContext
     // Two lines of the same operator at different prices are two lines, not a duplicate: same price
     // or a different payment channel (the app store and the website) is what looks like one.
     const similar = (o: DetectedSubscription) => o.channel !== s.channel || Math.abs(o.currentAmount - s.currentAmount) <= 0.25 * Math.max(o.currentAmount, s.currentAmount);
-    const twin = !s.needsLabel && subs.find((o) => o !== s && !o.needsLabel && o.serviceName === s.serviceName && similar(o) && (covers(o, s.firstSeen) || covers(s, o.firstSeen)));
+    // A monthly plan followed by a yearly one is a plan change, not a duplicate.
+    const twin = !s.needsLabel && subs.find((o) => o !== s && !o.needsLabel && o.serviceName === s.serviceName && o.frequency === s.frequency && similar(o) && (covers(o, s.firstSeen) || covers(s, o.firstSeen)));
     if (twin) reasons.push("Charged twice: two accounts or a duplicate subscription?");
 
     const usage = ctx.usage[s.key] ?? s.usage;
     const overdue = daysBetween(s.lastSeen, ctx.dataEnd) > PERIOD_DAYS[s.frequency] * 1.5 + 3;
-    // A cancellation email sent after the last charges ends the subscription.
+    // A cancellation email sent after the last charges ends the subscription. One sent before
+    // the first charge was for an earlier plan (Google One monthly, then yearly).
     const cancellation = related
-      .filter((r) => r.isCancellation && daysBetween(s.lastSeen, r.date) >= -PERIOD_DAYS[s.frequency])
+      .filter((r) => r.isCancellation && daysBetween(s.lastSeen, r.date) >= -PERIOD_DAYS[s.frequency] && daysBetween(s.firstSeen, r.date) >= -3)
       .sort((a, b) => b.date.localeCompare(a.date))[0];
     let status: Status = "active";
     if (overdue || cancellation) status = "cancelled";

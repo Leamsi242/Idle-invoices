@@ -11,7 +11,7 @@ const DATE_SRC = String.raw`\d{1,2}(?:er)?\s+[A-Za-zéûè]+\.?\s+\d{4}|[A-Z][a-
 
 export function detectFrequency(text: string): Frequency | undefined {
   if (/\b(annual|yearly|per year|a year|every year|\/\s?year|\/\s?yr|12 months|12 mois|annuel\w*|par an|chaque année|\/\s?an|1Y)\b|\(1 year\)/i.test(text)) return "yearly";
-  if (/\b(quarterly|every 3 months|trimestriel)\b/i.test(text)) return "quarterly";
+  if (/\b(quarterly|(?:every|for) 3 months|trimestriel\w*|(?:pour|tous les) 3 mois)\b/i.test(text)) return "quarterly";
   if (/\b(weekly|per week|every week|\/\s?week|hebdomadaire|par semaine|chaque semaine|\/\s?semaine)|\(1 week\)/i.test(text)) return "weekly";
   if (/\b(monthly|per month|a month|every month|\/\s?month|\/\s?mo|mensuel\w*|mensualit\w*|par mois|chaque mois|tous les mois|\/\s?mois)|\(1 month\)/i.test(text)) return "monthly";
   return undefined;
@@ -48,7 +48,7 @@ interface Extracted { merchant?: string; plan?: string; amount?: { amount: numbe
 /** Google Play order confirmations: "Tinder Gold (Tinder Dating App: Date & Chat) de Tinder LLC 19,99 € par semaine". */
 function googlePlay(body: string): Extracted | null {
   const text = flat(body);
-  const m = text.match(new RegExp(String.raw`(?:Article Prix|Item Price)\s+(.+?)\s+(?:de|by|from)\s+([^€$£]+?)\s+(${MONEY_SRC})\s*(par semaine|par mois|par an|per week|per month|per year|\/\s?(?:week|month|year))?`, "i"));
+  const m = text.match(new RegExp(String.raw`(?:Article Prix|Item Price)\s+(.+?)\s+(?:de|by|from)\s+([^€$£]+?)\s+(${MONEY_SRC})\s*(par semaine|par mois|par an|pour 3 mois|per week|per month|per year|for 3 months|\/\s?(?:week|month|year))?`, "i"));
   if (!m) return null;
   const item = m[1].trim();
   const paren = item.match(/^(.*?)\s*\((.+)\)$/);
@@ -69,7 +69,15 @@ function paypal(subject: string, body: string): Extracted {
   const paid =
     text.match(/\|\s*Paiement\s*\|\s*([^|]+?)\s*\|/i)?.[1] ??
     text.match(/(?:Vous avez payé|paiement de|payment of|You paid)\s+([^à]+?)\s+(?:à|to|en faveur)/i)?.[1];
-  return { merchant: name ? realName(clean(name)) : undefined, amount: (paid && money(paid)) || undefined };
+  // The item line names the service when the merchant is a store: "Google AI Pro (2 TB)... Qté : 1".
+  const item = text.match(/\|\s*([^|]+?)\s*(?:\.{3}|…)?\s*(?:Qté|Qty|Quantité|Quantity)\s*:\s*\d/i)?.[1];
+  const merchant = name ? realName(clean(name)) : undefined;
+  const hidden = merchant && /^(?:Google Play|Apple)$/.test(merchant) && item;
+  return {
+    merchant: hidden ? clean(item.replace(/\s*\([^)]*\)?.*$/, "")) : merchant,
+    plan: item ? clean(item) : undefined,
+    amount: (paid && money(paid)) || undefined,
+  };
 }
 
 function merchantFrom(name: string | undefined, address: string | undefined, subject: string): string {
@@ -153,6 +161,7 @@ export function receiptToTransaction(r: ReceiptFields): NormalizedTransaction | 
     if (SKIP.test(r.subject)) return null;
     const p = paypal(r.subject, r.body);
     if (p.merchant) merchant = p.merchant;
+    plan ??= p.plan;
     amount = p.amount;
   }
 
