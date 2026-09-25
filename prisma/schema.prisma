@@ -104,3 +104,11 @@ model TrackedTrial {
 
   @@index([sessionId])
 }
+
+// Onboarding answers: how the user pays and where receipts go (encrypted JSON), so the
+// checklist of what to upload survives a reload. Deleted with everything else.
+model Profile {
+  sessionId String   @id
+  answers   String // encrypted JSON, known ids only
+  updatedAt DateTime @updatedAt
+}

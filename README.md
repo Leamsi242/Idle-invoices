@@ -21,7 +21,7 @@ Then upload the files in [`samples/`](samples) to see a full report. Optional: s
 ## Run the tests
 
 ```bash
-npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks (115 tests)
+npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, onboarding (122 tests)
 npm run typecheck
 ```
 
@@ -69,6 +69,18 @@ Uploaded files
 - **No accounts in version 1.** Each browser gets a random session id in an httpOnly cookie; every row carries it.
 - The cancellation links in the descriptor map are starting points (account or help pages). Check them before relying on them.
 
+## Onboarding
+
+`/start` asks four questions (bank accounts and cards, payment apps and stores, mailboxes, other channels such as operator bills) and turns the answers into a checklist, with the steps to get each export: CSV or PDF statements for each bank, Amex PDF statements, PayPal's activity download (and a GDPR access request when PayPal only offers a few months), the App Store and Google Play subscription lists, the Gmail scan or `.eml` files for other mailboxes, and operator bills to check by hand.
+
+The checklist also reads what was uploaded (`lib/onboarding.ts`):
+
+- an item is ticked when a file of its kind has been read (with several banks, the user ticks each bank, since a file does not say which bank it comes from);
+- sources the user did not mention are added when the statements point to them: PayPal, Apple or Google charges that nothing explains yet (with the count), payments to American Express without the Amex statement, a deferred debit card total, telecom bills;
+- statements covering less than about 10 months get a note, since yearly renewals would be missed.
+
+The report shows "This report may be incomplete" while items are left to add. The answers hold known ids only, are encrypted, and are deleted with everything else.
+
 ## Privacy and security
 
 What the code does for each point of the spec's "Privacy and security" section:
@@ -76,7 +88,7 @@ What the code does for each point of the spec's "Privacy and security" section:
 | Rule | Where |
 | --- | --- |
 | Delete uploaded files right after parsing | Files are read into memory only, wiped (`fill(0)`) after parsing and never written to disk (`api/upload/route.ts`; `tests/privacy.test.ts` fails if any file-writing call appears). The `Upload` row is created with `deletedAt` already set. |
-| "Delete everything" button | On the report and privacy pages; `DELETE /api/data` erases every row of the session in all five tables and clears the cookie. Data is also purged automatically 30 days after the last upload. |
+| "Delete everything" button | On the report and privacy pages; `DELETE /api/data` erases every row of the session in every table and clears the cookie. Data is also purged automatically 30 days after the last upload. |
 | Mask account numbers, IBANs and card numbers during parsing | `lib/mask.ts`, applied by `makeTx()` in every parser and to stored file names. |
 | Encrypt the database at rest | Labels, merchants, plans and subscription details are encrypted with AES-256-GCM before storage (`lib/crypto.ts`, key in `DATA_ENCRYPTION_KEY`). Dates and amounts are not. For production, also use a database with disk encryption (Turso and managed Postgres provide it). |
 | HTTPS everywhere | HSTS, Content-Security-Policy and other security headers in `next.config.ts`; the session cookie is `Secure` in production; Vercel serves HTTPS only. |
@@ -128,7 +140,7 @@ Vercel limits request bodies to 4.5 MB, so the app accepts files up to 4 MB each
 ```
 samples/                 fake test data (no real personal data)
 scripts/                 sample generator
-prisma/schema.prisma     data model (Upload, Transaction, Subscription, Match, Descriptor)
+prisma/schema.prisma     data model (Upload, Transaction, Subscription, Match, Descriptor, TrackedTrial, Profile)
 src/lib/parsers/         one parser per source, plus file-type detection
 src/lib/engine/          reconcile, detect, label, flag, pipeline
 src/data/descriptors.json

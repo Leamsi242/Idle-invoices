@@ -6,6 +6,8 @@ import { buildReport, type Report } from "./engine/flags";
 import { descriptorFromAnswer, findDescriptor } from "./engine/descriptors";
 import { maskSensitive } from "./mask";
 import { upcomingTrials, type UpcomingTrial } from "./engine/trials";
+import { reconcile } from "./engine/reconcile";
+import { buildPlan, collectFacts, EMPTY_ANSWERS, sanitizeAnswers, type Answers, type Facts, type PlanItem } from "./onboarding";
 
 /** Data older than this is purged automatically (see the privacy page). */
 export const RETENTION_DAYS = 30;
@@ -235,6 +237,7 @@ export async function deleteEverything(sessionId: string) {
     prisma.upload.deleteMany({ where: { sessionId } }),
     prisma.descriptor.deleteMany({ where: { sessionId } }),
     prisma.trackedTrial.deleteMany({ where: { sessionId } }),
+    prisma.profile.deleteMany({ where: { sessionId } }),
   ]);
 }
 
@@ -250,5 +253,44 @@ export async function purgeExpired(now = new Date()) {
     distinct: ["sessionId"],
   });
   for (const { sessionId } of stale) await deleteEverything(sessionId);
+  // Answers without any recent upload expire too.
+  await prisma.profile.deleteMany({ where: { updatedAt: { lt: cutoff }, sessionId: { notIn: recent.map((r) => r.sessionId) } } });
   return stale.length;
+}
+
+// --- Onboarding ---------------------------------------------------------------------------
+
+export async function getAnswers(sessionId: string): Promise<Answers | null> {
+  const row = await prisma.profile.findUnique({ where: { sessionId } });
+  if (!row) return null;
+  try {
+    return sanitizeAnswers(JSON.parse(decrypt(row.answers)));
+  } catch {
+    return null;
+  }
+}
+
+export async function saveAnswers(sessionId: string, input: unknown): Promise<Answers> {
+  const answers = sanitizeAnswers(input);
+  const data = encrypt(JSON.stringify(answers));
+  await prisma.profile.upsert({ where: { sessionId }, create: { sessionId, answers: data }, update: { answers: data } });
+  return answers;
+}
+
+/** Ticks or unticks one checklist item. */
+export async function setItemDone(sessionId: string, itemId: string, done: boolean): Promise<Answers> {
+  const current = (await getAnswers(sessionId)) ?? EMPTY_ANSWERS;
+  const set = new Set(current.done);
+  if (done) set.add(itemId);
+  else set.delete(itemId);
+  return saveAnswers(sessionId, { ...current, done: [...set] });
+}
+
+export interface Onboarding { answers: Answers | null; facts: Facts; plan: PlanItem[] }
+
+export async function getOnboarding(sessionId: string | null): Promise<Onboarding> {
+  const [answers, txs] = sessionId ? await Promise.all([getAnswers(sessionId), loadTransactions(sessionId)]) : [null, []];
+  const explained = new Set(reconcile(txs).map((m) => m.bankTransactionId));
+  const facts = collectFacts(txs, explained);
+  return { answers, facts, plan: buildPlan(answers ?? EMPTY_ANSWERS, facts) };
 }

@@ -159,6 +159,9 @@ export default function UploadForm() {
           {response.needsMapping.map((m) => (
             <ColumnMapper key={m.fileName} info={m} busy={busy} onSubmit={(file, mapping) => send([file], { [file.name]: mapping })} />
           ))}
+          {response.results.length > 0 && (
+            <a href="/start" className="block text-sm text-brand underline">See what is still missing from your checklist</a>
+          )}
           {response.results.length > 0 && response.needsMapping.length === 0 && (
             <button onClick={() => router.push("/review")} className="w-full rounded-xl bg-brand px-4 py-3 font-semibold text-white">
               Continue: {response.subscriptions ?? 0} subscriptions found

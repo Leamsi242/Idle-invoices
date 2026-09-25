@@ -16,6 +16,7 @@ export default function Privacy() {
           <li>The subscriptions we found, and your answers to &quot;Still using this?&quot; and &quot;What is this charge?&quot;.</li>
           <li>Free trials you asked us to track (name, end date, price). Calendar reminders are created on your phone, not by us.</li>
           <li>The names of the files you uploaded, so you know what was read.</li>
+          <li>Your answers to &quot;How do you pay?&quot; (which banks, cards, payment apps, stores and mailboxes you use, never any number or password), encrypted, to build your checklist.</li>
         </ul>
       </section>
 
