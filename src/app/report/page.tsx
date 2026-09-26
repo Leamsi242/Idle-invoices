@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getSessionId } from "@/lib/session";
-import { getDoubts, getReport, type StoredSubscription } from "@/lib/store";
+import { getDoubts, getReport, listAlerts, type StoredSubscription } from "@/lib/store";
+import { AlertsPanel } from "@/components/Watch";
+import { alertLine } from "@/lib/notify";
 import { Doubts } from "@/components/Doubts";
 import { gmailConfigured } from "@/lib/gmail";
 import { outlookConfigured } from "@/lib/outlook";
@@ -123,7 +125,7 @@ export default async function Report() {
   const { m, locale } = await getMessages();
   const t = m.report;
   const sessionId = await getSessionId();
-  const [report, doubts] = sessionId ? await Promise.all([getReport(sessionId), getDoubts(sessionId, locale)]) : [null, []];
+  const [report, doubts, alerts] = sessionId ? await Promise.all([getReport(sessionId), getDoubts(sessionId, locale), listAlerts(sessionId)]) : [null, [], []];
   if (!report || report.uploads === 0) {
     return (
       <p className="rounded-xl bg-white p-6 text-center">
@@ -138,6 +140,7 @@ export default async function Report() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{t.title}</h1>
+      <AlertsPanel lines={alerts.map((a) => ({ id: a.id, text: alertLine(a.change, locale), date: formatDate(a.createdAt, locale) }))} />
       <Doubts doubts={doubts} gmail={gmailConfigured()} outlook={outlookConfigured()} banking={bankingConfigured()} />
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl bg-white p-4 shadow-sm">

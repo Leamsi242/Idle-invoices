@@ -9,6 +9,9 @@ import { upcomingTrials, type UpcomingTrial } from "./engine/trials";
 import { reconcile } from "./engine/reconcile";
 import { findDoubts, type Connections, type Doubt } from "./doubts";
 import type { Locale } from "./i18n";
+import { diffSubscriptions, type Change } from "./engine/changes";
+import { closeAccess, readAgain, type BankAccess } from "./banking";
+import { sendAlertEmail } from "./notify";
 import { buildPlan, collectFacts, EMPTY_ANSWERS, sanitizeAnswers, type Answers, type Facts, type PlanItem } from "./onboarding";
 
 /** Data older than this is purged automatically (see the privacy page). */
@@ -230,9 +233,12 @@ export async function saveLabel(sessionId: string, labelKey: string, serviceName
   await recompute(sessionId);
 }
 
-/** "Delete everything": every row of this session, in every table. */
+/** "Delete everything": every row of this session, in every table, and any bank access kept open. */
 export async function deleteEverything(sessionId: string) {
+  for (const link of await prisma.bankLink.findMany({ where: { sessionId } })) await closeLink(link);
   await prisma.$transaction([
+    prisma.bankLink.deleteMany({ where: { sessionId } }),
+    prisma.alert.deleteMany({ where: { sessionId } }),
     prisma.match.deleteMany({ where: { sessionId } }),
     prisma.subscription.deleteMany({ where: { sessionId } }),
     prisma.transaction.deleteMany({ where: { sessionId } }),
@@ -323,4 +329,99 @@ export async function getConnections(sessionId: string | null): Promise<Connecti
 export async function getDoubts(sessionId: string, locale: Locale = "en"): Promise<Doubt[]> {
   const [subs, onboarding, connections] = await Promise.all([listSubscriptions(sessionId), getOnboarding(sessionId), getConnections(sessionId)]);
   return findDoubts(subs, onboarding.facts, connections, locale);
+}
+
+// --- Watching: a bank access kept open and read again every night --------------------------------
+
+type LinkRow = { id: string; sessionId: string; provider: string; institution: string; access: string; alertEmail: string | null; locale: string; validUntil: Date; lastReadAt: Date };
+
+async function closeLink(link: LinkRow) {
+  try {
+    await closeAccess(link.provider, JSON.parse(decrypt(link.access)) as BankAccess);
+  } catch {
+    // Already closed or expired at the provider: nothing left to revoke.
+  }
+}
+
+export interface WatchInfo { id: string; institution: string; validUntil: string; lastReadAt: string; hasEmail: boolean }
+
+export async function saveWatch(sessionId: string, w: { provider: string; institution: string; access: BankAccess; locale: Locale; days: number }) {
+  const now = new Date();
+  return prisma.bankLink.create({
+    data: {
+      sessionId,
+      provider: w.provider,
+      institution: encrypt(w.institution),
+      access: encrypt(JSON.stringify(w.access)),
+      locale: w.locale,
+      validUntil: new Date(now.getTime() + w.days * 86_400_000),
+      lastReadAt: now,
+    },
+  });
+}
+
+export async function listWatches(sessionId: string | null): Promise<WatchInfo[]> {
+  if (!sessionId) return [];
+  const rows = await prisma.bankLink.findMany({ where: { sessionId }, orderBy: { createdAt: "asc" } });
+  return rows.map((r) => ({ id: r.id, institution: decrypt(r.institution), validUntil: iso(r.validUntil), lastReadAt: iso(r.lastReadAt), hasEmail: !!r.alertEmail }));
+}
+
+export async function setWatchEmail(sessionId: string, id: string, email: string | null) {
+  const { count } = await prisma.bankLink.updateMany({ where: { id, sessionId }, data: { alertEmail: email ? encrypt(email) : null } });
+  if (!count) throw new Error("Unknown watch");
+}
+
+export async function stopWatch(sessionId: string, id: string) {
+  const link = await prisma.bankLink.findFirst({ where: { id, sessionId } });
+  if (!link) return;
+  await closeLink(link);
+  await prisma.bankLink.delete({ where: { id } });
+}
+
+/** Reads a watched account again, re-analyses, and records what changed. */
+export async function refreshWatch(link: LinkRow, now = new Date(), appUrl = ""): Promise<Change[]> {
+  const today = iso(now);
+  const since = iso(new Date(link.lastReadAt.getTime() - 7 * 86_400_000));
+  const access = JSON.parse(decrypt(link.access)) as BankAccess;
+  const transactions = await readAgain(link.provider, access, since, today);
+  const before = await listSubscriptions(link.sessionId);
+  await saveUpload(link.sessionId, `Bank connection: ${decrypt(link.institution)} (${access.accounts.length} account${access.accounts.length === 1 ? "" : "s"})`, "bank", transactions);
+  await recompute(link.sessionId);
+  const changes = diffSubscriptions(before, await listSubscriptions(link.sessionId));
+  if (changes.length) await prisma.alert.createMany({ data: changes.map((c) => ({ sessionId: link.sessionId, kind: c.kind, details: encrypt(JSON.stringify(c)) })) });
+  await prisma.bankLink.update({ where: { id: link.id }, data: { lastReadAt: now } });
+  if (changes.length && link.alertEmail) await sendAlertEmail(decrypt(link.alertEmail), changes, link.locale === "en" ? "en" : "fr", appUrl).catch(() => false);
+  return changes;
+}
+
+/** The nightly job: every watch still valid is read again; expired ones are closed. */
+export async function refreshAllWatches(now = new Date(), appUrl = "") {
+  let read = 0;
+  let changes = 0;
+  let failed = 0;
+  for (const link of await prisma.bankLink.findMany()) {
+    if (link.validUntil <= now) {
+      await closeLink(link);
+      await prisma.bankLink.delete({ where: { id: link.id } });
+      continue;
+    }
+    try {
+      changes += (await refreshWatch(link, now, appUrl)).length;
+      read++;
+    } catch {
+      failed++; // the bank refused this time (consent revoked, rate limit): tried again tomorrow
+    }
+  }
+  return { read, changes, failed };
+}
+
+export interface StoredAlert { id: string; change: Change; createdAt: string }
+
+export async function listAlerts(sessionId: string): Promise<StoredAlert[]> {
+  const rows = await prisma.alert.findMany({ where: { sessionId, seenAt: null }, orderBy: { createdAt: "desc" }, take: 20 });
+  return rows.map((r) => ({ id: r.id, change: JSON.parse(decrypt(r.details)) as Change, createdAt: iso(r.createdAt) }));
+}
+
+export async function dismissAlerts(sessionId: string) {
+  await prisma.alert.updateMany({ where: { sessionId, seenAt: null }, data: { seenAt: new Date() } });
 }

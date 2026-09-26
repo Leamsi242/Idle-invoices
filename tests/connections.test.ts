@@ -86,7 +86,8 @@ describe("Enable Banking", () => {
   });
 
   it("remembers the pending bank in a cookie that cannot carry anything else", () => {
-    expect(decodePending(encodePending("st", { name: "BNP Paribas", country: "FR" }))).toEqual({ state: "st", institution: { name: "BNP Paribas", country: "FR" } });
+    expect(decodePending(encodePending("st", { name: "BNP Paribas", country: "FR" }))).toEqual({ state: "st", institution: { name: "BNP Paribas", country: "FR" }, watch: false });
+    expect(decodePending(encodePending("st", { name: "BNP Paribas", country: "FR" }, true))?.watch).toBe(true);
     expect(decodePending("not-json")).toBeNull();
   });
 });
@@ -184,5 +185,32 @@ describe("doubts in French", () => {
     const doubts = findDoubts(subscriptions, collectFacts(transactions, new Set()), { banks: ["Demo"], mailboxes: [], files: 0 }, "fr");
     expect(doubts[1].title).toBe("Votre banque paie une carte American Express chaque mois");
     expect(doubts.find((d) => d.kind === "name" && d.store === "google")?.title).toMatch(/^Quel service se cache derrière 9,99\s€ par semaine payés via Google Play \?$/);
+  });
+});
+
+describe("watching an account", () => {
+  it("asks for a 90-day access, keeps it after the first read, and reads it again later", async () => {
+    const calls: { method: string; url: string; body?: string }[] = [];
+    const f = (async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      calls.push({ method: init?.method ?? "GET", url, body: init?.body as string | undefined });
+      if (url.endsWith("/auth")) return json({ url: "https://bank.example/login" });
+      if (url.endsWith("/sessions") && init?.method === "POST") return json({ session_id: "s1", accounts: [{ uid: "a1" }] });
+      if (url.includes("/transactions")) return json({ transactions: [tx({})] });
+      return json({}, 204);
+    }) as typeof fetch;
+    const eb = new EnableBanking("app", privateKey, f);
+    await eb.start({ institution: { name: "Crédit Mutuel", country: "FR" }, redirectUrl: "https://app.example/cb", state: "st", keepDays: 90 });
+    const days = (Date.parse(JSON.parse(calls[0].body!).access.valid_until) - Date.now()) / 86_400_000;
+    expect(Math.round(days)).toBe(90);
+
+    const read = await eb.finish({ code: "c", since: ["2026-06-29"], keep: true });
+    expect(read.access).toEqual({ session: "s1", accounts: ["a1"] });
+    expect(calls.some((c) => c.method === "DELETE")).toBe(false);
+
+    await eb.read(read.access!, "2026-09-19");
+    expect(calls.at(-1)!.url).toContain("/accounts/a1/transactions?date_from=2026-09-19");
+    await eb.close("s1");
+    expect(calls.at(-1)).toMatchObject({ method: "DELETE", url: "https://api.enablebanking.com/sessions/s1" });
   });
 });

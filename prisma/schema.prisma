@@ -112,3 +112,33 @@ model Profile {
   answers   String // encrypted JSON, known ids only
   updatedAt DateTime @updatedAt
 }
+
+// A bank access kept open (up to 90 days) because the user asked to be watched: read again every
+// night to spot new subscriptions and price increases. The provider's session id and account ids
+// are encrypted; stopping the watch or "Delete everything" closes the access at the provider.
+model BankLink {
+  id          String   @id @default(cuid())
+  sessionId   String
+  provider    String // enable-banking, demo
+  institution String // encrypted bank name
+  access      String // encrypted JSON: provider session id and account ids
+  alertEmail  String? // encrypted, optional
+  locale      String   @default("fr")
+  validUntil  DateTime
+  lastReadAt  DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([sessionId])
+}
+
+// What changed at a nightly read: a new subscription, a price increase, a subscription restarting.
+model Alert {
+  id        String    @id @default(cuid())
+  sessionId String
+  kind      String // new, price-up, restarted
+  details   String // encrypted JSON: service, amounts, currency, frequency, date
+  createdAt DateTime  @default(now())
+  seenAt    DateTime?
+
+  @@index([sessionId])
+}

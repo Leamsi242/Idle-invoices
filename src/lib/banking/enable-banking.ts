@@ -1,5 +1,5 @@
 import { createSign } from "node:crypto";
-import type { BankProvider, BankRead, Institution, PsuContext } from "./types";
+import type { BankAccess, BankProvider, BankRead, Institution, PsuContext } from "./types";
 import type { NormalizedTransaction } from "../types";
 import { makeTx } from "../parsers/common";
 
@@ -96,9 +96,9 @@ export class EnableBanking implements BankProvider {
     return aspsps.filter((a) => !a.psu_types || a.psu_types.includes("personal")).map((a) => ({ name: a.name, country: a.country }));
   }
 
-  async start({ institution, redirectUrl, state, psu }: { institution: Institution; redirectUrl: string; state: string; psu?: PsuContext }) {
-    // One read, right after the user signs in: the access only needs to last a day.
-    const validUntil = new Date(Date.now() + 86_400_000).toISOString();
+  async start({ institution, redirectUrl, state, psu, keepDays = 0 }: { institution: Institution; redirectUrl: string; state: string; psu?: PsuContext; keepDays?: number }) {
+    // One read right after sign-in needs a day; watching keeps the access for `keepDays`.
+    const validUntil = new Date(Date.now() + Math.max(1, keepDays) * 86_400_000).toISOString();
     const { url } = await this.call<{ url: string }>("/auth", {
       method: "POST",
       psu,
@@ -107,26 +107,44 @@ export class EnableBanking implements BankProvider {
     return { url };
   }
 
-  async finish({ code, since, psu }: { code: string; since: string[]; psu?: PsuContext }): Promise<BankRead> {
-    const session = await this.call<{ session_id: string; accounts: { uid: string }[] }>("/sessions", { method: "POST", psu, body: JSON.stringify({ code }) });
-    try {
-      const transactions: NormalizedTransaction[] = [];
-      for (const { uid } of session.accounts) {
-        // Ask for the longest history first; a bank that shares less (90 days) refuses the date.
-        for (const [i, dateFrom] of since.entries()) {
-          try {
-            transactions.push(...(await this.readAccount(uid, dateFrom, psu)));
-            break;
-          } catch (e) {
-            const tooOld = e instanceof EnableBankingError && (e.status === 400 || e.status === 422);
-            if (!tooOld || i === since.length - 1) throw e;
-          }
+  /** Every account from the first date the bank accepts (oldest first in `since`). */
+  private async readAccounts(uids: string[], since: string[], psu?: PsuContext): Promise<NormalizedTransaction[]> {
+    const transactions: NormalizedTransaction[] = [];
+    for (const uid of uids) {
+      // Ask for the longest history first; a bank that shares less (90 days) refuses the date.
+      for (const [i, dateFrom] of since.entries()) {
+        try {
+          transactions.push(...(await this.readAccount(uid, dateFrom, psu)));
+          break;
+        } catch (e) {
+          const tooOld = e instanceof EnableBankingError && (e.status === 400 || e.status === 422);
+          if (!tooOld || i === since.length - 1) throw e;
         }
       }
-      return { accounts: session.accounts.length, transactions };
-    } finally {
-      // Close the access as soon as it has been read.
-      await this.call(`/sessions/${session.session_id}`, { method: "DELETE" }).catch(() => undefined);
     }
+    return transactions;
+  }
+
+  async finish({ code, since, psu, keep = false }: { code: string; since: string[]; psu?: PsuContext; keep?: boolean }): Promise<BankRead> {
+    const session = await this.call<{ session_id: string; accounts: { uid: string }[] }>("/sessions", { method: "POST", psu, body: JSON.stringify({ code }) });
+    const uids = session.accounts.map((a) => a.uid);
+    let kept = false;
+    try {
+      const transactions = await this.readAccounts(uids, since, psu);
+      kept = keep;
+      return { accounts: uids.length, transactions, access: keep ? { session: session.session_id, accounts: uids } : undefined };
+    } finally {
+      // Close the access as soon as it has been read, unless the user asked to be watched.
+      if (!kept) await this.close(session.session_id);
+    }
+  }
+
+  /** A nightly read of a kept access, without the user (banks allow a few such reads a day). */
+  async read(access: BankAccess, since: string): Promise<NormalizedTransaction[]> {
+    return this.readAccounts(access.accounts, [since]);
+  }
+
+  async close(session: string): Promise<void> {
+    await this.call(`/sessions/${session}`, { method: "DELETE" }).catch(() => undefined);
   }
 }

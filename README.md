@@ -21,7 +21,7 @@ Then upload the files in [`samples/`](samples) to see a full report. Optional: s
 ## Run the tests
 
 ```bash
-npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, bank and mailbox connections, doubts, French and English (150 tests)
+npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, bank and mailbox connections, doubts, French and English, watching (155 tests)
 npm run typecheck
 ```
 
@@ -74,7 +74,8 @@ Uploaded files
 1. **Connect your bank** (`/`): search the bank, sign in on the bank's own page (PSD2 strong authentication), come back. The app reads the transactions of every account the user shared, up to 24 months (90 days at Crédit Mutuel, the bank's limit), once, then deletes the consent (`lib/banking`, `api/bank/*`). Cards with their own statement (American Express) are connected the same way.
 2. **Connect your mailbox**: Gmail or Outlook / Hotmail, one-time read-only scan of receipts (`lib/gmail.ts`, `lib/outlook.ts`).
 3. **Report**, with "We need your help" on top (`lib/doubts.ts`): only the points the data could not settle, each with one small action. Unnamed PayPal, Google Play or Apple payments without a mailbox connected ask for the mailbox (one action answers many); a bank paying an American Express card asks to connect the card; a recurring charge still unnamed asks for its name, or a screenshot of the store's subscription list.
-4. **Advanced** (`/advanced`, `/start`): manual import of files and the import checklist, for testing, for banks the provider does not cover, or for a PayPal export.
+4. **Watching (optional)**: ticking "Keep watching for 90 days" at the bank step keeps the read-only access (encrypted, `BankLink`). Every night `/api/cron/refresh` reads the account again from a few days before the last read, re-analyses, and compares with the previous analysis (`engine/changes.ts`): a new subscription, a price increase or a stopped subscription charging again becomes an alert on top of the report, and an email when the user gave an address and Resend is set up (`lib/notify.ts`). Stopping the watch, "Delete everything" or the 90-day end close the access at the bank. No account is needed: the watch belongs to the browser session.
+5. **Advanced** (`/advanced`, `/start`): manual import of files and the import checklist, for testing, for banks the provider does not cover, or for a PayPal export.
 
 ### Bank connection provider
 
@@ -145,7 +146,7 @@ Setup in [Google Cloud console](https://console.cloud.google.com/): create a pro
 
 ## Deploy on Vercel
 
-A step-by-step guide in French, from the Turso database to the first real Crédit Mutuel and Gmail connection, with a check after each step: [docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md). `GET /api/health` tells what is configured (database, encryption, bank provider, Gmail, Outlook, screenshots, purge) without returning any value, and `vercel.json` schedules the daily retention purge (`/api/cron/purge`, protected by `CRON_SECRET`).
+A step-by-step guide in French, from the Turso database to the first real Crédit Mutuel and Gmail connection, with a check after each step: [docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md). `GET /api/health` tells what is configured (database, encryption, bank provider, Gmail, Outlook, screenshots, purge) without returning any value, and `vercel.json` schedules the daily retention purge (`/api/cron/purge`) and the nightly read of watched accounts (`/api/cron/refresh`), both protected by `CRON_SECRET`.
 
 A SQLite file does not survive on Vercel (each function has its own temporary disk), so use a hosted libSQL database. [Turso](https://turso.tech) has a free tier and works with the same schema.
 

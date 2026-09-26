@@ -30,7 +30,7 @@ export default async function Privacy() {
           <li><strong>Account numbers, IBANs and card numbers.</strong> They are masked while reading, before anything is stored (for example ••••7890).</li>
           <li>Your balance, your name or your address.</li>
           <li><strong>Your bank password or your email password.</strong> You type them on your bank&apos;s or your email provider&apos;s own page, never on ours.</li>
-          <li><strong>Any access to your bank or mailbox.</strong> Each connection is used once, right after you sign in, then closed.</li>
+          <li><strong>Any access to your bank or mailbox you did not ask to keep.</strong> Each connection is used once, right after you sign in, then closed, unless you tick &quot;Keep watching for 90 days&quot;: then the read-only bank access is kept (encrypted), read again every night, and closed when you stop, when you delete everything, or after 90 days. An alert email, if you give one, is stored encrypted and used for nothing else.</li>
         </ul>
       </section>
 
@@ -104,7 +104,7 @@ function PrivacyFr() {
           <li><strong>Les numéros de compte, IBAN et numéros de carte.</strong> Ils sont masqués pendant la lecture, avant tout enregistrement (par exemple ••••7890).</li>
           <li>Votre solde, votre nom ou votre adresse.</li>
           <li><strong>Le mot de passe de votre banque ou de votre boîte mail.</strong> Vous le tapez sur la page de votre banque ou de votre messagerie, jamais sur la nôtre.</li>
-          <li><strong>Un accès permanent à votre banque ou à votre boîte mail.</strong> Chaque connexion sert une fois, juste après votre identification, puis elle est fermée.</li>
+          <li><strong>Un accès à votre banque ou à votre boîte mail que vous n&apos;avez pas demandé à garder.</strong> Chaque connexion sert une fois, juste après votre identification, puis elle est fermée, sauf si vous cochez « Continuer à surveiller pendant 90 jours » : l&apos;accès bancaire en lecture seule est alors gardé (chiffré), relu chaque nuit, et fermé quand vous arrêtez, quand vous supprimez tout, ou au bout de 90 jours. L&apos;e-mail d&apos;alerte, si vous en donnez un, est chiffré et ne sert à rien d&apos;autre.</li>
         </ul>
       </section>
 

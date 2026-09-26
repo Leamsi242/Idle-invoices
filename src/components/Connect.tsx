@@ -26,6 +26,7 @@ export function BankPicker({ initialQuery = "" }: { initialQuery?: string }) {
   const [list, setList] = useState<Institution[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [going, setGoing] = useState<string | null>(null);
+  const [watch, setWatch] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -54,7 +55,7 @@ export function BankPicker({ initialQuery = "" }: { initialQuery?: string }) {
     setGoing(i.name);
     setError(null);
     try {
-      const res = await fetch("/api/bank/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(i) });
+      const res = await fetch("/api/bank/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...i, watch }) });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? t.unreachable);
       window.location.href = json.url;
@@ -79,6 +80,13 @@ export function BankPicker({ initialQuery = "" }: { initialQuery?: string }) {
           {COUNTRIES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
         </select>
       </div>
+      <label className="flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-sm">
+        <input type="checkbox" checked={watch} onChange={(e) => setWatch(e.target.checked)} className="mt-1" />
+        <span>
+          <span className="font-medium">{m.watch.option}</span>
+          <span className="block text-xs text-slate-500">{m.watch.optionHelp}</span>
+        </span>
+      </label>
       {error && <p className="text-sm text-red-700">{error}</p>}
       {!list && !error && <p className="text-sm text-slate-500">{t.loading}</p>}
       {list && (

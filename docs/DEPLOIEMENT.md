@@ -21,7 +21,7 @@ Gardez-les dans un gestionnaire de mots de passe. Perdre `DATA_ENCRYPTION_KEY` r
 2. Récupérez son adresse (`libsql://...`) et créez un jeton d'accès (« Create token »).
 3. Créez les tables. Dans le dépôt : `npm install` puis `npm run db:sql`, ce qui écrit `prisma/schema.sql`. Ensuite, soit `turso db shell subscription-detective < prisma/schema.sql` avec l'outil en ligne de commande, soit copiez le contenu du fichier dans la console SQL du tableau de bord Turso.
 
-Vérification : la console Turso liste les tables `Upload`, `Transaction`, `Subscription`, `Match`, `Descriptor`, `TrackedTrial` et `Profile`.
+Vérification : la console Turso liste les tables `Upload`, `Transaction`, `Subscription`, `Match`, `Descriptor`, `TrackedTrial`, `Profile`, `BankLink` et `Alert`.
 
 ## 3. Déployer sur Vercel
 
@@ -68,6 +68,7 @@ Vérification : `/api/health` affiche `"gmail": true`, et le bouton Gmail appara
 
 - **Outlook / Hotmail** : application Microsoft Entra (comptes personnels et professionnels), permission déléguée `Mail.Read`, secret client, URI de redirection `https://<domaine>/api/outlook/callback`, puis `MICROSOFT_CLIENT_ID` et `MICROSOFT_CLIENT_SECRET`.
 - **Lecture des captures d'écran** : `ANTHROPIC_API_KEY`.
+- **Alertes par e-mail** (surveillance) : créez un compte sur [resend.com](https://resend.com), vérifiez votre domaine d'envoi, puis ajoutez `RESEND_API_KEY`, `ALERT_FROM` (par exemple `Subscription Detective <alertes@votre-domaine.fr>`) et `APP_URL` (`https://<domaine>`). Sans cela, les alertes apparaissent seulement en haut du rapport.
 - **Banque de démonstration en ligne** : `BANK_DEMO=1` affiche « Demo bank (test data) » dans la liste des banques. Laissez-la vide pour vos testeurs.
 
 ## 7. Premier test réel
@@ -83,8 +84,12 @@ Si la connexion bancaire échoue, la page d'accueil affiche le code d'erreur de 
 
 ## Ce qui tourne tout seul
 
-- Chaque nuit à 3 h, `/api/cron/purge` efface les données de plus de 30 jours (`vercel.json`). Sur l'offre gratuite de Vercel, une tâche par jour est autorisée.
-- Les accès bancaires et mail sont fermés juste après chaque lecture : rien n'est à révoquer à la main.
+- Chaque nuit à 3 h (heure UTC), `/api/cron/purge` efface les données de plus de 30 jours.
+- Chaque nuit à 5 h (UTC), `/api/cron/refresh` relit les comptes que leurs propriétaires ont demandé de surveiller, et crée les alertes (nouvel abonnement, hausse de prix, abonnement qui redémarre).
+- Les deux tâches sont déclarées dans `vercel.json` et protégées par `CRON_SECRET`. L'offre gratuite de Vercel autorise deux tâches quotidiennes.
+- Sans surveillance, les accès bancaires et mail sont fermés juste après chaque lecture. Avec, l'accès bancaire est fermé à l'arrêt de la surveillance, à « Tout supprimer » ou au bout de 90 jours.
+
+Pour tester la surveillance sans attendre la nuit : `curl -H "Authorization: Bearer <CRON_SECRET>" https://<domaine>/api/cron/refresh`.
 
 ## Mettre à jour la base après une évolution
 

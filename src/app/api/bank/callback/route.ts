@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { timingSafeEqual } from "node:crypto";
-import { finishConnection, psuHeaders } from "@/lib/banking";
+import { finishConnection, providerOf, psuHeaders, WATCH_DAYS } from "@/lib/banking";
 import { BANK_COOKIE, decodePending } from "@/lib/banking/cookie";
 import { getSessionId } from "@/lib/session";
-import { recompute, saveUpload } from "@/lib/store";
+import { recompute, saveUpload, saveWatch } from "@/lib/store";
+import { getLocale } from "@/lib/locale";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const same = (a: string, b: string) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
 
-/** The bank sends the user back here: read the transactions once, close the access, analyse. */
+/** The bank sends the user back here: read the transactions, close the access unless watched, analyse. */
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const back = (query: string) => {
@@ -27,10 +28,12 @@ export async function GET(req: Request) {
   try {
     const psu = psuHeaders(req);
     const today = new Date().toISOString().slice(0, 10);
-    const { accounts, transactions } = await finishConnection(pending.institution, code, today, psu);
+    const { accounts, transactions, access } = await finishConnection(pending.institution, code, today, psu, pending.watch);
     await saveUpload(sessionId, `Bank connection: ${pending.institution.name} (${accounts} account${accounts === 1 ? "" : "s"})`, "bank", transactions);
+    // The user asked to be watched: keep the access (encrypted) for the nightly reads.
+    if (access) await saveWatch(sessionId, { provider: providerOf(pending.institution), institution: pending.institution.name, access, locale: await getLocale(), days: WATCH_DAYS });
     await recompute(sessionId);
-    return back(`bank=ok&count=${transactions.length}`);
+    return back(`bank=ok&count=${transactions.length}${access ? "&watch=1" : ""}`);
   } catch (e) {
     // The provider's error code (e.g. PSU_HEADER_NOT_PROVIDED) helps when testing a new bank; no account data is in it.
     const message = e instanceof Error ? e.message : "";

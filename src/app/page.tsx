@@ -3,7 +3,9 @@ import { gmailConfigured } from "@/lib/gmail";
 import { outlookConfigured } from "@/lib/outlook";
 import { bankingConfigured } from "@/lib/banking";
 import { getSessionId } from "@/lib/session";
-import { getConnections } from "@/lib/store";
+import { getConnections, listWatches } from "@/lib/store";
+import { WatchControls } from "@/components/Watch";
+import { emailConfigured } from "@/lib/notify";
 import { BankPicker } from "@/components/Connect";
 import { getMessages } from "@/lib/locale";
 import type { Messages } from "@/lib/i18n";
@@ -12,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 function message(q: Record<string, string | undefined>, m: Messages): string | null {
   const h = m.home;
-  if (q.bank === "ok") return h.bankOk(q.count ?? "0");
+  if (q.bank === "ok") return q.watch === "1" ? h.bankOkWatch(q.count ?? "0") : h.bankOk(q.count ?? "0");
   if (q.gmail === "ok" || q.mail === "ok") return h.mailOk(q.scanned ?? "0", q.receipts ?? "0");
   if (q.bank === "error" && q.reason) return `${h.messages.bank.error} ${h.bankErrorCode(q.reason.replace(/[^A-Z_]/g, "").slice(0, 60))}`;
   for (const key of ["bank", "gmail", "mail"]) if (q[key] && h.messages[key][q[key]!]) return h.messages[key][q[key]!];
@@ -36,7 +38,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const { m } = await getMessages();
   const h = m.home;
   const note = message(q, m);
-  const c = await getConnections(await getSessionId());
+  const sessionId = await getSessionId();
+  const [c, watches] = await Promise.all([getConnections(sessionId), listWatches(sessionId)]);
   const banking = bankingConfigured();
   const gmail = gmailConfigured();
   const outlook = outlookConfigured();
@@ -54,9 +57,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
       <Step n={1} title={h.step1} done={c.banks.length > 0}>
         {c.banks.length > 0 && (
           <ul className="text-sm text-slate-700">
-            {c.banks.map((b) => <li key={b}>✓ {b}{m.lang === "fr" ? " : " : ": "}{h.bankDone}</li>)}
+            {c.banks.map((b) => <li key={b}>✓ {b}{m.lang === "fr" ? " : " : ": "}{watches.some((w) => w.institution === b) ? h.bankWatched : h.bankDone}</li>)}
           </ul>
         )}
+        {watches.map((w) => <WatchControls key={w.id} watch={w} emailEnabled={emailConfigured()} />)}
         {banking ? (
           c.banks.length > 0 && !pickBank ? (
             <details id="bank">

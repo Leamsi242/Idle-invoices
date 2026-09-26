@@ -12,13 +12,13 @@ export interface BankProvider {
   id: string;
   listInstitutions(country: string): Promise<Institution[]>;
   /** Returns the bank's sign-in page, and what we need to remember until the user comes back. */
-  start(opts: { institution: Institution; redirectUrl: string; state: string; psu?: PsuContext }): Promise<{ url: string }>;
+  start(opts: { institution: Institution; redirectUrl: string; state: string; psu?: PsuContext; keepDays?: number }): Promise<{ url: string }>;
   /**
    * Called on the way back: reads every account of the connection, then closes the access. The
    * first date the bank accepts is used (`since` lists them, oldest first): many banks share
    * 90 days only.
    */
-  finish(opts: { code: string; since: string[]; psu?: PsuContext }): Promise<BankRead>;
+  finish(opts: { code: string; since: string[]; psu?: PsuContext; keep?: boolean }): Promise<BankRead>;
 }
 
 /**
@@ -39,4 +39,12 @@ export function psuHeaders(req: Request): PsuContext {
   return h;
 }
 
-export interface BankRead { accounts: number; transactions: NormalizedTransaction[] }
+export interface BankRead {
+  accounts: number;
+  transactions: NormalizedTransaction[];
+  /** When the access is kept to watch the account: what is needed to read it again. */
+  access?: BankAccess;
+}
+
+/** A kept access: the provider's session and the accounts the user shared. */
+export interface BankAccess { session: string; accounts: string[] }

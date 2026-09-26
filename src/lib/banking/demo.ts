@@ -43,3 +43,13 @@ export function demoTransactions(today: string): BankRead {
   for (let w = 5; w >= 1; w--) add(addDays(today, -7 * w + 2), 9.99, "CB GOOGLE*GOOGLE PLAY APPS G.CO HELPPAY");
   return { accounts: 1, transactions: out };
 }
+
+/**
+ * A later read of the demo bank: the same account, plus a subscription that started since
+ * (Disney+ charged twice), so the nightly check has something to report.
+ */
+export function demoRefresh(today: string): NormalizedTransaction[] {
+  const { transactions } = demoTransactions(today);
+  const extra = [addDays(today, -31), addDays(today, -1)].map((date) => makeTx({ date, amount: 11.99, currency: "EUR", rawLabel: "CB DISNEY PLUS", source: "bank" }));
+  return [...transactions, ...extra];
+}

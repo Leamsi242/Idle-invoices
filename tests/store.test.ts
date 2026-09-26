@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/crypto";
+import { dismissAlerts, listAlerts, listWatches, refreshWatch, saveWatch, stopWatch, setWatchEmail } from "@/lib/store";
+import { demoTransactions } from "@/lib/banking/demo";
 import { deleteEverything, getAnswers, getOnboarding, saveAnswers, setItemDone, getReport, listSubscriptions, purgeExpired, recompute, saveLabel, saveUpload, setUsage } from "@/lib/store";
 import { parseSample } from "./helpers";
 
@@ -77,8 +79,9 @@ describe("store", () => {
     await uploadAll(b);
     await saveLabel(a, "PADDLE.NET* FOCUSFLOW", "FocusFlow");
     await saveAnswers(a, { banks: ["n26"], wallets: ["paypal"] });
+    await saveWatch(a, { provider: "demo", institution: "Demo bank (test data)", access: { session: "demo", accounts: ["demo"] }, locale: "fr", days: 90 });
     await deleteEverything(a);
-    for (const model of [prisma.upload, prisma.transaction, prisma.subscription, prisma.match, prisma.descriptor, prisma.trackedTrial, prisma.profile] as unknown as { count: (q: object) => Promise<number> }[]) {
+    for (const model of [prisma.upload, prisma.transaction, prisma.subscription, prisma.match, prisma.descriptor, prisma.trackedTrial, prisma.profile, prisma.bankLink, prisma.alert] as unknown as { count: (q: object) => Promise<number> }[]) {
       expect(await model.count({ where: { sessionId: a } })).toBe(0);
     }
     expect(await prisma.subscription.count({ where: { sessionId: b } })).toBe(16);
@@ -106,6 +109,28 @@ describe("store", () => {
     expect(plan.filter((i) => i.status === "done").map((i) => i.id)).toEqual(expect.arrayContaining(["bank:n26", "paypal", "mail:gmail"]));
     await setItemDone(session, "amazon", true);
     expect((await getAnswers(session))!.done).toEqual(["amazon"]);
+  });
+
+  it("reads a watched account again, alerts on what is new, and stops on request", async () => {
+    const session = randomUUID();
+    const today = new Date().toISOString().slice(0, 10);
+    await saveUpload(session, "Bank connection: Demo bank (test data) (1 account)", "bank", demoTransactions(today).transactions);
+    await recompute(session);
+    const link = await saveWatch(session, { provider: "demo", institution: "Demo bank (test data)", access: { session: "demo", accounts: ["demo"] }, locale: "fr", days: 90 });
+    expect((await prisma.bankLink.findUnique({ where: { id: link.id } }))!.access).not.toContain("demo");
+    await setWatchEmail(session, link.id, "someone@example.com");
+    expect((await listWatches(session)).map((w) => [w.institution, w.hasEmail])).toEqual([["Demo bank (test data)", true]]);
+
+    const changes = await refreshWatch((await prisma.bankLink.findUnique({ where: { id: link.id } }))!);
+    expect(changes.map((c) => [c.kind, c.serviceName])).toEqual([["new", "Disney+"]]);
+    expect((await listAlerts(session)).map((a) => a.change.serviceName)).toEqual(["Disney+"]);
+    // Reading again finds nothing new.
+    expect(await refreshWatch((await prisma.bankLink.findUnique({ where: { id: link.id } }))!)).toEqual([]);
+    await dismissAlerts(session);
+    expect(await listAlerts(session)).toEqual([]);
+
+    await stopWatch(session, link.id);
+    expect(await listWatches(session)).toEqual([]);
   });
 });
 
