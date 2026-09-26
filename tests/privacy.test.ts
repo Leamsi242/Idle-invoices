@@ -32,3 +32,15 @@ describe("privacy guarantees in the code", () => {
     }
   });
 });
+
+describe("retention purge endpoint", () => {
+  it("refuses calls without the cron secret", async () => {
+    const { GET } = await import("@/app/api/cron/purge/route");
+    process.env.CRON_SECRET = "s3cret-value";
+    expect((await GET(new Request("http://x/api/cron/purge"))).status).toBe(401);
+    expect((await GET(new Request("http://x/api/cron/purge", { headers: { authorization: "Bearer wrong-value!" } }))).status).toBe(401);
+    const ok = await GET(new Request("http://x/api/cron/purge", { headers: { authorization: "Bearer s3cret-value" } }));
+    expect(ok.status).toBe(200);
+    delete process.env.CRON_SECRET;
+  });
+});

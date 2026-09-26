@@ -21,7 +21,7 @@ Then upload the files in [`samples/`](samples) to see a full report. Optional: s
 ## Run the tests
 
 ```bash
-npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, bank and mailbox connections, doubts, French and English (149 tests)
+npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, bank and mailbox connections, doubts, French and English (150 tests)
 npm run typecheck
 ```
 
@@ -144,6 +144,8 @@ Setup in [Google Cloud console](https://console.cloud.google.com/): create a pro
 `gmail.readonly` is a restricted scope: in Testing mode it works for the listed test users (Google shows an "unverified app" warning), which is enough for the 20 to 30 testers of the validation plan. A public launch needs Google's verification and a yearly third-party security assessment (CASA).
 
 ## Deploy on Vercel
+
+A step-by-step guide in French, from the Turso database to the first real Crédit Mutuel and Gmail connection, with a check after each step: [docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md). `GET /api/health` tells what is configured (database, encryption, bank provider, Gmail, Outlook, screenshots, purge) without returning any value, and `vercel.json` schedules the daily retention purge (`/api/cron/purge`, protected by `CRON_SECRET`).
 
 A SQLite file does not survive on Vercel (each function has its own temporary disk), so use a hosted libSQL database. [Turso](https://turso.tech) has a free tier and works with the same schema.
 
