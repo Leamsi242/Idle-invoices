@@ -82,7 +82,7 @@ export default async function Privacy() {
         <p>Only to show you your subscriptions report. We don&apos;t sell, share or use your data for anything else.</p>
       </section>
 
-      <p className="text-sm text-slate-500">This is a prototype. A GDPR review and a security audit will happen before any public launch.</p>
+      <p className="text-sm text-muted">This is a prototype. A GDPR review and a security audit will happen before any public launch.</p>
       <DeleteEverythingButton />
     </article>
   );
@@ -167,7 +167,7 @@ function PrivacyFr() {
         <p>Uniquement pour vous montrer votre rapport d&apos;abonnements. Nous ne vendons, ne partageons et n&apos;utilisons vos données pour rien d&apos;autre.</p>
       </section>
 
-      <p className="text-sm text-slate-500">Ceci est un prototype. Un examen RGPD et un audit de sécurité auront lieu avant tout lancement public.</p>
+      <p className="text-sm text-muted">Ceci est un prototype. Un examen RGPD et un audit de sécurité auront lieu avant tout lancement public.</p>
       <DeleteEverythingButton />
     </article>
   );

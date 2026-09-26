@@ -74,21 +74,21 @@ export function BankPicker({ initialQuery = "" }: { initialQuery?: string }) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t.placeholder}
           aria-label={t.aria}
-          className="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-2"
+          className="min-w-0 flex-1 rounded-2xl border border-line px-3 py-2"
         />
-        <select value={country} onChange={(e) => setCountry(e.target.value)} aria-label={t.country} className="rounded-xl border border-slate-300 px-2 py-2 text-sm">
+        <select value={country} onChange={(e) => setCountry(e.target.value)} aria-label={t.country} className="rounded-2xl border border-line px-2 py-2 text-sm">
           {COUNTRIES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
         </select>
       </div>
-      <label className="flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-sm">
+      <label className="flex items-start gap-2 rounded-2xl bg-surface-2 p-3 text-sm">
         <input type="checkbox" checked={watch} onChange={(e) => setWatch(e.target.checked)} className="mt-1" />
         <span>
           <span className="font-medium">{m.watch.option}</span>
-          <span className="block text-xs text-slate-500">{m.watch.optionHelp}</span>
+          <span className="block text-xs text-muted">{m.watch.optionHelp}</span>
         </span>
       </label>
-      {error && <p className="text-sm text-red-700">{error}</p>}
-      {!list && !error && <p className="text-sm text-slate-500">{t.loading}</p>}
+      {error && <p className="text-sm text-leak">{error}</p>}
+      {!list && !error && <p className="text-sm text-muted">{t.loading}</p>}
       {list && (
         <ul className="grid gap-2 sm:grid-cols-2">
           {shown.map((i) => (
@@ -97,13 +97,13 @@ export function BankPicker({ initialQuery = "" }: { initialQuery?: string }) {
                 type="button"
                 disabled={!!going}
                 onClick={() => connect(i)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-left text-sm font-medium hover:border-brand disabled:opacity-50"
+                className="w-full rounded-2xl border border-line bg-surface px-3 py-2 text-left text-sm font-medium hover:border-brand disabled:opacity-50"
               >
                 {going === i.name ? t.opening : i.name}
               </button>
             </li>
           ))}
-          {shown.length === 0 && <li className="text-sm text-slate-500">{t.noMatch(query)}</li>}
+          {shown.length === 0 && <li className="text-sm text-muted">{t.noMatch(query)}</li>}
         </ul>
       )}
     </div>

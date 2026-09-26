@@ -42,10 +42,10 @@ function Chip({ choice, on, toggle }: { choice: Choice; on: boolean; toggle: () 
       type="button"
       aria-pressed={on}
       onClick={toggle}
-      className={`rounded-xl border px-3 py-2 text-left text-sm ${on ? "border-brand bg-teal-50 text-brand-dark" : "border-slate-300 bg-white hover:border-brand"}`}
+      className={`rounded-2xl border px-3 py-2 text-left text-sm ${on ? "border-brand bg-brand-soft text-brand-dark" : "border-line bg-surface hover:border-brand"}`}
     >
       <span className="font-medium">{on ? "✓ " : ""}{choice.label}</span>
-      {choice.hint && <span className="block text-xs text-slate-500">{choice.hint}</span>}
+      {choice.hint && <span className="block text-xs text-muted">{choice.hint}</span>}
     </button>
   );
 }
@@ -75,29 +75,29 @@ export function OnboardingQuestions({ initial }: { initial: Answers }) {
     });
 
   return (
-    <section className="space-y-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between text-sm text-slate-500">
+    <section className="space-y-4 rounded-2xl bg-surface p-4 shadow-card">
+      <div className="flex items-center justify-between text-sm text-muted">
         <span>Step {step + 1} of {STEPS.length}</span>
         <div className="flex gap-1" aria-hidden>
-          {STEPS.map((_, i) => <span key={i} className={`h-1.5 w-8 rounded-full ${i <= step ? "bg-brand" : "bg-slate-200"}`} />)}
+          {STEPS.map((_, i) => <span key={i} className={`h-1.5 w-8 rounded-full ${i <= step ? "bg-brand" : "bg-line"}`} />)}
         </div>
       </div>
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">{current.title}</h2>
-        <p className="text-sm text-slate-600">{current.intro}</p>
+        <p className="text-sm text-muted">{current.intro}</p>
       </div>
       {current.groups.map((g) => (
         <fieldset key={g.key} className="space-y-2">
-          <legend className="text-sm font-medium text-slate-700">{g.label}</legend>
+          <legend className="text-sm font-medium text-ink-2">{g.label}</legend>
           <div className="grid gap-2 sm:grid-cols-2">
             {g.choices.map((c) => <Chip key={c.id} choice={c} on={answers[g.key].includes(c.id)} toggle={() => toggle(g.key, c.id)} />)}
           </div>
         </fieldset>
       ))}
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-leak">{error}</p>}
       <div className="flex gap-2">
         {step > 0 && (
-          <button type="button" onClick={() => setStep(step - 1)} className="rounded-xl border border-slate-300 px-4 py-3 font-semibold">
+          <button type="button" onClick={() => setStep(step - 1)} className="rounded-2xl border border-line px-4 py-3 font-semibold">
             Back
           </button>
         )}
@@ -105,12 +105,12 @@ export function OnboardingQuestions({ initial }: { initial: Answers }) {
           type="button"
           disabled={pending}
           onClick={() => (last ? save() : setStep(step + 1))}
-          className="flex-1 rounded-xl bg-brand px-4 py-3 font-semibold text-white disabled:opacity-40"
+          className="flex-1 rounded-2xl bg-brand px-4 py-3 font-semibold text-white disabled:opacity-40"
         >
           {last ? (pending ? "Saving…" : "See my checklist") : "Next"}
         </button>
       </div>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted">
         We only keep these choices (no account number, no password), encrypted, and delete them with the rest of your data.
       </p>
     </section>
@@ -118,9 +118,9 @@ export function OnboardingQuestions({ initial }: { initial: Answers }) {
 }
 
 const BADGE: Record<PlanItem["status"], { text: string; className: string }> = {
-  todo: { text: "To add", className: "bg-amber-100 text-amber-800" },
-  optional: { text: "Worth checking", className: "bg-slate-100 text-slate-700" },
-  done: { text: "Done", className: "bg-teal-100 text-teal-800" },
+  todo: { text: "To add", className: "bg-warn-soft text-ink-2" },
+  optional: { text: "Worth checking", className: "bg-surface-2 text-ink-2" },
+  done: { text: "Done", className: "bg-brand-soft text-brand" },
 };
 
 function CopyButton({ text }: { text: string }) {
@@ -128,7 +128,7 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       type="button"
-      className="rounded-full border border-slate-300 bg-white px-3 py-1 text-sm hover:border-brand"
+      className="rounded-full border border-line bg-surface px-3 py-1 text-sm hover:border-brand"
       onClick={async () => {
         await navigator.clipboard.writeText(text).catch(() => {});
         setCopied(true);
@@ -153,25 +153,25 @@ export function Checklist({ plan, ticked, gmail, gdpr, banking = false }: { plan
     <ul className="space-y-3">
       {plan.map((i) => (
         <li key={i.id}>
-          <article className={`space-y-2 rounded-xl bg-white p-4 shadow-sm ${i.status === "done" ? "opacity-75" : ""}`}>
+          <article className={`space-y-2 rounded-2xl bg-surface p-4 shadow-card ${i.status === "done" ? "opacity-75" : ""}`}>
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-medium">{i.title}</h3>
               <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs ${BADGE[i.status].className}`}>{BADGE[i.status].text}</span>
             </div>
             {i.detected && <p className="text-xs font-medium text-brand">Found in your statements</p>}
-            <p className="text-sm text-slate-600">{i.why}</p>
-            {i.alert && <p className="rounded-lg bg-amber-50 p-2 text-sm text-amber-800">{i.alert}</p>}
-            <details className="rounded-lg bg-slate-50 p-3 text-sm" open={i.status === "todo"}>
+            <p className="text-sm text-muted">{i.why}</p>
+            {i.alert && <p className="rounded-lg bg-warn-soft p-2 text-sm text-ink-2">{i.alert}</p>}
+            <details className="rounded-lg bg-surface-2 p-3 text-sm" open={i.status === "todo"}>
               <summary className="cursor-pointer font-medium text-brand">How to get it ({i.accepts})</summary>
-              <ol className="mt-2 list-decimal space-y-1 pl-5 text-slate-700">
+              <ol className="mt-2 list-decimal space-y-1 pl-5 text-ink-2">
                 {i.steps.map((s) => <li key={s}>{s}</li>)}
               </ol>
               {i.action === "gdpr" && (
-                <details className="mt-3 rounded-lg bg-white p-3">
+                <details className="mt-3 rounded-lg bg-surface p-3">
                   <summary className="cursor-pointer font-medium">Email to ask PayPal for your full history</summary>
-                  <pre className="mt-2 whitespace-pre-wrap text-xs text-slate-700">{gdpr}</pre>
+                  <pre className="mt-2 whitespace-pre-wrap text-xs text-ink-2">{gdpr}</pre>
                   <div className="mt-2"><CopyButton text={gdpr} /></div>
-                  <p className="mt-2 text-xs text-slate-500">Send it from the email address of your PayPal account, through PayPal&apos;s help centre (Contact us) or its data protection officer.</p>
+                  <p className="mt-2 text-xs text-muted">Send it from the email address of your PayPal account, through PayPal&apos;s help centre (Contact us) or its data protection officer.</p>
                 </details>
               )}
             </details>
@@ -188,10 +188,10 @@ export function Checklist({ plan, ticked, gmail, gdpr, banking = false }: { plan
                 </Link>
               )}
               {ticked.includes(i.id) ? (
-                <button type="button" disabled={pending} onClick={() => tick(i.id, false)} className="text-sm text-slate-500 underline">Undo</button>
+                <button type="button" disabled={pending} onClick={() => tick(i.id, false)} className="text-sm text-muted underline">Undo</button>
               ) : (
                 i.status !== "done" && (
-                  <button type="button" disabled={pending} onClick={() => tick(i.id, true)} className="rounded-full border border-slate-300 px-3 py-1 text-sm hover:border-brand">
+                  <button type="button" disabled={pending} onClick={() => tick(i.id, true)} className="rounded-full border border-line px-3 py-1 text-sm hover:border-brand">
                     {i.status === "optional" ? "Checked" : "Done, or not for me"}
                   </button>
                 )

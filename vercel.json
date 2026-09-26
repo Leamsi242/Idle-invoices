@@ -1,6 +1,15 @@
 {
+  "regions": [
+    "cdg1"
+  ],
   "crons": [
-    { "path": "/api/cron/purge", "schedule": "0 3 * * *" },
-    { "path": "/api/cron/refresh", "schedule": "0 5 * * *" }
+    {
+      "path": "/api/cron/purge",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/refresh",
+      "schedule": "0 5 * * *"
+    }
   ]
 }

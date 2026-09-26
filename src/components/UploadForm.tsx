@@ -73,7 +73,7 @@ export default function UploadForm() {
         }}
       >
         <label
-          className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-white p-6 text-center hover:border-brand"
+          className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-line bg-surface p-6 text-center hover:border-brand"
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault();
@@ -82,7 +82,7 @@ export default function UploadForm() {
         >
           <span className="text-3xl" aria-hidden>📄</span>
           <span className="font-medium">{u.drop}</span>
-          <span className="text-sm text-slate-500">{u.kinds}</span>
+          <span className="text-sm text-muted">{u.kinds}</span>
           <input
             type="file"
             multiple
@@ -93,7 +93,7 @@ export default function UploadForm() {
         </label>
 
         {files.length > 0 && (
-          <ul className="divide-y divide-slate-200 rounded-xl bg-white text-sm">
+          <ul className="divide-y divide-line rounded-2xl bg-surface text-sm">
             {files.map((f) => (
               <li key={f.name} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
                 <span className="truncate">{f.name}</span>
@@ -101,7 +101,7 @@ export default function UploadForm() {
                   {needsHint(f) && (
                     <select
                       aria-label={u.sourceOf(f.name)}
-                      className="rounded border border-slate-300 px-2 py-1"
+                      className="rounded border border-line px-2 py-1"
                       value={hints[f.name] ?? "apple"}
                       onChange={(e) => setHints({ ...hints, [f.name]: e.target.value as Hint })}
                     >
@@ -110,7 +110,7 @@ export default function UploadForm() {
                       <option value="email">{u.receipt}</option>
                     </select>
                   )}
-                  <button type="button" className="text-slate-400 hover:text-red-600" onClick={() => setFiles(files.filter((x) => x !== f))} aria-label={u.remove(f.name)}>
+                  <button type="button" className="text-muted hover:text-leak" onClick={() => setFiles(files.filter((x) => x !== f))} aria-label={u.remove(f.name)}>
                     ✕
                   </button>
                 </span>
@@ -119,16 +119,16 @@ export default function UploadForm() {
           </ul>
         )}
 
-        <details className="rounded-xl bg-white p-4">
+        <details className="rounded-2xl bg-surface p-4">
           <summary className="cursor-pointer font-medium">{u.paste}</summary>
-          <p className="mt-2 text-sm text-slate-500">{u.pasteHelp}</p>
-          <select className="mt-3 w-full rounded border border-slate-300 px-2 py-2 text-sm" value={pastedHint} onChange={(e) => setPastedHint(e.target.value as Hint)} aria-label={u.pastedAria}>
+          <p className="mt-2 text-sm text-muted">{u.pasteHelp}</p>
+          <select className="mt-3 w-full rounded border border-line px-2 py-2 text-sm" value={pastedHint} onChange={(e) => setPastedHint(e.target.value as Hint)} aria-label={u.pastedAria}>
             <option value="apple">{u.appleList}</option>
             <option value="google">{u.googleList}</option>
             <option value="email">{u.receiptEmail}</option>
           </select>
           <textarea
-            className="mt-2 h-32 w-full rounded border border-slate-300 p-2 text-sm"
+            className="mt-2 h-32 w-full rounded border border-line p-2 text-sm"
             value={pasted}
             onChange={(e) => setPasted(e.target.value)}
             placeholder={"Apple One\nIndividual (Monthly)\n€19.95/month\nRenews 17 October 2026"}
@@ -138,23 +138,23 @@ export default function UploadForm() {
         <button
           type="submit"
           disabled={busy || (files.length === 0 && !pasted.trim())}
-          className="w-full rounded-xl bg-brand px-4 py-3 font-semibold text-white disabled:opacity-40"
+          className="w-full rounded-2xl bg-brand px-4 py-3 font-semibold text-white disabled:opacity-40"
         >
           {busy ? u.reading : u.find}
         </button>
       </form>
 
-      {error && <p className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>}
+      {error && <p className="rounded-2xl bg-leak-soft p-4 text-sm text-leak">{error}</p>}
 
       {response && (
-        <section className="space-y-4 rounded-xl bg-white p-4">
+        <section className="space-y-4 rounded-2xl bg-surface p-4">
           <h2 className="font-semibold">{u.filesRead}</h2>
           <ul className="space-y-1 text-sm">
             {response.results.map((r, i) => (
               <li key={i}>✅ {r.fileName} : {u.records(r.count, r.source)}</li>
             ))}
             {response.errors.map((r, i) => (
-              <li key={`e${i}`} className="text-red-700">⚠️ {r.fileName}: {r.error}</li>
+              <li key={`e${i}`} className="text-leak">⚠️ {r.fileName}: {r.error}</li>
             ))}
           </ul>
           {response.needsMapping.map((m) => (
@@ -164,7 +164,7 @@ export default function UploadForm() {
             <a href="/start" className="block text-sm text-brand underline">{u.missing}</a>
           )}
           {response.results.length > 0 && response.needsMapping.length === 0 && (
-            <button onClick={() => router.push("/review")} className="w-full rounded-xl bg-brand px-4 py-3 font-semibold text-white">
+            <button onClick={() => router.push("/review")} className="w-full rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
               {u.continue(response.subscriptions ?? 0)}
             </button>
           )}
@@ -190,15 +190,15 @@ function ColumnMapper({ info, busy, onSubmit }: { info: NeedsMapping; busy: bool
 
   const select = (value: string, set: (v: string) => void, name: string) => (
     <label className="block text-sm">
-      <span className="text-slate-600">{name}</span>
-      <select className="mt-1 w-full rounded border border-slate-300 px-2 py-2" value={value} onChange={(e) => set(e.target.value)}>
+      <span className="text-muted">{name}</span>
+      <select className="mt-1 w-full rounded border border-line px-2 py-2" value={value} onChange={(e) => set(e.target.value)}>
         {h.map((x) => <option key={x}>{x}</option>)}
       </select>
     </label>
   );
 
   return (
-    <div className="space-y-3 rounded-lg border border-amber-300 bg-amber-50 p-4">
+    <div className="space-y-3 rounded-lg border border-warn/40 bg-warn-soft p-4">
       <p className="text-sm">
         We don&apos;t know the layout of <strong>{info.fileName}</strong> yet. Tell us which column is which.
       </p>
@@ -211,14 +211,14 @@ function ColumnMapper({ info, busy, onSubmit }: { info: NeedsMapping; busy: bool
       <div className="grid gap-3 sm:grid-cols-2">
         {select(date, setDate, "Date")}
         <label className="block text-sm">
-          <span className="text-slate-600">Description (one or more)</span>
-          <select multiple className="mt-1 w-full rounded border border-slate-300 px-2 py-1" value={label} onChange={(e) => setLabel(Array.from(e.target.selectedOptions).map((o) => o.value))}>
+          <span className="text-muted">Description (one or more)</span>
+          <select multiple className="mt-1 w-full rounded border border-line px-2 py-1" value={label} onChange={(e) => setLabel(Array.from(e.target.selectedOptions).map((o) => o.value))}>
             {h.map((x) => <option key={x}>{x}</option>)}
           </select>
         </label>
         <label className="block text-sm">
-          <span className="text-slate-600">Amounts</span>
-          <select className="mt-1 w-full rounded border border-slate-300 px-2 py-2" value={mode} onChange={(e) => setMode(e.target.value as "single" | "split")}>
+          <span className="text-muted">Amounts</span>
+          <select className="mt-1 w-full rounded border border-line px-2 py-2" value={mode} onChange={(e) => setMode(e.target.value as "single" | "split")}>
             <option value="single">One amount column</option>
             <option value="split">Separate debit and credit columns</option>
           </select>
@@ -237,20 +237,20 @@ function ColumnMapper({ info, busy, onSubmit }: { info: NeedsMapping; busy: bool
           </>
         )}
         <label className="block text-sm">
-          <span className="text-slate-600">Date format</span>
-          <select className="mt-1 w-full rounded border border-slate-300 px-2 py-2" value={dateOrder} onChange={(e) => setDateOrder(e.target.value as "DMY")}>
+          <span className="text-muted">Date format</span>
+          <select className="mt-1 w-full rounded border border-line px-2 py-2" value={dateOrder} onChange={(e) => setDateOrder(e.target.value as "DMY")}>
             <option value="DMY">Day/Month/Year</option>
             <option value="MDY">Month/Day/Year</option>
             <option value="YMD">Year-Month-Day</option>
           </select>
         </label>
         <label className="block text-sm">
-          <span className="text-slate-600">Currency</span>
-          <input className="mt-1 w-full rounded border border-slate-300 px-2 py-2" value={currency} maxLength={3} onChange={(e) => setCurrency(e.target.value.toUpperCase())} />
+          <span className="text-muted">Currency</span>
+          <input className="mt-1 w-full rounded border border-line px-2 py-2" value={currency} maxLength={3} onChange={(e) => setCurrency(e.target.value.toUpperCase())} />
         </label>
       </div>
       <label className="block text-sm">
-        <span className="text-slate-600">Select {info.fileName} again (we deleted it after the first read)</span>
+        <span className="text-muted">Select {info.fileName} again (we deleted it after the first read)</span>
         <input type="file" accept=".csv" className="mt-1 block w-full text-sm" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
       </label>
       <button

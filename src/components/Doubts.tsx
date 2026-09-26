@@ -41,8 +41,8 @@ function NameAnswer({ labelKey, store }: { labelKey: string; store?: "apple" | "
           if (name.trim()) saveName();
         }}
       >
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.namePlaceholder} aria-label={t.nameAria} className="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm" />
-        <button type="submit" disabled={pending || !name.trim()} className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{t.save}</button>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.namePlaceholder} aria-label={t.nameAria} className="min-w-0 flex-1 rounded-2xl border border-line px-3 py-2 text-sm" />
+        <button type="submit" disabled={pending || !name.trim()} className="rounded-2xl bg-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{t.save}</button>
       </form>
       {store && (
         <label className="block cursor-pointer text-sm text-brand underline">
@@ -50,7 +50,7 @@ function NameAnswer({ labelKey, store }: { labelKey: string; store?: "apple" | "
           <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => e.target.files?.[0] && sendScreenshot(e.target.files[0])} />
         </label>
       )}
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-leak">{error}</p>}
     </div>
   );
 }
@@ -60,28 +60,38 @@ export function Doubts({ doubts, gmail, outlook, banking }: { doubts: Doubt[]; g
   const { m } = useI18n();
   const t = m.doubts;
   if (doubts.length === 0) return null;
+  const button = "inline-flex items-center gap-1.5 rounded-full bg-brand px-3.5 py-1.5 text-sm font-semibold text-white transition hover:opacity-90";
   return (
-    <section className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
-      <div>
-        <h2 className="font-semibold text-amber-900">{t.help(doubts.length)}</h2>
-        <p className="text-sm text-amber-900">{t.everythingElse}</p>
+    <section className="space-y-3">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-leak">{m.ui.missingClues}</p>
+          <h2 className="font-display text-xl font-semibold tracking-tight">{t.help(doubts.length)}</h2>
+          <p className="text-sm text-muted">{t.everythingElse}</p>
+        </div>
       </div>
-      <ul className="space-y-3">
-        {doubts.map((d) => (
-          <li key={d.id} className="space-y-2 rounded-xl bg-white p-4 shadow-sm">
-            <h3 className="font-medium">{d.title}</h3>
-            <p className="text-sm text-slate-600">{d.detail}</p>
-            {d.kind === "mail" && (
-              <div className="flex flex-wrap gap-2">
-                {gmail && <a href="/api/gmail/start" className="rounded-full bg-brand px-3 py-1 text-sm font-medium text-white">{t.connectGmail}</a>}
-                {outlook && <a href="/api/outlook/start" className="rounded-full bg-brand px-3 py-1 text-sm font-medium text-white">{t.connectOutlook}</a>}
-                {!gmail && !outlook && <span className="text-sm text-slate-500">{t.mailNotSetUp}</span>}
-              </div>
-            )}
-            {(d.kind === "card" || d.kind === "paypal") && banking && (
-              <a href={`/?bank=${encodeURIComponent(d.bank)}#bank`} className="inline-block rounded-full bg-brand px-3 py-1 text-sm font-medium text-white">{t.connectCard(d.bank)}</a>
-            )}
-            {d.kind === "name" && <NameAnswer labelKey={d.labelKey} store={d.store} />}
+      {/* Clue cards: swiped on a phone, side by side on a large screen. */}
+      <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0">
+        {doubts.map((d, i) => (
+          <li key={d.id} className="relative flex w-[85%] shrink-0 snap-start flex-col gap-3 rounded-3xl border border-line bg-surface p-5 shadow-card sm:w-auto">
+            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-leak-soft px-2.5 py-0.5 text-xs font-semibold text-leak">
+              {i + 1} / {doubts.length}
+            </span>
+            <h3 className="font-semibold leading-snug tracking-tight">{d.title}</h3>
+            <p className="text-sm text-muted">{d.detail}</p>
+            <div className="mt-auto">
+              {d.kind === "mail" && (
+                <div className="flex flex-wrap gap-2">
+                  {gmail && <a href="/api/gmail/start" className={button}>{t.connectGmail}</a>}
+                  {outlook && <a href="/api/outlook/start" className={button}>{t.connectOutlook}</a>}
+                  {!gmail && !outlook && <span className="text-sm text-muted">{t.mailNotSetUp}</span>}
+                </div>
+              )}
+              {(d.kind === "card" || d.kind === "paypal") && banking && (
+                <a href={`/?bank=${encodeURIComponent(d.bank)}#bank`} className={button}>{t.connectCard(d.bank)}</a>
+              )}
+              {d.kind === "name" && <NameAnswer labelKey={d.labelKey} store={d.store} />}
+            </div>
           </li>
         ))}
       </ul>

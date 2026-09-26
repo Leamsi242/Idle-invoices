@@ -12,18 +12,18 @@ export async function TrialList({ trials }: { trials: ReportTrial[] }) {
   const t = m.trials;
   return (
     <section className="space-y-3">
-      <h2 className="font-semibold">{t.listTitle} <span className="text-slate-400">({trials.length})</span></h2>
+      <h2 className="font-semibold">{t.listTitle} <span className="text-muted">({trials.length})</span></h2>
       {trials.map((trial) => {
         const price = trial.amount ? `${money(trial.amount, trial.currency, locale)}${trial.frequency ? ` ${m.per[trial.frequency]}` : ""}` : undefined;
         const left = daysLeft(trial.startsCharging);
         const date = formatDate(trial.startsCharging, locale);
         return (
-          <article key={`${trial.serviceName}-${trial.startsCharging}`} className="space-y-2 rounded-xl border border-amber-300 bg-amber-50 p-4">
+          <article key={`${trial.serviceName}-${trial.startsCharging}`} className="space-y-2 rounded-2xl border border-warn/40 bg-warn-soft p-4">
             <div className="flex items-baseline justify-between gap-2">
               <h3 className="font-medium">{trial.serviceName}</h3>
               {price && <span className="whitespace-nowrap font-semibold">{price}</span>}
             </div>
-            <p className="text-sm text-amber-900">
+            <p className="text-sm text-ink-2">
               {trial.kind === "price-increase" ? t.priceUp(money(trial.previousAmount ?? 0, trial.currency, locale), price ?? "", date) : t.trialEnds(date)}
               {left >= 0 ? ` (${left === 0 ? t.today : t.inDays(left)})` : ""}. {t.cancelBefore}
             </p>

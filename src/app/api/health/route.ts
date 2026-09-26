@@ -18,12 +18,19 @@ export async function GET() {
       return false;
     }
   };
+  const started = Date.now();
   const database = await check(() => prisma.profile.count());
+  const databaseMs = Date.now() - started;
+  // Where the database and this function run: far apart, every page waits on each query.
+  const databaseRegion = (process.env.DATABASE_URL ?? "").match(/\.((?:aws|gcp|fly)-[a-z0-9-]+)\.turso\.io/)?.[1] ?? (process.env.DATABASE_URL?.startsWith("file:") ? "local file" : "unknown");
   const encryption = await check(() => {
     if (decrypt(encrypt("check")) !== "check") throw new Error();
   });
   const body = {
     database,
+    databaseMs,
+    databaseRegion,
+    functionRegion: process.env.VERCEL_REGION ?? "local",
     encryption,
     bank: enableBankingConfigured() ? "enable-banking" : demoEnabled() ? "demo only" : "not configured",
     gmail: gmailConfigured(),

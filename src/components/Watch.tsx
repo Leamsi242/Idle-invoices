@@ -16,10 +16,10 @@ export function WatchControls({ watch, emailEnabled }: { watch: WatchView; email
   const [email, setEmail] = useState("");
   const [saved, setSaved] = useState(false);
   return (
-    <div className="space-y-2 rounded-xl border border-teal-200 bg-teal-50 p-3 text-sm">
+    <div className="space-y-2 rounded-2xl border border-brand/20 bg-brand-soft p-3 text-sm">
       <p>
         <span className="font-medium">👁 {w.active(watch.institution, formatDate(watch.validUntil, locale))}</span>
-        <span className="text-slate-600"> · {w.lastRead(formatDate(watch.lastReadAt, locale))}</span>
+        <span className="text-muted"> · {w.lastRead(formatDate(watch.lastReadAt, locale))}</span>
       </p>
       {emailEnabled ? (
         <form
@@ -33,17 +33,17 @@ export function WatchControls({ watch, emailEnabled }: { watch: WatchView; email
             });
           }}
         >
-          <label className="w-full text-xs text-slate-600" htmlFor={`email-${watch.id}`}>{w.emailLabel}</label>
-          <input id={`email-${watch.id}`} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={watch.hasEmail ? "••••" : w.emailPlaceholder} className="min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-1" />
+          <label className="w-full text-xs text-muted" htmlFor={`email-${watch.id}`}>{w.emailLabel}</label>
+          <input id={`email-${watch.id}`} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={watch.hasEmail ? "••••" : w.emailPlaceholder} className="min-w-0 flex-1 rounded-lg border border-line px-2 py-1" />
           <button disabled={pending} className="rounded-lg bg-brand px-3 py-1 font-medium text-white disabled:opacity-40">{saved ? w.emailSaved : w.emailSave}</button>
         </form>
       ) : (
-        <p className="text-xs text-slate-500">{w.emailOff}</p>
+        <p className="text-xs text-muted">{w.emailOff}</p>
       )}
       <button
         type="button"
         disabled={pending}
-        className="text-xs text-slate-600 underline"
+        className="text-xs text-muted underline"
         onClick={() => {
           if (!confirm(w.stopConfirm)) return;
           start(async () => {
@@ -65,19 +65,19 @@ export function AlertsPanel({ lines }: { lines: { id: string; text: string; date
   const [pending, start] = useTransition();
   if (lines.length === 0) return null;
   return (
-    <section className="space-y-2 rounded-xl border border-red-200 bg-red-50 p-4">
-      <h2 className="font-semibold text-red-900">🔔 {m.alerts.title}</h2>
-      <ul className="space-y-1 text-sm text-red-900">
+    <section className="space-y-2 rounded-2xl border border-leak/30 bg-leak-soft p-4">
+      <h2 className="font-semibold text-leak">🔔 {m.alerts.title}</h2>
+      <ul className="space-y-1 text-sm text-leak">
         {lines.map((l) => (
           <li key={l.id}>
-            {l.text} <span className="text-xs text-red-700">({l.date})</span>
+            {l.text} <span className="text-xs text-leak">({l.date})</span>
           </li>
         ))}
       </ul>
       <button
         type="button"
         disabled={pending}
-        className="rounded-full border border-red-300 bg-white px-3 py-1 text-sm"
+        className="rounded-full border border-leak/30 bg-surface px-3 py-1 text-sm"
         onClick={() => start(async () => {
           await fetch("/api/alerts", { method: "POST" });
           router.refresh();

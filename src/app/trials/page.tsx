@@ -18,9 +18,12 @@ export default async function Trials() {
   const today = new Date().toISOString().slice(0, 10);
   const trials = sessionId ? (await listTrackedTrials(sessionId)).filter((t) => t.startsCharging >= today) : [];
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">{m.trials.pageTitle}</h1>
-      <p className="text-slate-600">{m.trials.pageIntro}</p>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <section className="space-y-2">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">{m.nav.trials}</p>
+        <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">{m.trials.pageTitle}</h1>
+        <p className="text-muted">{m.trials.pageIntro}</p>
+      </section>
       <TrialForm />
       <TrialList trials={trials} />
     </div>

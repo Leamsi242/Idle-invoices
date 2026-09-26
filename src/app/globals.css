@@ -1,9 +1,127 @@
 @import "tailwindcss";
 
-@theme {
-  --color-brand: #0f766e;
-  --color-brand-dark: #115e59;
+/*
+ * Design tokens. The palette follows the detective idea: warm paper for the case files, ink for
+ * text, an electric indigo for what the app reveals, coral for money leaking out, mint for money
+ * saved. Every color is a variable so the dark theme is one block below.
+ */
+:root {
+  --bg: #f5f3ef;
+  --surface: #ffffff;
+  --surface-2: #faf9f6;
+  --ink: #0d0f16;
+  --ink-2: #3b3f4d;
+  --muted: #72778a;
+  --line: #e8e4dc;
+  --brand: #4338ff;
+  --brand-2: #7c5cff;
+  --brand-soft: #eceaff;
+  --leak: #ff5a36;
+  --leak-soft: #fff0eb;
+  --save: #0fb67f;
+  --save-soft: #e5f8f0;
+  --warn: #f5a524;
+  --warn-soft: #fff6e5;
+  --night: #0b0c14;
+  --shadow: 0 1px 2px rgb(13 15 22 / 0.04), 0 8px 24px -12px rgb(13 15 22 / 0.12);
 }
 
-html { -webkit-text-size-adjust: 100%; }
-body { @apply bg-slate-50 text-slate-900 antialiased; }
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0b10;
+    --surface: #13151d;
+    --surface-2: #181b25;
+    --ink: #f3f3f7;
+    --ink-2: #c9cbd6;
+    --muted: #8a8fa3;
+    --line: #252834;
+    --brand: #8b83ff;
+    --brand-2: #b39dff;
+    --brand-soft: #1e1c3d;
+    --leak: #ff7a5c;
+    --leak-soft: #2a1812;
+    --save: #34d399;
+    --save-soft: #0f261e;
+    --warn: #fbbf24;
+    --warn-soft: #2a2110;
+    --night: #06070b;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -16px rgb(0 0 0 / 0.6);
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-2: var(--brand-2);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-dark: var(--brand);
+  --color-leak: var(--leak);
+  --color-leak-soft: var(--leak-soft);
+  --color-save: var(--save);
+  --color-save-soft: var(--save-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-night: var(--night);
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", Roboto, sans-serif;
+  --shadow-card: var(--shadow);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  color-scheme: light dark;
+}
+body {
+  @apply bg-bg font-sans text-ink antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+input, select, textarea { background-color: var(--surface-2); color: var(--ink); }
+input::placeholder, textarea::placeholder { color: var(--muted); }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+::selection { background: var(--brand-soft); color: var(--ink); }
+
+/* Amounts line up and never jump while they change. */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* The spotlight of the hero: a lens of light sweeping the night, where the money shows up. */
+.spotlight {
+  background:
+    radial-gradient(60% 80% at 85% 0%, rgb(124 92 255 / 0.55), transparent 60%),
+    radial-gradient(50% 70% at 0% 100%, rgb(255 90 54 / 0.35), transparent 60%),
+    radial-gradient(120% 120% at 50% 50%, #151731, var(--night));
+}
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.08;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+/* Details that open smoothly, with a turning chevron. */
+details > summary { list-style: none; cursor: pointer; }
+details > summary::-webkit-details-marker { display: none; }
+details[open] .chev { transform: rotate(90deg); }
+.chev { transition: transform 0.2s ease; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+@keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+.skeleton {
+  background: linear-gradient(90deg, var(--line) 0px, var(--surface-2) 120px, var(--line) 240px);
+  background-size: 800px 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise, .skeleton { animation: none; }
+}

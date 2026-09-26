@@ -93,7 +93,7 @@ export function GmailContinue({ scanned, total }: { scanned: number; total: numb
   }, [router]);
 
   return (
-    <p className="rounded-xl bg-white p-4 text-sm shadow-sm" role="status" aria-live="polite">
+    <p className="rounded-2xl bg-surface p-4 text-sm shadow-card" role="status" aria-live="polite">
       {m.home.gmailReading(progress.scanned, progress.total)}
     </p>
   );

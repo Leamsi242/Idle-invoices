@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "./db";
 import { decrypt, decryptOptional, encrypt, encryptOptional } from "./crypto";
 import type { DescriptorEntry, DetectedSubscription, Frequency, NormalizedTransaction, Source, Status, Usage } from "./types";
@@ -192,14 +193,17 @@ export async function listSubscriptions(sessionId: string): Promise<StoredSubscr
 export type ReportTrial = UpcomingTrial & { id?: string; tracked: boolean };
 
 export async function getReport(sessionId: string, today = new Date().toISOString().slice(0, 10)): Promise<Report<StoredSubscription> & { subscriptions: StoredSubscription[]; uploads: number; trials: ReportTrial[] }> {
-  // Subscriptions computed before "paid with" existed get it now.
-  if ((await listSubscriptions(sessionId)).some((s) => !s.paidWith)) await recompute(sessionId);
-  const [subs, uploads, txs, tracked] = await Promise.all([
+  let [subs, uploads, txs, tracked] = await Promise.all([
     listSubscriptions(sessionId),
     prisma.upload.count({ where: { sessionId } }),
-    loadTransactions(sessionId),
+    transactionsForRequest(sessionId),
     listTrackedTrials(sessionId),
   ]);
+  // Subscriptions computed before "paid with" existed get it now (once).
+  if (subs.some((s) => !s.paidWith)) {
+    await recompute(sessionId);
+    subs = await listSubscriptions(sessionId);
+  }
   const found: ReportTrial[] = upcomingTrials(txs, today).map((t) => ({ ...t, tracked: false }));
   const trials = [...tracked.filter((t) => t.startsCharging >= today), ...found.filter((f) => !tracked.some((t) => t.serviceName === f.serviceName))]
     .sort((a, b) => a.startsCharging.localeCompare(b.startsCharging));
@@ -332,8 +336,11 @@ export async function setItemDone(sessionId: string, itemId: string, done: boole
 
 export interface Onboarding { answers: Answers | null; facts: Facts; plan: PlanItem[] }
 
+/** Pages ask for the transactions several times per request (report, doubts, trials): read them once. */
+const transactionsForRequest = cache(loadTransactions);
+
 export async function getOnboarding(sessionId: string | null): Promise<Onboarding> {
-  const [answers, txs] = sessionId ? await Promise.all([getAnswers(sessionId), loadTransactions(sessionId)]) : [null, []];
+  const [answers, txs] = sessionId ? await Promise.all([getAnswers(sessionId), transactionsForRequest(sessionId)]) : [null, []];
   const explained = new Set(reconcile(txs).map((m) => m.bankTransactionId));
   const facts = collectFacts(txs, explained);
   return { answers, facts, plan: buildPlan(answers ?? EMPTY_ANSWERS, facts, { canConnect: bankingConfigured() }) };
@@ -362,6 +369,50 @@ export async function getConnections(sessionId: string | null): Promise<Connecti
     }
   }
   return { banks: [...banks], mailboxes: [...mailboxes], files, wallets: [...wallets] };
+}
+
+/**
+ * What was read from each source, to show its limits: the period a bank or PayPal shared, how many
+ * emails a mailbox scan checked (the newest MAX_MESSAGES at most), the lines of an imported file.
+ */
+export interface SourceCoverage {
+  name: string;
+  kind: "bank" | "paypal" | "mail" | "file";
+  from?: string;
+  to?: string;
+  /** Transactions, payments or receipts kept. */
+  items: number;
+  /** Mailbox scans only: emails checked. */
+  checked?: number;
+}
+
+export async function getSources(sessionId: string | null): Promise<SourceCoverage[]> {
+  if (!sessionId) return [];
+  const [uploads, spans] = await Promise.all([
+    prisma.upload.findMany({ where: { sessionId }, select: { id: true, fileName: true, sourceType: true }, orderBy: { uploadedAt: "asc" } }),
+    prisma.transaction.groupBy({ by: ["uploadId"], where: { sessionId, amount: { gt: 0 } }, _min: { date: true }, _max: { date: true }, _count: { _all: true } }),
+  ]);
+  const byUpload = new Map(spans.map((x) => [x.uploadId, x]));
+  const out = new Map<string, SourceCoverage>();
+  for (const u of uploads) {
+    const connection = u.fileName.match(/^Bank connection: (.+?) \(\d+ accounts?\)$/)?.[1];
+    const mail = u.fileName.match(/^(Gmail|Outlook) scan \((\d+) emails? checked\)/);
+    const kind: SourceCoverage["kind"] = connection ? (u.sourceType === "paypal" ? "paypal" : "bank") : mail ? "mail" : "file";
+    const name = connection ?? mail?.[1] ?? maskSensitive(u.fileName);
+    const entry = out.get(`${kind}:${name}`) ?? { name, kind, items: 0, ...(mail ? { checked: 0 } : {}) };
+    const span = byUpload.get(u.id);
+    if (span) {
+      const from = iso(span._min.date!);
+      const to = iso(span._max.date!);
+      entry.from = !entry.from || from < entry.from ? from : entry.from;
+      entry.to = !entry.to || to > entry.to ? to : entry.to;
+      // Nightly reads overlap the first one: count the span, not every copy.
+      entry.items = connection ? Math.max(entry.items, span._count._all) : entry.items + span._count._all;
+    }
+    if (mail) entry.checked! += Number(mail[2]);
+    out.set(`${kind}:${name}`, entry);
+  }
+  return [...out.values()];
 }
 
 export async function getDoubts(sessionId: string, locale: Locale = "en"): Promise<Doubt[]> {

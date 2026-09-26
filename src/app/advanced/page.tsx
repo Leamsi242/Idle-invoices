@@ -17,7 +17,7 @@ export default async function Advanced() {
     <div className="space-y-6">
       <section className="space-y-2">
         <h1 className="text-2xl font-bold leading-tight">{m.advanced.title}</h1>
-        <p className="text-slate-600">{m.advanced.intro}</p>
+        <p className="text-muted">{m.advanced.intro}</p>
         <p className="text-sm">
           <Link href="/start" className="text-brand underline">{m.advanced.checklist}</Link>
         </p>
