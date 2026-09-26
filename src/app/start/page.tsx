@@ -6,7 +6,7 @@ import { EMPTY_ANSWERS, gdprRequest, progress } from "@/lib/onboarding";
 import { Checklist, OnboardingQuestions } from "@/components/Onboarding";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Get started · Subscription Detective" };
+export const metadata = { title: "Import checklist · Subscription Detective" };
 
 export default async function Start({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const q = await searchParams;
@@ -17,10 +17,10 @@ export default async function Start({ searchParams }: { searchParams: Promise<Re
     return (
       <div className="space-y-6">
         <section className="space-y-2">
-          <h1 className="text-2xl font-bold leading-tight">Let&apos;s find where your subscriptions hide</h1>
+          <h1 className="text-2xl font-bold leading-tight">Advanced: what to import by hand</h1>
           <p className="text-slate-600">
-            Four quick questions about how you pay. You get a checklist of exactly what to add, with the steps for each bank, card, app
-            store and mailbox. No password, no account number.
+            Only needed when a bank or mailbox cannot be connected. Four questions about how you pay give a checklist of files to add, with
+            the steps for each one. No password, no account number.
           </p>
         </section>
         <OnboardingQuestions initial={answers ?? EMPTY_ANSWERS} />
@@ -34,7 +34,7 @@ export default async function Start({ searchParams }: { searchParams: Promise<Re
   return (
     <div className="space-y-6">
       <section className="space-y-3">
-        <h1 className="text-2xl font-bold leading-tight">Your checklist</h1>
+        <h1 className="text-2xl font-bold leading-tight">Your import checklist</h1>
         <p className="text-slate-600">
           The more sources you add, the more hidden charges we can name. Items are ticked automatically when the matching file is read.
         </p>
@@ -55,7 +55,7 @@ export default async function Start({ searchParams }: { searchParams: Promise<Re
       </section>
       <Checklist plan={plan} ticked={answers.done} gmail={gmailConfigured()} gdpr={gdprRequest("PayPal", "the opening of my account")} />
       <div className="flex flex-wrap gap-3 text-sm">
-        <Link href="/#upload" className="rounded-xl bg-brand px-4 py-3 font-semibold text-white">Add files</Link>
+        <Link href="/advanced#upload" className="rounded-xl bg-brand px-4 py-3 font-semibold text-white">Add files</Link>
         <Link href="/report" className="rounded-xl border border-slate-300 px-4 py-3 font-semibold">See my report</Link>
         <Link href="/start?edit" className="px-2 py-3 text-slate-600 underline">Change my answers</Link>
       </div>

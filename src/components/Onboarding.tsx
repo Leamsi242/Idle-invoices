@@ -180,7 +180,7 @@ export function Checklist({ plan, ticked, gmail, gdpr }: { plan: PlanItem[]; tic
                 <a href="/api/gmail/start" className="rounded-full bg-brand px-3 py-1 text-sm font-medium text-white">Connect Gmail and scan</a>
               )}
               {i.status !== "done" && (i.action === "upload" || i.action === "paste" || i.action === "gdpr" || (i.action === "gmail" && !gmail)) && (
-                <Link href="/#upload" className="rounded-full bg-brand px-3 py-1 text-sm font-medium text-white">
+                <Link href="/advanced#upload" className="rounded-full bg-brand px-3 py-1 text-sm font-medium text-white">
                   {i.action === "paste" ? "Add a screenshot or paste" : "Upload"}
                 </Link>
               )}

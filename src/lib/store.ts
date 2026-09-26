@@ -7,6 +7,7 @@ import { descriptorFromAnswer, findDescriptor } from "./engine/descriptors";
 import { maskSensitive } from "./mask";
 import { upcomingTrials, type UpcomingTrial } from "./engine/trials";
 import { reconcile } from "./engine/reconcile";
+import { findDoubts, type Connections, type Doubt } from "./doubts";
 import { buildPlan, collectFacts, EMPTY_ANSWERS, sanitizeAnswers, type Answers, type Facts, type PlanItem } from "./onboarding";
 
 /** Data older than this is purged automatically (see the privacy page). */
@@ -293,4 +294,28 @@ export async function getOnboarding(sessionId: string | null): Promise<Onboardin
   const explained = new Set(reconcile(txs).map((m) => m.bankTransactionId));
   const facts = collectFacts(txs, explained);
   return { answers, facts, plan: buildPlan(answers ?? EMPTY_ANSWERS, facts) };
+}
+
+// --- Connections and doubts ---------------------------------------------------------------
+
+/** What the session has connected: banks and mailboxes read through an API, and manual files. */
+export async function getConnections(sessionId: string | null): Promise<Connections> {
+  if (!sessionId) return { banks: [], mailboxes: [], files: 0 };
+  const uploads = await prisma.upload.findMany({ where: { sessionId }, select: { fileName: true }, orderBy: { uploadedAt: "asc" } });
+  const banks = new Set<string>();
+  const mailboxes = new Set<string>();
+  let files = 0;
+  for (const { fileName } of uploads) {
+    const bank = fileName.match(/^Bank connection: (.+?) \(\d+ accounts?\)$/)?.[1];
+    const mail = fileName.match(/^(Gmail|Outlook) scan\b/)?.[1];
+    if (bank) banks.add(bank);
+    else if (mail) mailboxes.add(mail);
+    else files++;
+  }
+  return { banks: [...banks], mailboxes: [...mailboxes], files };
+}
+
+export async function getDoubts(sessionId: string): Promise<Doubt[]> {
+  const [subs, onboarding, connections] = await Promise.all([listSubscriptions(sessionId), getOnboarding(sessionId), getConnections(sessionId)]);
+  return findDoubts(subs, onboarding.facts, connections);
 }

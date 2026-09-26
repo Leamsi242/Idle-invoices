@@ -45,6 +45,21 @@ export async function listMessageIds(token: string, f: Fetch = fetch, max = MAX_
 
 export interface ScanResult { scanned: number; receipts: NormalizedTransaction[] }
 
+/**
+ * Keeps an email only if it reads as a receipt or a cancellation notice (amount 0, evidence that
+ * a subscription stopped), with the same fields as an uploaded .eml. The raw email is wiped.
+ */
+export async function receiptFromRaw(raw: Buffer): Promise<NormalizedTransaction | null> {
+  try {
+    const mail = await simpleParser(raw);
+    const body = mail.text ?? (typeof mail.html === "string" ? mail.html.replace(/<[^>]+>/g, " ") : "");
+    if (!looksLikeReceipt(mail.subject ?? "", body)) return null;
+    return await parseEml(raw);
+  } finally {
+    raw.fill(0);
+  }
+}
+
 /** Downloads each candidate email, keeps the ones that read as receipts, and discards the rest. */
 export async function scanGmail(token: string, f: Fetch = fetch): Promise<ScanResult> {
   const ids = await listMessageIds(token, f);
@@ -53,16 +68,7 @@ export async function scanGmail(token: string, f: Fetch = fetch): Promise<ScanRe
     const batch = await Promise.all(
       ids.slice(i, i + 10).map(async (id) => {
         const msg = await getJson<{ raw: string }>(`${API}/messages/${id}?format=raw`, token, f);
-        const raw = Buffer.from(msg.raw, "base64url");
-        try {
-          const mail = await simpleParser(raw);
-          const body = mail.text ?? (typeof mail.html === "string" ? mail.html.replace(/<[^>]+>/g, " ") : "");
-          if (!looksLikeReceipt(mail.subject ?? "", body)) return null;
-          // Receipts and cancellation notices (amount 0, used as evidence that a subscription stopped).
-          return await parseEml(raw);
-        } finally {
-          raw.fill(0);
-        }
+        return receiptFromRaw(Buffer.from(msg.raw, "base64url"));
       }),
     );
     receipts.push(...batch.filter((t): t is NormalizedTransaction => !!t));

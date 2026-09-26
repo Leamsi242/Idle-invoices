@@ -69,5 +69,8 @@ export function displayLabel(cleaned: string): string {
   const name = (behind ? behind[1] : s).replace(/\s*G\.CO[ /]HELPPAY.*$/, "").replace(/\.(?:COM|NET|C|N)$/, "").trim();
   // "GOOGLE*GOOGLE PLAY APPS G.CO HELPPAY": the app is not named.
   if (/^GOOGLE PLAY(?: AP\w*)?$/.test(name)) return "GOOGLE PLAY";
+  // The intermediary alone: "PAYPAL EUROPE S.A.R.L", "APPLE.COM/BILL ITUNES.COM".
+  if (/^PAYPAL(?: \(?EUROPE\)?\b.*)?$/.test(name)) return "PAYPAL";
+  if (/^APPLE\.COM\/BILL\b|^ITUNES\b/.test(name)) return "APPLE.COM/BILL";
   return name || cleaned;
 }

@@ -12,7 +12,7 @@ export default async function Review() {
   if (subs.length === 0) {
     return (
       <p className="rounded-xl bg-white p-6 text-center">
-        No subscriptions yet. <Link href="/" className="text-brand underline">Upload your statements</Link>.
+        No subscriptions yet. <Link href="/" className="text-brand underline">Connect your bank and your mailbox</Link>.
       </p>
     );
   }

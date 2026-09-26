@@ -41,6 +41,8 @@ export interface DescriptorEntry {
   category?: string;
   cancellationUrl?: string;
   bundle?: string[]; // services included in a bundle
+  /** A known merchant whose charges are purchases, not a subscription (Uber rides, Uber Eats). */
+  notSubscription?: boolean;
 }
 
 export interface RecurringGroup {

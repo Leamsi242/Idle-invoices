@@ -254,7 +254,22 @@
     "pattern": "UBER EATS",
     "serviceName": "Uber Eats",
     "category": "food",
-    "cancellationUrl": "https://www.ubereats.com/"
+    "cancellationUrl": "https://www.ubereats.com/",
+    "notSubscription": true
+  },
+  {
+    "pattern": "UBER TRIP",
+    "serviceName": "Uber rides",
+    "category": "transport",
+    "cancellationUrl": "https://www.uber.com/",
+    "notSubscription": true
+  },
+  {
+    "pattern": "UBER *TRIP",
+    "serviceName": "Uber rides",
+    "category": "transport",
+    "cancellationUrl": "https://www.uber.com/",
+    "notSubscription": true
   },
   {
     "pattern": "DELIVEROO",

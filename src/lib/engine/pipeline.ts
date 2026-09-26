@@ -111,7 +111,12 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
   const withMerchant = charges.map((t) => ({ ...t, merchant: t.merchant ?? inferMerchant(t) }));
 
   const baseKey = (t: NormalizedTransaction) => (t.merchant ? nameKey(t.merchant) : cleanLabel(t.rawLabel));
-  const isKnown = (key: string) => !!findDescriptor([key], userDescriptors);
+  // A known subscription service (not a known shop or ride app).
+  const subscriptionService = (texts: (string | undefined)[]) => {
+    const d = findDescriptor(texts, userDescriptors);
+    return d && !d.notSubscription ? d : undefined;
+  };
+  const isKnown = (key: string) => !!subscriptionService([key]);
   let { groups, leftovers } = detectRecurring(withMerchant, baseKey, isKnown);
 
   // Card processors change the label from one month to the next ("NETFLIX.COM AMSTERDAM",
@@ -121,7 +126,7 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
   const byService = new Map<string, { txs: NormalizedTransaction[]; keys: Map<string, number> }>();
   for (const t of withMerchant) {
     const key = baseKey(t);
-    const service = key && t.amount > 0 ? findDescriptor([key], userDescriptors)?.serviceName : undefined;
+    const service = key && t.amount > 0 ? subscriptionService([key])?.serviceName : undefined;
     if (!service) continue;
     const entry = byService.get(service) ?? { txs: [] as NormalizedTransaction[], keys: new Map<string, number>() };
     entry.txs.push(t);
@@ -179,7 +184,7 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
     }
     // A subscription that started recently has only 2 charges. Accept it early when the
     // service is a known subscription, so a forgotten trial is caught after one renewal.
-    if (left.txs.length === 2 && findDescriptor([first.merchant, cleanLabel(first.rawLabel)], userDescriptors)) {
+    if (left.txs.length === 2 && subscriptionService([first.merchant, cleanLabel(first.rawLabel)])) {
       const reg = regularity(left.txs.map((t) => t.date), 2);
       if (reg && reg.frequency !== "yearly") {
         groups.push(toGroup(left.key, left.txs, reg.frequency, 0, 0.5));
@@ -206,7 +211,7 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
   // Unknown merchants whose amount keeps moving (a bakery, a taxi) are regular spending, not a
   // subscription. Known services are kept: foreign-currency plans move a little every month.
   const steady = (g: RecurringGroup) => {
-    if (g.merchant || findDescriptor([cleanLabel(g.transactions[0].rawLabel)], userDescriptors)) return true;
+    if (g.merchant || subscriptionService([cleanLabel(g.transactions[0].rawLabel)])) return true;
     const amounts = g.transactions.map((t) => t.amount);
     // Price steps (165, 165, 180, 180, 192, 192): every price but the last is paid at least twice.
     const runs: number[] = [];

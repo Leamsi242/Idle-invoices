@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { getSessionId } from "@/lib/session";
-import { getOnboarding, getReport, type StoredSubscription } from "@/lib/store";
+import { getDoubts, getReport, type StoredSubscription } from "@/lib/store";
+import { Doubts } from "@/components/Doubts";
+import { gmailConfigured } from "@/lib/gmail";
+import { outlookConfigured } from "@/lib/outlook";
+import { bankingConfigured } from "@/lib/banking";
 import { money, FREQUENCY_LABEL } from "@/lib/format";
 import { DeleteEverythingButton } from "@/components/Questions";
 import { ReminderButton } from "@/components/Reminders";
@@ -79,14 +83,11 @@ function Section({ title, subs, note }: { title: string; subs: StoredSubscriptio
 
 export default async function Report() {
   const sessionId = await getSessionId();
-  const [report, onboarding] = sessionId ? await Promise.all([getReport(sessionId), getOnboarding(sessionId)]) : [null, null];
-  // Sources the data points to (unnamed PayPal payments, an Amex card) but that are not added yet.
-  const missing = onboarding?.plan.filter((i) => i.status === "todo") ?? [];
+  const [report, doubts] = sessionId ? await Promise.all([getReport(sessionId), getDoubts(sessionId)]) : [null, []];
   if (!report || report.uploads === 0) {
     return (
       <p className="rounded-xl bg-white p-6 text-center">
-        Nothing to report yet. <Link href="/" className="text-brand underline">Upload your statements</Link>, or{" "}
-        <Link href="/start" className="text-brand underline">get a checklist of what to add</Link>.
+        Nothing to report yet. <Link href="/" className="text-brand underline">Connect your bank and your mailbox</Link> to start.
       </p>
     );
   }
@@ -96,12 +97,7 @@ export default async function Report() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Your forgotten subscriptions report</h1>
-      {missing.length > 0 && (
-        <Link href="/start" className="block rounded-xl bg-amber-50 p-4 text-sm text-amber-900 shadow-sm">
-          <strong>This report may be incomplete.</strong> Still missing: {missing.map((i) => i.title.split(":")[0]).join(", ")}.
-          {missing.filter((i) => i.detected && i.alert).map((i) => ` ${i.alert}`).join("")} Open your checklist to add them.
-        </Link>
-      )}
+      <Doubts doubts={doubts} gmail={gmailConfigured()} outlook={outlookConfigured()} banking={bankingConfigured()} />
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl bg-white p-4 shadow-sm">
           <p className="text-sm text-slate-600">Yearly spend on subscriptions</p>

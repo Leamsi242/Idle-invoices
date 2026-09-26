@@ -10,8 +10,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0f766e" };
 
 const nav = [
-  { href: "/start", label: "Start" },
-  { href: "/", label: "Upload" },
+  { href: "/", label: "Connect" },
   { href: "/review", label: "Review" },
   { href: "/report", label: "Report" },
   { href: "/trials", label: "Trials" },
@@ -34,7 +33,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </header>
         <main className="mx-auto max-w-2xl px-4 py-6">{children}</main>
         <footer className="mx-auto max-w-2xl px-4 pb-8 text-xs text-slate-500">
-          Your files are deleted right after reading. <Link href="/privacy" className="underline">How we handle your data</Link>.
+          Read-only access, closed right after reading. <Link href="/privacy" className="underline">How we handle your data</Link> ·{" "}
+          <Link href="/advanced" className="underline">Advanced import</Link>
         </footer>
       </body>
     </html>

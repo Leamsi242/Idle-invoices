@@ -2,7 +2,7 @@
 
 "You're paying for things you forgot you have."
 
-Upload bank statements, a PayPal export, receipts and app store lists. The app finds recurring charges, unmasks the ones hidden behind PayPal, Apple, Google, Stripe, Paddle or Klarna, flags the ones you probably forgot, and asks "Still using this?" to work out what you could stop paying for. The full product spec is in [SPEC.md](SPEC.md).
+Connect your bank and your mailbox, read-only. The app finds recurring charges, unmasks the ones hidden behind PayPal, Apple, Google, Stripe, Paddle or Klarna, flags the ones you probably forgot, and asks "Still using this?" to work out what you could stop paying for. It only asks for your help where the data is not enough ("Which service is the €9.99 a week paid through Google Play?"). Importing files (CSV, PDF, receipts, app store lists) is still possible under "Advanced". The original product spec is in [SPEC.md](SPEC.md).
 
 ## Run it locally
 
@@ -21,7 +21,7 @@ Then upload the files in [`samples/`](samples) to see a full report. Optional: s
 ## Run the tests
 
 ```bash
-npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, onboarding (122 tests)
+npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, bank and mailbox connections, doubts (131 tests)
 npm run typecheck
 ```
 
@@ -69,9 +69,26 @@ Uploaded files
 - **No accounts in version 1.** Each browser gets a random session id in an httpOnly cookie; every row carries it.
 - The cancellation links in the descriptor map are starting points (account or help pages). Check them before relying on them.
 
-## Onboarding
+## User journey
 
-`/start` asks four questions (bank accounts and cards, payment apps and stores, mailboxes, other channels such as operator bills) and turns the answers into a checklist, with the steps to get each export: CSV or PDF statements for each bank, Amex PDF statements, PayPal's activity download (and a GDPR access request when PayPal only offers a few months), the App Store and Google Play subscription lists, the Gmail scan or `.eml` files for other mailboxes, and operator bills to check by hand.
+1. **Connect your bank** (`/`): search the bank, sign in on the bank's own page (PSD2 strong authentication), come back. The app reads up to 24 months of transactions of every account the user shared, once, then deletes the consent (`lib/banking`, `api/bank/*`). Cards with their own statement (American Express) are connected the same way.
+2. **Connect your mailbox**: Gmail or Outlook / Hotmail, one-time read-only scan of receipts (`lib/gmail.ts`, `lib/outlook.ts`).
+3. **Report**, with "We need your help" on top (`lib/doubts.ts`): only the points the data could not settle, each with one small action. Unnamed PayPal, Google Play or Apple payments without a mailbox connected ask for the mailbox (one action answers many); a bank paying an American Express card asks to connect the card; a recurring charge still unnamed asks for its name, or a screenshot of the store's subscription list.
+4. **Advanced** (`/advanced`, `/start`): manual import of files and the import checklist, for testing, for banks the provider does not cover, or for a PayPal export.
+
+### Bank connection provider
+
+The connection goes through [Enable Banking](https://enablebanking.com), a licensed PSD2 account information provider with self-serve sign-up and coverage of French banks. (GoCardless Bank Account Data, formerly Nordigen, no longer accepts new customers.) Its "restricted production" mode is enough for the test phase: it connects real accounts that you whitelist. Other providers (Powens, Bridge, Tink) can be added behind the same `BankProvider` interface (`lib/banking/types.ts`).
+
+Setup: create an application in the Enable Banking control panel, register the redirect URL `https://<your-domain>/api/bank/callback`, and set `ENABLE_BANKING_APP_ID` and `ENABLE_BANKING_PRIVATE_KEY` (the application's PEM key). Requests are authenticated with a one-hour JWT signed with that key (RS256). Without it, `BANK_DEMO=1` shows a made-up "Demo bank (test data)" to try the whole journey; it is on by default in development.
+
+### Outlook setup
+
+Register an application in Microsoft Entra (supported account types: any organizational directory and personal Microsoft accounts), add the delegated permission `Mail.Read`, create a client secret, register the redirect URI `https://<your-domain>/api/outlook/callback`, and set `MICROSOFT_CLIENT_ID` and `MICROSOFT_CLIENT_SECRET`. No `offline_access` is requested, so there is no refresh token; the access token (about an hour) lives only during the scan, since Microsoft has no endpoint to revoke a single access token.
+
+## Import checklist (Advanced)
+
+For manual imports, `/start` asks four questions (bank accounts and cards, payment apps and stores, mailboxes, other channels such as operator bills) and turns the answers into a checklist, with the steps to get each export: CSV or PDF statements for each bank, Amex PDF statements, PayPal's activity download (and a GDPR access request when PayPal only offers a few months), the App Store and Google Play subscription lists, the Gmail scan or `.eml` files for other mailboxes, and operator bills to check by hand.
 
 The checklist also reads what was uploaded (`lib/onboarding.ts`):
 
