@@ -288,6 +288,12 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
   return { subscriptions: flagged.sort((a, b) => b.yearlyCost - a.yearlyCost), matches };
 }
 
+/** Two real words or more and no reference number: the user would learn nothing by being asked. */
+export function readableLabel(label: string): boolean {
+  if (/\d/.test(label)) return false;
+  return label.split(/\s+/).filter((w) => /^[A-ZÀ-Ÿ'-]{4,}$/i.test(w)).length >= 2;
+}
+
 export function nextChargeDate(lastSeen: string, frequency: RecurringGroup["frequency"]): string {
   if (frequency === "weekly") return addDays(lastSeen, 7);
   return addMonths(lastSeen, { monthly: 1, quarterly: 3, yearly: 12 }[frequency]);
@@ -321,8 +327,9 @@ function label(
     category: descriptor?.category,
     cancellationUrl: descriptor?.cancellationUrl,
     bundle: descriptor?.bundle,
-    // Unknown when neither the map nor reconciliation could name it.
-    needsLabel: !descriptor && (!g.merchant || hidden),
+    // Unknown when neither the map nor reconciliation could name it, and the label itself is cryptic:
+    // "ASSURANCE ACCIDENTS DE LA VIE" already says what it is, "PRLV 4821 FR77ZZZ" does not.
+    needsLabel: !descriptor && (hidden || (!g.merchant && !readableLabel(displayLabel(cleaned)))),
     yearlyCost: g.currentAmount * PER_YEAR[g.frequency],
     forgottenReasons: [],
     status: "active",

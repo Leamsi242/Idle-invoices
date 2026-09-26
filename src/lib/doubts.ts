@@ -32,7 +32,8 @@ const MAX_NAME_QUESTIONS = 5;
 export function findDoubts(subs: DoubtSub[], facts: Facts, connections: Connections, locale: Locale = "en"): Doubt[] {
   const t = messages(locale).doubts;
   const doubts: Doubt[] = [];
-  const hidden = facts.intermediaries.paypal.unexplained + facts.intermediaries.google.unexplained + facts.intermediaries.apple.unexplained;
+  // Count the subscriptions behind PayPal or a store, not every payment: one-off purchases don't matter here.
+  const hidden = subs.filter((s) => s.needsLabel && s.status !== "cancelled" && ["paypal", "google", "apple"].includes(s.channel)).length;
   const shortHistory = !!facts.bankFrom && !!facts.bankTo && daysBetween(facts.bankFrom, facts.bankTo) < SHORT_HISTORY_DAYS;
   // One connection answers many questions at once: ask for it first.
   if (connections.mailboxes.length === 0 && (hidden > 0 || shortHistory)) {
@@ -43,7 +44,8 @@ export function findDoubts(subs: DoubtSub[], facts: Facts, connections: Connecti
       detail: hidden > 0 ? `${t.mailWhy}${shortHistory ? ` ${t.mailYearly}` : ""} ${t.mailSafe}` : `${t.mailYearly} ${t.connectMailbox} ${t.mailSafe}`,
     });
   }
-  if (facts.amexSettlements > 0 && !facts.amexStatement) {
+  const amexConnected = connections.banks.some((b) => /american express|\bamex\b/i.test(b));
+  if (facts.amexSettlements > 0 && !facts.amexStatement && !amexConnected) {
     doubts.push({ kind: "card", id: "card:amex", bank: "American Express", title: t.cardTitle, detail: t.cardDetail });
   }
   const unnamed = subs.filter((s) => s.needsLabel && s.status !== "cancelled").slice(0, MAX_NAME_QUESTIONS);

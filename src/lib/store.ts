@@ -347,6 +347,12 @@ export interface WatchInfo { id: string; institution: string; validUntil: string
 
 export async function saveWatch(sessionId: string, w: { provider: string; institution: string; access: BankAccess; locale: Locale; days: number }) {
   const now = new Date();
+  // Connecting the same bank again replaces its watch: one access per bank, the older one closed.
+  const previous = (await prisma.bankLink.findMany({ where: { sessionId } })).filter((l) => decrypt(l.institution) === w.institution);
+  for (const link of previous) {
+    await closeLink(link);
+    await prisma.bankLink.delete({ where: { id: link.id } });
+  }
   return prisma.bankLink.create({
     data: {
       sessionId,

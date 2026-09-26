@@ -65,6 +65,27 @@ export function sameName(a: string, b: string): boolean {
 // Cities that card payments put before the merchant ("LUXEMBOURG PAYPAL *JOTFORM", "DUBLIN GOOGLE YOUTUBE").
 const BILLING_CITIES = /^(?:LUXEMBOURG|DUBLIN|CORK|AMSTERDAM|LONDON|LONDRES|PARIS|BORDEAUX CEDE\w*|BERLIN|BARCELONA|MADRID|STOCKHOLM|SAN FRANCISCO|INTERNET|WWW)\s+/;
 
+/**
+ * Banks often repeat the payee in the remittance text: "ASSURANCE ACCIDENTS DE LA VIE P ASSURANCE
+ * ACCIDENTS DE LA VIE" gives "ASSURANCE ACCIDENTS DE LA VIE" (up to two short words in between).
+ */
+export function collapseRepeat(label: string): string {
+  const w = label.split(" ");
+  for (let len = Math.floor(w.length / 2); len >= 2; len--) {
+    for (let i = 0; i + 2 * len <= w.length; i++) {
+      const phrase = w.slice(i, i + len).join(" ");
+      for (let gap = 0; gap <= 2 && i + 2 * len + gap <= w.length; gap++) {
+        const between = w.slice(i + len, i + len + gap);
+        if (between.some((x) => x.length > 3)) break;
+        if (w.slice(i + len + gap, i + 2 * len + gap).join(" ") === phrase) {
+          return collapseRepeat([...w.slice(0, i + len), ...w.slice(i + 2 * len + gap)].join(" "));
+        }
+      }
+    }
+  }
+  return label;
+}
+
 /** A readable name for an unknown label: "LUXEMBOURG PAYPAL *JOTFORM" gives "JOTFORM". */
 export function displayLabel(cleaned: string): string {
   const s = cleaned.replace(BILLING_CITIES, "").replace(/^PAIEMENTS?\s+/, "");
@@ -75,5 +96,5 @@ export function displayLabel(cleaned: string): string {
   // The intermediary alone: "PAYPAL EUROPE S.A.R.L", "APPLE.COM/BILL ITUNES.COM".
   if (/^PAYPAL(?: \(?EUROPE\)?\b.*)?$/.test(name)) return "PAYPAL";
   if (/^APPLE\.COM\/BILL\b|^ITUNES\b/.test(name)) return "APPLE.COM/BILL";
-  return name || cleaned;
+  return collapseRepeat(name || cleaned);
 }

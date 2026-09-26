@@ -86,3 +86,20 @@ describe("labelling and flags on the samples", () => {
     expect(subscriptions[0].status).toBe("active");
   });
 });
+
+describe("readable labels", () => {
+  it("collapses a payee repeated in the remittance text", async () => {
+    const { collapseRepeat, displayLabel, cleanLabel } = await import("@/lib/engine/labels");
+    expect(collapseRepeat("ASSURANCE ACCIDENTS DE LA VIE P ASSURANCE ACCIDENTS DE LA VIE")).toBe("ASSURANCE ACCIDENTS DE LA VIE");
+    expect(displayLabel(cleanLabel("PRLV SEPA ASSURANCE ACCIDENTS DE LA VIE P ASSURANCE ACCIDENTS DE LA VIE"))).not.toMatch(/VIE .*VIE/);
+    expect(collapseRepeat("BANQUE POPULAIRE DE LA LOIRE")).toBe("BANQUE POPULAIRE DE LA LOIRE");
+  });
+
+  it("does not ask the user to name a label that is already readable", () => {
+    const { subscriptions } = analyze([...monthlySeries("2026-01-05", 8, 11, "PRLV SEPA ASSURANCE ACCIDENTS DE LA VIE"), ...monthlySeries("2026-01-07", 8, 7.5, "CB SP QX7 SRL")]);
+    const insurance = subscriptions.find((s) => /ACCIDENTS/i.test(s.serviceName))!;
+    const cryptic = subscriptions.find((s) => s.currentAmount === 7.5)!;
+    expect(insurance.needsLabel).toBe(false);
+    expect(cryptic.needsLabel).toBe(true);
+  });
+});

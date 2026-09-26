@@ -44,6 +44,8 @@ export interface BankRead {
   transactions: NormalizedTransaction[];
   /** When the access is kept to watch the account: what is needed to read it again. */
   access?: BankAccess;
+  /** Lines the bank sent and why some were left out, to explain an empty read. */
+  stats?: { raw: number; pending: number; skipped: number; fields: string[] };
 }
 
 /** A kept access: the provider's session and the accounts the user shared. */

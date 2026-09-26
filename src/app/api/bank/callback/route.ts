@@ -28,7 +28,12 @@ export async function GET(req: Request) {
   try {
     const psu = psuHeaders(req);
     const today = new Date().toISOString().slice(0, 10);
-    const { accounts, transactions, access } = await finishConnection(pending.institution, code, today, psu, pending.watch);
+    const { accounts, transactions, access, stats } = await finishConnection(pending.institution, code, today, psu, pending.watch);
+    if (transactions.length === 0) {
+      // Keep nothing, so the bank is not shown as read. The line shapes help support a new bank.
+      console.warn("Bank read returned nothing:", JSON.stringify({ bank: pending.institution.name, accounts, ...stats }));
+      return back(`bank=empty&accounts=${accounts}&pending=${stats?.pending ?? 0}`);
+    }
     await saveUpload(sessionId, `Bank connection: ${pending.institution.name} (${accounts} account${accounts === 1 ? "" : "s"})`, "bank", transactions);
     // The user asked to be watched: keep the access (encrypted) for the nightly reads.
     if (access) await saveWatch(sessionId, { provider: providerOf(pending.institution), institution: pending.institution.name, access, locale: await getLocale(), days: WATCH_DAYS });

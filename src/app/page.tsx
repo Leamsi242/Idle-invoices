@@ -15,6 +15,7 @@ export const dynamic = "force-dynamic";
 function message(q: Record<string, string | undefined>, m: Messages): string | null {
   const h = m.home;
   if (q.bank === "ok") return q.watch === "1" ? h.bankOkWatch(q.count ?? "0") : h.bankOk(q.count ?? "0");
+  if (q.bank === "empty") return q.accounts === "0" ? h.bankEmptyNoAccount : h.bankEmptyNoLines(Number(q.pending) || 0);
   if (q.gmail === "ok" || q.mail === "ok") return h.mailOk(q.scanned ?? "0", q.receipts ?? "0");
   if (q.bank === "error" && q.reason) return `${h.messages.bank.error} ${h.bankErrorCode(q.reason.replace(/[^A-Z_]/g, "").slice(0, 60))}`;
   for (const key of ["bank", "gmail", "mail"]) if (q[key] && h.messages[key][q[key]!]) return h.messages[key][q[key]!];
@@ -44,7 +45,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const gmail = gmailConfigured();
   const outlook = outlookConfigured();
   const anything = c.banks.length + c.mailboxes.length + c.files > 0;
-  const pickBank = q.bank && q.bank !== "ok" && !h.messages.bank[q.bank] ? q.bank : "";
+  const pickBank = q.bank && q.bank !== "ok" && q.bank !== "empty" && !h.messages.bank[q.bank] ? q.bank : "";
 
   return (
     <div className="space-y-5">

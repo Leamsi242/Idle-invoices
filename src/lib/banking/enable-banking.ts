@@ -16,6 +16,7 @@ export class EnableBankingError extends Error {
   }
 }
 type Fetch = typeof fetch;
+interface ReadStats { raw: number; pending: number; skipped: number; fields: Set<string> }
 
 export function enableBankingConfigured(): boolean {
   return !!(process.env.ENABLE_BANKING_APP_ID && process.env.ENABLE_BANKING_PRIVATE_KEY);
@@ -42,6 +43,8 @@ export interface EbTransaction {
   creditor?: { name?: string } | null;
   debtor?: { name?: string } | null;
   remittance_information?: string[] | null;
+  note?: string | null;
+  bank_transaction_code?: { description?: string | null } | null;
 }
 
 /** Card lines keep the merchant in the remittance text ("CB NETFLIX.COM 12/07"); transfers name the creditor. */
@@ -51,7 +54,8 @@ export function toTransaction(t: EbTransaction): NormalizedTransaction | null {
   if (!date || !Number.isFinite(amount) || amount === 0 || t.status === "PDNG") return null;
   const debit = t.credit_debit_indicator === "DBIT";
   const counterpart = (debit ? t.creditor?.name : t.debtor?.name) ?? "";
-  const text = (t.remittance_information ?? []).join(" ").trim();
+  // Card issuers (American Express) may leave the remittance empty and name the merchant elsewhere.
+  const text = (t.remittance_information ?? []).join(" ").trim() || t.note?.trim() || t.bank_transaction_code?.description?.trim() || "";
   const label = text && counterpart && !text.toUpperCase().includes(counterpart.toUpperCase()) ? `${counterpart} ${text}` : text || counterpart;
   if (!label) return null;
   return makeTx({ date: date.slice(0, 10), amount: debit ? amount : -amount, currency: t.transaction_amount.currency || "EUR", rawLabel: label, source: "bank" });
@@ -75,7 +79,7 @@ export class EnableBanking implements BankProvider {
   }
 
   /** Every transaction of one account from `dateFrom`, page by page. */
-  private async readAccount(uid: string, dateFrom: string, psu?: PsuContext): Promise<NormalizedTransaction[]> {
+  private async readAccount(uid: string, dateFrom: string, psu?: PsuContext, stats?: ReadStats): Promise<NormalizedTransaction[]> {
     const out: NormalizedTransaction[] = [];
     let continuation: string | undefined;
     let pages = 0;
@@ -85,7 +89,14 @@ export class EnableBanking implements BankProvider {
       for (const t of page.transactions ?? []) {
         const tx = toTransaction(t);
         if (tx) out.push(tx);
+        else if (stats) {
+          if (t.status === "PDNG") stats.pending++;
+          else stats.skipped++;
+          // Field names only, never values: enough to see how an unfamiliar bank shapes its lines.
+          for (const k of Object.keys(t)) if (t[k as keyof EbTransaction] != null) stats.fields.add(k);
+        }
       }
+      if (stats) stats.raw += page.transactions?.length ?? 0;
       continuation = page.continuation_key ?? undefined;
     } while (continuation && ++pages < 200);
     return out;
@@ -108,13 +119,13 @@ export class EnableBanking implements BankProvider {
   }
 
   /** Every account from the first date the bank accepts (oldest first in `since`). */
-  private async readAccounts(uids: string[], since: string[], psu?: PsuContext): Promise<NormalizedTransaction[]> {
+  private async readAccounts(uids: string[], since: string[], psu?: PsuContext, stats?: ReadStats): Promise<NormalizedTransaction[]> {
     const transactions: NormalizedTransaction[] = [];
     for (const uid of uids) {
       // Ask for the longest history first; a bank that shares less (90 days) refuses the date.
       for (const [i, dateFrom] of since.entries()) {
         try {
-          transactions.push(...(await this.readAccount(uid, dateFrom, psu)));
+          transactions.push(...(await this.readAccount(uid, dateFrom, psu, stats)));
           break;
         } catch (e) {
           const tooOld = e instanceof EnableBankingError && (e.status === 400 || e.status === 422);
@@ -130,9 +141,16 @@ export class EnableBanking implements BankProvider {
     const uids = session.accounts.map((a) => a.uid);
     let kept = false;
     try {
-      const transactions = await this.readAccounts(uids, since, psu);
-      kept = keep;
-      return { accounts: uids.length, transactions, access: keep ? { session: session.session_id, accounts: uids } : undefined };
+      const stats: ReadStats = { raw: 0, pending: 0, skipped: 0, fields: new Set() };
+      const transactions = await this.readAccounts(uids, since, psu, stats);
+      // Nothing to watch on a connection that shared nothing.
+      kept = keep && transactions.length > 0;
+      return {
+        accounts: uids.length,
+        transactions,
+        access: kept ? { session: session.session_id, accounts: uids } : undefined,
+        stats: { raw: stats.raw, pending: stats.pending, skipped: stats.skipped, fields: [...stats.fields].sort() },
+      };
     } finally {
       // Close the access as soon as it has been read, unless the user asked to be watched.
       if (!kept) await this.close(session.session_id);

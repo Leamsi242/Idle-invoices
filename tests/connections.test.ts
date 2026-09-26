@@ -35,6 +35,8 @@ describe("Enable Banking", () => {
     expect(toTransaction(tx({ credit_debit_indicator: "CRDT", remittance_information: ["SALAIRE"], debtor: { name: "ACME SAS" } }))).toMatchObject({ amount: -15.99, rawLabel: "ACME SAS SALAIRE" });
     expect(toTransaction(tx({ creditor: { name: "PAYPAL EUROPE S.A.R.L" }, remittance_information: ["1045987736512 PAYPAL"] }))!.rawLabel).toBe("PAYPAL EUROPE S.A.R.L ••••6512 PAYPAL"); // long references are masked
     expect(toTransaction(tx({ status: "PDNG" }))).toBeNull();
+    // American Express leaves the remittance empty and names the merchant in the note.
+    expect(toTransaction(tx({ remittance_information: null, note: "NETFLIX.COM" }))!.rawLabel).toBe("NETFLIX.COM");
   });
 
   it("reads every account page by page, then closes the access", async () => {
@@ -57,6 +59,22 @@ describe("Enable Banking", () => {
     expect(calls[1].url).toContain("date_from=2024-09-26");
     expect(calls[2].url).toContain("continuation_key=k2");
     expect(calls.at(-1)).toMatchObject({ method: "DELETE", url: "https://api.enablebanking.com/sessions/s1" });
+  });
+
+  it("keeps no access when the bank shared nothing, and says why", async () => {
+    const methods: string[] = [];
+    const f = (async (input: string | URL | Request, init?: RequestInit) => {
+      methods.push(init?.method ?? "GET");
+      if (String(input).endsWith("/sessions")) return json({ session_id: "s3", accounts: [{ uid: "a1" }] });
+      if (init?.method === "DELETE") return json({}, 204);
+      return json({ transactions: [tx({ status: "PDNG" }), tx({ remittance_information: null })] });
+    }) as typeof fetch;
+    const read = await new EnableBanking("app", privateKey, f).finish({ code: "x", since: ["2025-01-01"], keep: true });
+    expect(read.transactions).toEqual([]);
+    expect(read.access).toBeUndefined();
+    expect(read.stats).toMatchObject({ raw: 2, pending: 1, skipped: 1 });
+    expect(read.stats!.fields).toContain("transaction_amount");
+    expect(methods.at(-1)).toBe("DELETE");
   });
 
   it("closes the access even when a read fails", async () => {
@@ -107,6 +125,12 @@ describe("demo bank, then the doubts left for the user", () => {
     const google = doubts.find((d) => d.kind === "name" && d.store === "google");
     expect(google?.title).toBe("Which service is the €9.99 a week paid through Google Play?");
     expect(names).not.toContain("Uber One");
+
+    // Connecting the card itself answers the card question.
+    expect(findDoubts(subscriptions, facts, { banks: ["Demo bank (test data)", "American Express"], mailboxes: [], files: 0 }).some((d) => d.kind === "card")).toBe(false);
+    // The mail question counts subscriptions, not every payment.
+    const hiddenSubs = subscriptions.filter((s) => s.needsLabel && s.status !== "cancelled" && ["paypal", "google", "apple"].includes(s.channel)).length;
+    expect(doubts[0].title).toMatch(new RegExp(`^${hiddenSubs} subscription`));
 
     // Once the mailbox is connected, the mail question goes away.
     expect(findDoubts(subscriptions, facts, { banks: ["Demo bank (test data)"], mailboxes: ["Gmail"], files: 0 }).some((d) => d.kind === "mail")).toBe(false);
