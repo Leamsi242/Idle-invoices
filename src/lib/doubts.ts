@@ -44,12 +44,13 @@ export function findDoubts(subs: DoubtSub[], facts: Facts, connections: Connecti
   const askPaypal = !!opts.canConnect && viaPaypal > 0 && !paypalRead;
   if (askPaypal) doubts.push({ kind: "paypal", id: "connect:paypal", bank: "PayPal", title: t.paypalTitle(viaPaypal), detail: t.paypalDetail });
   // The mailbox answers the rest (and PayPal too, when PayPal is not suggested).
-  const hidden = viaStores + (askPaypal ? 0 : viaPaypal);
+  const paypalForMail = askPaypal ? 0 : viaPaypal;
+  const hidden = viaStores + paypalForMail;
   if (connections.mailboxes.length === 0 && (hidden > 0 || shortHistory)) {
     doubts.push({
       kind: "mail",
       id: "mail",
-      title: hidden > 0 ? (askPaypal ? t.mailTitleStores(hidden) : t.mailTitleHidden(hidden)) : t.mailTitleShort,
+      title: hidden > 0 ? (paypalForMail > 0 ? t.mailTitleHidden(hidden) : t.mailTitleStores(hidden)) : t.mailTitleShort,
       detail: hidden > 0 ? `${t.mailWhy}${shortHistory ? ` ${t.mailYearly}` : ""} ${t.mailSafe}` : `${t.mailYearly} ${t.connectMailbox} ${t.mailSafe}`,
     });
   }

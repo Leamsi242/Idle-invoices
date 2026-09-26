@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { generateKeyPairSync, randomUUID } from "node:crypto";
 import { EnableBanking, toPaypalTransaction, type EbTransaction } from "@/lib/banking/enable-banking";
 import { demoPaypalTransactions, demoTransactions } from "@/lib/banking/demo";
@@ -131,6 +131,7 @@ describe("PayPal connection", () => {
   });
 
   it("is listed apart from the banks, and read again every night as PayPal", async () => {
+    vi.stubEnv("BANK_DEMO", "1");
     const session = randomUUID();
     const today = new Date().toISOString().slice(0, 10);
     await saveUpload(session, "Bank connection: Demo bank (test data) (1 account)", "bank", demoTransactions(today).transactions);
@@ -158,5 +159,32 @@ describe("PayPal export and PayPal connection together", () => {
     const [spotify] = analyze([...fromCsv, ...fromApi], { today: "2026-08-20" }).subscriptions;
     expect(spotify.transactions).toHaveLength(3);
     expect(spotify.totalPaid).toBeCloseTo(38.97);
+  });
+});
+
+describe("PayPal review fixes", () => {
+  const bankLine = (date: string, amount: number, rawLabel: string) => ({ id: `${rawLabel}-${date}`, date, amount, currency: "EUR", rawLabel, source: "bank" as const });
+
+  it("still asks which app when PayPal paid a store that its line does not name", () => {
+    const months = ["2025-10", "2025-11", "2025-12", ...Array.from({ length: 9 }, (_, i) => `2026-0${i + 1}`)];
+    const bank = months.map((m) => bankLine(`${m}-05`, 4.99, "PRLV SEPA PAYPAL EUROPE S.A.R.L"));
+    const paypal = months.slice(-3).map((m) => toPaypalTransaction(line({ transaction_date: `${m}-03`, transaction_amount: { amount: "4.99", currency: "EUR" }, creditor: { name: "Google Payment Ireland Limited" } }))!);
+    const [sub] = analyze([...bank, ...paypal], { today: "2026-09-10" }).subscriptions;
+    expect(sub).toMatchObject({ needsLabel: true, channel: "google" });
+    const doubts = findDoubts([sub], collectFacts([...bank, ...paypal], new Set()), { banks: ["B"], mailboxes: [], files: 0, wallets: ["PayPal"] }, "en", { canConnect: true });
+    expect(doubts.find((d) => d.kind === "name")).toMatchObject({ store: "google" });
+  });
+
+  it("keeps the 4X rule for bank lines older than the PayPal data", () => {
+    const plan = ["2025-01-12", "2025-02-12", "2025-03-12"].map((d) => bankLine(d, 62.5, "PRLV SEPA PAYPAL (EUROPE) S.A R.L. ET CIE"));
+    const vinted = toPaypalTransaction(line({ transaction_date: "2026-09-01", creditor: { name: "Vinted UAB" } }))!;
+    expect(analyze(plan, { today: "2026-09-10" }).subscriptions).toEqual([]);
+    expect(analyze([...plan, vinted], { today: "2026-09-10" }).subscriptions).toEqual([]);
+  });
+
+  it("accepts a monthly PayPal payment seen twice when PayPal is all there is", () => {
+    const rows = ["2026-07-12", "2026-08-12"].map((d) => toPaypalTransaction(line({ transaction_date: d, transaction_amount: { amount: "7.49", currency: "EUR" }, creditor: { name: "Kagi Inc" } }))!);
+    const subs = analyze(rows, { today: "2026-08-20" }).subscriptions;
+    expect(subs.map((s) => [s.serviceName, s.frequency])).toEqual([["Kagi Inc", "monthly"]]);
   });
 });

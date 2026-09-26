@@ -40,6 +40,18 @@ export function isExcludedLabel(cleaned: string, opts: { paypalExport?: boolean 
 
 export interface Intermediary { id: string; pattern: RegExp; sources: Source[] }
 
+/**
+ * Payees that collect for someone else: a payment to "Google Payment Ireland" or "Paddle.com" does
+ * not say which app it paid for, unless an item title named it (the PayPal export has one, the
+ * PayPal connection often does not).
+ */
+export function storeOf(name: string): "google" | "apple" | "processor" | undefined {
+  if (/^google (?:payment|play|commerce)\b/i.test(name)) return "google";
+  if (/^(?:apple (?:services|distribution)|itunes)\b/i.test(name)) return "apple";
+  if (/^(?:paddle|fastspring|stripe)\b/i.test(name)) return "processor";
+  return undefined;
+}
+
 /** Payment intermediaries that hide the real merchant (SPEC.md, "Reconcile intermediaries"). */
 export const INTERMEDIARIES: Intermediary[] = [
   { id: "paypal", pattern: /PAYPAL/, sources: ["paypal", "email"] },

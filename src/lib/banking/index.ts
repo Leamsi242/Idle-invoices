@@ -15,7 +15,8 @@ export const kindOf = (institution: Institution | string): AccountKind => (isPay
 /** History asked for, longest first: many banks (Crédit Mutuel) share 90 days only. */
 export const HISTORY_DAYS = [730, 395, 89];
 /** How long a watched access stays open (most banks allow 90 to 180 days under PSD2). */
-export const WATCH_DAYS = 90;
+export { WATCH_DAYS } from "./cookie";
+import { WATCH_DAYS } from "./cookie";
 
 export function bankingConfigured(): boolean {
   return enableBankingConfigured() || demoEnabled();
@@ -45,6 +46,7 @@ export const providerOf = (institution: Institution) => (isDemo(institution) ? "
 
 export async function finishConnection(institution: Institution, code: string, today: string, psu?: PsuContext, watch = false): Promise<BankRead> {
   if (isDemo(institution)) {
+    if (!demoEnabled()) throw new Error("Demo bank disabled");
     const read = isPaypal(institution) ? demoPaypalTransactions(today) : demoTransactions(today);
     return { ...read, access: watch ? { session: "demo", accounts: ["demo"] } : undefined };
   }
@@ -54,6 +56,7 @@ export async function finishConnection(institution: Institution, code: string, t
 
 /** The nightly read of a watched access, from `since` (a few days before the last read). */
 export async function readAgain(provider: string, access: BankAccess, since: string, today: string, institution: string): Promise<NormalizedTransaction[]> {
+  if (provider === "demo" && !demoEnabled()) throw new Error("Demo bank disabled");
   if (provider === "demo") return isPaypal(institution) ? demoPaypalTransactions(today).transactions : demoRefresh(today);
   return new EnableBanking().read(access, since, kindOf(institution));
 }

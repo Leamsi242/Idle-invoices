@@ -15,9 +15,14 @@ export const dynamic = "force-dynamic";
 
 function message(q: Record<string, string | undefined>, m: Messages): string | null {
   const h = m.home;
-  if (q.bank === "ok") return q.watch === "1" ? h.bankOkWatch(q.count ?? "0") : h.bankOk(q.count ?? "0");
+  const paypal = q.via === "paypal";
+  const days = Number(q.days) > 0 ? Number(q.days) : 90;
+  if (q.bank === "ok" && paypal) return q.watch === "1" ? h.paypalOkWatch(q.count ?? "0", days) : h.paypalOk(q.count ?? "0");
+  if (q.bank === "ok") return q.watch === "1" ? h.bankOkWatch(q.count ?? "0", days) : h.bankOk(q.count ?? "0");
+  if (q.bank === "empty" && paypal) return q.accounts === "0" ? h.paypalEmptyNoAccount : h.paypalEmptyNoLines;
   if (q.bank === "empty") return q.accounts === "0" ? h.bankEmptyNoAccount : h.bankEmptyNoLines(Number(q.pending) || 0);
   if (q.gmail === "ok" || q.mail === "ok") return h.mailOk(q.scanned ?? "0", q.receipts ?? "0");
+  if (q.gmail === "cut") return h.mailCut(q.scanned ?? "0", q.receipts);
   if (q.bank === "error" && q.reason) return `${h.messages.bank.error} ${h.bankErrorCode(q.reason.replace(/[^A-Z_]/g, "").slice(0, 60))}`;
   for (const key of ["bank", "gmail", "mail"]) if (q[key] && h.messages[key][q[key]!]) return h.messages[key][q[key]!];
   return null;
@@ -72,7 +77,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
               <div className="mt-3"><BankPicker /></div>
             </details>
           ) : (
-            <div id="bank" className="scroll-mt-4"><BankPicker initialQuery={pickBank} /></div>
+            <div id="bank" className="scroll-mt-4"><BankPicker key={pickBank || "none"} initialQuery={pickBank} /></div>
           )
         ) : (
           <p className="text-sm text-slate-500">{h.bankNotSetUp} <Link href="/advanced" className="text-brand underline">{h.importStatement}</Link> {h.instead}</p>
@@ -87,7 +92,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
       </Step>
 
       <Step n={2} title={h.step2} done={c.mailboxes.length > 0}>
-        {c.mailboxes.length > 0 && <p className="text-sm text-slate-700">✓ {c.mailboxes.join(", ")}{m.lang === "fr" ? " : " : ": "}{h.mailDone}</p>}
+        {c.mailboxes.length > 0 && q.gmail !== "partial" && <p className="text-sm text-slate-700">✓ {c.mailboxes.join(", ")}{m.lang === "fr" ? " : " : ": "}{h.mailDone}</p>}
         <p className="text-sm text-slate-600">{h.mailWhy}</p>
         <div className="flex flex-wrap gap-2">
           {gmail && <a href="/api/gmail/start" className="rounded-xl border border-brand px-4 py-2 font-semibold text-brand">Gmail</a>}

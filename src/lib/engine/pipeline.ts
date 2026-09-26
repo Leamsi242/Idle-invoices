@@ -1,6 +1,6 @@
 import type { Channel, DescriptorEntry, DetectedSubscription, MatchResult, NormalizedTransaction, RecurringGroup, Usage } from "../types";
-import { cleanLabel, displayLabel, findIntermediary, isExcludedLabel, nameKey, sameName } from "./labels";
-import { reconcile, withinBookingWindow } from "./reconcile";
+import { cleanLabel, displayLabel, findIntermediary, isExcludedLabel, nameKey, sameName, storeOf } from "./labels";
+import { BOOKING_LAG_DAYS, reconcile, withinBookingWindow } from "./reconcile";
 import { detectRecurring, regularity, toGroup, PER_YEAR } from "./recurring";
 import { findDescriptor } from "./descriptors";
 import { flagSubscriptions } from "./flags";
@@ -102,8 +102,12 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
     const r = matchedSources.get(t.id);
     return !!r && isExcludedLabel(cleanLabel(r.rawLabel));
   };
-  const paypalExport = transactions.some((t) => t.source === "paypal");
-  const bankCharges = transactions.filter((t) => t.source === "bank" && t.amount > 0 && !isExcludedLabel(cleanLabel(t.rawLabel), { paypalExport }) && !excludedRecord(t));
+  // PayPal's own data (export or connection) settles the "PAYPAL EUROPE S.A R" lines it covers.
+  // A connection covers about 90 days: older lines keep the 4X rule.
+  const paypalDates = transactions.filter((t) => t.source === "paypal").map((t) => t.date).sort();
+  const coveredByPaypal = (date: string) =>
+    paypalDates.length > 0 && date >= addDays(paypalDates[0], -BOOKING_LAG_DAYS) && date <= addDays(paypalDates.at(-1)!, BOOKING_LAG_DAYS);
+  const bankCharges = transactions.filter((t) => t.source === "bank" && t.amount > 0 && !isExcludedLabel(cleanLabel(t.rawLabel), { paypalExport: coveredByPaypal(t.date) }) && !excludedRecord(t));
   const charges = [...bankCharges, ...receiptOnlyCharges(transactions, new Set(matches.map((m) => m.intermediaryTransactionId)))];
   const records = transactions.filter((t) => t.source !== "bank");
   const userDescriptors = opts.userDescriptors ?? [];
@@ -159,6 +163,9 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
   const unused = new Set(leftovers);
   const bankDates = bankCharges.map((t) => t.date).sort();
   const shortHistory = bankDates.length > 0 && daysBetween(bankDates[0], bankDates.at(-1)!) < SHORT_HISTORY_DAYS;
+  // PayPal alone (a connection shares about 90 days): short when its first payment is recent.
+  const lastDate = transactions.reduce((max, t) => (t.date > max ? t.date : max), "");
+  const paypalShort = paypalDates.length > 0 && daysBetween(paypalDates[0], lastDate) < SHORT_HISTORY_DAYS;
   const seenTwice = new Set<RecurringGroup>();
   const converted: { group: RecurringGroup; reason: string }[] = [];
 
@@ -213,7 +220,8 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
     // times. With such a short history, two charges of exactly the same amount a month apart
     // are kept, and say so.
     // PayPal's connection shares about 90 days too.
-    if (shortHistory && left.txs.length === 2 && (left.txs[0].source === "bank" || left.txs[0].source === "paypal") && Math.abs(left.txs[0].amount - left.txs[1].amount) < 0.005 && first.amount >= 1) {
+    const short = left.txs[0].source === "bank" ? shortHistory : left.txs[0].source === "paypal" && (shortHistory || paypalShort);
+    if (short && left.txs.length === 2 && Math.abs(left.txs[0].amount - left.txs[1].amount) < 0.005 && first.amount >= 1) {
       if (regularity(left.txs.map((t) => t.date), 2)?.frequency === "monthly") {
         const group = toGroup(left.key, left.txs, "monthly", 0, 0.4);
         seenTwice.add(group);
@@ -307,6 +315,9 @@ export function nextChargeDate(lastSeen: string, frequency: RecurringGroup["freq
 }
 
 function channelOf(g: RecurringGroup, sources: Set<string>): Channel {
+  // Paid through PayPal to Google Play or Apple: cancelled in that store.
+  const store = g.merchant ? storeOf(g.merchant) : undefined;
+  if (store === "apple" || store === "google") return store;
   const raw = g.transactions.map((t) => t.rawLabel.toUpperCase()).join(" ");
   const intermediary = findIntermediary(cleanLabel(g.transactions[0].rawLabel))?.id;
   if (sources.has("apple") || intermediary === "apple") return "apple";
@@ -324,7 +335,8 @@ function label(
 ): DetectedSubscription {
   const cleaned = cleanLabel(g.transactions[0].rawLabel);
   const descriptor = findDescriptor([g.merchant, cleaned], userDescriptors);
-  const hidden = !g.merchant && !!findIntermediary(cleaned);
+  // An intermediary with no merchant found, or a store's company that does not name the app.
+  const hidden = (!g.merchant && !!findIntermediary(cleaned)) || (!!g.merchant && !!storeOf(g.merchant));
   const serviceName = descriptor?.serviceName ?? (g.merchant ? g.merchant : titleCase(displayLabel(cleaned)));
   const sources = new Set(g.transactions.map((t) => matchedSources.get(t.id)?.source ?? (t.source !== "bank" ? t.source : undefined)).filter((s) => !!s));
   const paid = g.transactions.reduce((sum, t) => sum + t.amount, 0) + (trial?.amount ?? 0);

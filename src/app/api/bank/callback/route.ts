@@ -40,9 +40,10 @@ export async function GET(req: Request) {
     }
     await saveUpload(sessionId, connectionFileName(pending.institution.name, accounts), paypal ? "paypal" : "bank", transactions);
     // The user asked to be watched: keep the access (encrypted) for the nightly reads.
-    if (access) await saveWatch(sessionId, { provider: providerOf(pending.institution), institution: pending.institution.name, access, locale: await getLocale(), days: pending.days ?? WATCH_DAYS });
+    const days = pending.days ?? WATCH_DAYS;
+    if (access) await saveWatch(sessionId, { provider: providerOf(pending.institution), institution: pending.institution.name, access, locale: await getLocale(), days });
     await recompute(sessionId);
-    return back(`bank=ok&count=${transactions.length}${access ? "&watch=1" : ""}${via}`);
+    return back(`bank=ok&count=${transactions.length}${access ? `&watch=1&days=${days}` : ""}${via}`);
   } catch (e) {
     // The provider's error code (e.g. PSU_HEADER_NOT_PROVIDED) helps when testing a new bank; no account data is in it.
     const message = e instanceof Error ? e.message : "";

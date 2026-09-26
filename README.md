@@ -21,7 +21,7 @@ Then upload the files in [`samples/`](samples) to see a full report. Optional: s
 ## Run the tests
 
 ```bash
-npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, bank and mailbox connections, doubts, French and English, watching, PayPal connection (172 tests)
+npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, bank and mailbox connections, doubts, French and English, watching, PayPal connection (177 tests)
 npm run typecheck
 ```
 
@@ -136,11 +136,13 @@ Known gaps for later: the rate limiter and the CSP are prototype-grade (the limi
 The upload page shows "Scan my Gmail receipts" when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set. The scan:
 
 - asks Google for `gmail.readonly` only, without a refresh token (`access_type=online`), with PKCE and a state check;
-- searches the last year for emails whose subject mentions a receipt, invoice, payment, subscription, renewal or trial (at most 300);
+- searches the whole mailbox, newest first, for emails whose subject mentions a receipt, invoice, payment, subscription, renewal, trial or cancellation (at most 500);
 - keeps only the ones that read as receipts (amount plus billing words, no promotions), with the same fields as an uploaded `.eml` (merchant, amount, date, plan, frequency, trial), and discards the emails themselves;
-- never stores the access token and revokes it as soon as the scan ends.
+- stays within Gmail's per-user quota (since May 2026 a message read costs 20 of 6,000 units a minute): about 250 reads a minute, with pauses and retries when Gmail answers with its rate limit;
+- reads a large mailbox in parts (`/api/gmail/continue`, driven by the home page): each part stops before the server function's time limit, and between parts the read-only access token stays encrypted in an httpOnly cookie of the user's browser (10 minutes at most, scoped to `/api`);
+- revokes the access token when the scan ends, when the user leaves the page (`/api/gmail/cancel`), starts again or deletes everything; otherwise Google ends it within the hour. It is never stored on the server.
 
-Setup in [Google Cloud console](https://console.cloud.google.com/): create a project, enable the Gmail API, configure the OAuth consent screen (External, **Testing** mode) and add each tester's Gmail address as a test user (up to 100), then create an OAuth client of type "Web application" with the redirect URI `https://<your-domain>/api/gmail/callback` (and `http://localhost:3000/api/gmail/callback` for local runs).
+Setup in [Google Cloud console](https://console.cloud.google.com/) (Google Auth Platform since 2025): create a project, enable the Gmail API, in Branding set up the app (audience External, **Testing**), in Audience add each tester's Gmail address as a test user (up to 100, your own included), then in Clients create an OAuth client of type "Web application" with the redirect URI `https://<your-domain>/api/gmail/callback` (and `http://localhost:3000/api/gmail/callback` for local runs).
 
 `gmail.readonly` is a restricted scope: in Testing mode it works for the listed test users (Google shows an "unverified app" warning), which is enough for the 20 to 30 testers of the validation plan. A public launch needs Google's verification and a yearly third-party security assessment (CASA).
 

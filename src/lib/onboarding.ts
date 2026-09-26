@@ -163,7 +163,8 @@ function item(partial: Omit<PlanItem, "status"> & { status?: ItemStatus }): Plan
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** The checklist: one item per source to add, with its status from the uploaded data. */
-export function buildPlan(answers: Answers, facts: Facts): PlanItem[] {
+/** `canConnect`: this server can connect accounts, so PayPal can be connected instead of exported. */
+export function buildPlan(answers: Answers, facts: Facts, opts: { canConnect?: boolean } = {}): PlanItem[] {
   const items: PlanItem[] = [];
   const has = (s: Source) => (facts.uploads[s] ?? 0) > 0;
   const bankLabel = (id: string) => BANKS.find((b) => b.id === id)?.label ?? "Bank";
@@ -243,19 +244,19 @@ export function buildPlan(answers: Answers, facts: Facts): PlanItem[] {
   if (answers.wallets.includes("paypal") || paypalDetected) {
     items.push(item({
       id: "paypal",
-      title: "PayPal: connect it, or download its activity",
+      title: opts.canConnect ? "PayPal: connect it, or download its activity" : "PayPal: activity download",
       why: "On a bank statement every PayPal payment reads \"PAYPAL\". PayPal's own data says which service each one paid.",
       steps: [
-        "Simplest: connect PayPal from the home page, like your bank (read-only, you sign in on PayPal's page). Or, without a connection:",
+        ...(opts.canConnect ? ["Simplest: connect PayPal from the home page, like your bank (read-only, you sign in on PayPal's page). Or, without a connection:"] : []),
         "Sign in on paypal.com (the website, not the app).",
         "Open Activity, then Statements (Relevés), then Activity download (Télécharger l'activité).",
         "Choose Completed payments, CSV format, and the longest period offered.",
         "Upload the CSV here. PayPal receipts found by the Gmail scan also help.",
         "If PayPal only offers a few months, ask for your full history under the GDPR right of access (template below).",
       ],
-      accepts: "a PayPal connection or its CSV",
+      accepts: opts.canConnect ? "a PayPal connection or its CSV" : "CSV",
       action: "gdpr",
-      connect: "PayPal",
+      connect: opts.canConnect ? "PayPal" : undefined,
       detected: paypalDetected,
       status: has("paypal") ? "done" : "todo",
       alert: pp.unexplained ? `${plural(pp.unexplained, "PayPal payment")} on your statements ${pp.unexplained === 1 ? "is" : "are"} still unnamed.` : undefined,

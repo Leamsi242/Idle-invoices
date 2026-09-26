@@ -234,6 +234,11 @@ export async function saveLabel(sessionId: string, labelKey: string, serviceName
 }
 
 /** "Delete everything": every row of this session, in every table, and any bank access kept open. */
+/** Whether this session still has anything stored (false once "Delete everything" has run). */
+export async function sessionHasData(sessionId: string): Promise<boolean> {
+  return (await prisma.upload.count({ where: { sessionId } })) > 0;
+}
+
 export async function deleteEverything(sessionId: string) {
   for (const link of await prisma.bankLink.findMany({ where: { sessionId } })) await closeLink(link);
   await prisma.$transaction([
@@ -300,7 +305,7 @@ export async function getOnboarding(sessionId: string | null): Promise<Onboardin
   const [answers, txs] = sessionId ? await Promise.all([getAnswers(sessionId), loadTransactions(sessionId)]) : [null, []];
   const explained = new Set(reconcile(txs).map((m) => m.bankTransactionId));
   const facts = collectFacts(txs, explained);
-  return { answers, facts, plan: buildPlan(answers ?? EMPTY_ANSWERS, facts) };
+  return { answers, facts, plan: buildPlan(answers ?? EMPTY_ANSWERS, facts, { canConnect: bankingConfigured() }) };
 }
 
 // --- Connections and doubts ---------------------------------------------------------------

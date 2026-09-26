@@ -59,12 +59,17 @@ export async function listMessageIds(token: string, f: Fetch = fetch, max = MAX_
   return ids.slice(0, max);
 }
 
-/** `next`: where a scan cut short by the time limit resumes; `total`: candidate emails in all. */
-export interface ScanResult { scanned: number; receipts: NormalizedTransaction[]; next?: number; total: number }
+/**
+ * `next` and `nextId`: where a scan cut short resumes (position, and id of that email, since the
+ * list can shift between parts); `total`: candidate emails in all.
+ */
+export interface ScanResult { scanned: number; receipts: NormalizedTransaction[]; next?: number; nextId?: string; total: number }
 
 export interface ScanOptions {
-  /** The first candidate to read (0, or the `next` of a previous part). */
+  /** The first candidate to read (0, or the `next` of a previous part)... */
   from?: number;
+  /** ...found by its id when it is still listed: an email moved to the bin shifts the positions. */
+  fromId?: string;
   /** No new download starts after this time: a server function has about a minute. */
   deadline?: number;
   /** The shortest time per batch of 10 downloads, to stay within Gmail's per-minute quota. */
@@ -98,9 +103,11 @@ export async function receiptFromRaw(raw: Buffer): Promise<NormalizedTransaction
  * (or when Gmail keeps refusing for its quota) and returns `next`, where the following part starts.
  */
 export async function scanGmail(token: string, f: Fetch = fetch, opts: ScanOptions = {}): Promise<ScanResult> {
-  const { from = 0, deadline = Date.now() + 45_000, batchMs = BATCH_MS, backoffMs = 1_000 } = opts;
+  const { deadline = Date.now() + 45_000, batchMs = BATCH_MS, backoffMs = 1_000 } = opts;
   const ids = await listMessageIds(token, f);
   const receipts: NormalizedTransaction[] = [];
+  const byId = opts.fromId ? ids.indexOf(opts.fromId) : -1;
+  const from = byId >= 0 ? byId : Math.min(opts.from ?? 0, ids.length);
   let i = from;
   while (i < ids.length && Date.now() < deadline) {
     const started = Date.now();
@@ -116,9 +123,9 @@ export async function scanGmail(token: string, f: Fetch = fetch, opts: ScanOptio
         }
       }),
     );
-    receipts.push(...batch.filter((t): t is NormalizedTransaction => !!t && t !== "limited"));
-    // Still refused after the pauses: this batch is read again in the next part (copies are merged later).
+    // Still refused after the pauses: the whole batch is read again in the next part.
     if (batch.includes("limited")) break;
+    receipts.push(...batch.filter((t): t is NormalizedTransaction => !!t && t !== "limited"));
     i += chunk.length;
     const wait = batchMs - (Date.now() - started);
     if (wait > 0 && i < ids.length) {
@@ -126,7 +133,7 @@ export async function scanGmail(token: string, f: Fetch = fetch, opts: ScanOptio
       await sleep(wait);
     }
   }
-  return { scanned: i - from, receipts, next: i < ids.length ? i : undefined, total: ids.length };
+  return { scanned: i - from, receipts, next: i < ids.length ? i : undefined, nextId: ids[i], total: ids.length };
 }
 
 export function authUrl(opts: { clientId: string; redirectUri: string; state: string; codeChallenge: string }): string {

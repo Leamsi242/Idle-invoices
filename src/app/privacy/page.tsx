@@ -58,8 +58,9 @@ export default async function Privacy() {
             If you scan Gmail, we get read-only access for the length of the scan. We only open emails whose subject
             mentions a receipt, invoice, subscription, renewal or trial, keep the amount, merchant and date of real receipts, and revoke our
             access right after. Your emails are never stored. A large mailbox is read in parts, while you keep the page open: in between,
-            the read-only access (which Google limits to one hour) stays encrypted in a cookie of your own browser for at most 10 minutes,
-            then it is revoked.
+            the read-only access (which Google limits to one hour) stays encrypted in a cookie of your own browser for at most 10 minutes.
+            We revoke it when the reading ends, when you leave the page, start again or delete everything; if your browser cannot tell
+            us (a crash, no network), Google ends it within the hour.
           </li>
           <li>
             If you upload a screenshot of your app store subscriptions, only that image is sent to Claude (Anthropic&apos;s AI) to read the
@@ -142,7 +143,9 @@ function PrivacyFr() {
             l&apos;objet parle de reçu, facture, abonnement, renouvellement ou essai, gardons le montant, le marchand et la date des vrais reçus,
             et révoquons l&apos;accès juste après. Vos e-mails ne sont jamais conservés. Une grosse boîte mail est lue en plusieurs fois, pendant
             que vous gardez la page ouverte : entre deux parties, l&apos;accès en lecture seule (que Google limite à une heure) reste chiffré dans
-            un cookie de votre propre navigateur, 10 minutes au plus, puis il est révoqué.
+            un cookie de votre propre navigateur, 10 minutes au plus. Nous le révoquons à la fin de la lecture, quand vous quittez la page,
+            recommencez ou supprimez tout ; si votre navigateur ne peut pas nous prévenir (plantage, pas de réseau), Google y met fin dans
+            l&apos;heure.
           </li>
           <li>
             Si vous envoyez une capture de vos abonnements, seule cette image est transmise à Claude (l&apos;IA d&apos;Anthropic) pour en lire le

@@ -100,13 +100,26 @@ describe("Gmail scan time limit and quota", () => {
     expect(receipts.map((r) => r.merchant)).toContain("WeTransfer");
   });
 
-  it("stops without losing the part read when Gmail keeps refusing", async () => {
+  it("stops when Gmail keeps refusing, and reads that batch again in the next part", async () => {
     const base = fakeGmail([]);
     const f = (async (input: string | URL | Request, init?: RequestInit) =>
       String(input).includes("/m2?") ? new Response("", { status: 429 }) : base(input, init)) as typeof fetch;
-    const { scanned, next, receipts } = await scanGmail("token-123", f, { backoffMs: 1, batchMs: 0 });
-    expect([scanned, next]).toEqual([0, 0]);
-    expect(receipts.length).toBeGreaterThan(0); // the other emails of the batch were read
+    const { scanned, next, nextId, receipts } = await scanGmail("token-123", f, { backoffMs: 1, batchMs: 0 });
+    // Nothing of the refused batch is counted yet, so its receipts are not counted twice later.
+    expect([scanned, next, nextId, receipts]).toEqual([0, 0, "m1", []]);
+  });
+
+  it("resumes at the same email when the list shifted between parts", async () => {
+    // "m1" was moved to the bin after the first part: positions shift, the id does not.
+    const base = fakeGmail([]);
+    const f = (async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/messages?") && !url.includes("pageToken")) return new Response(JSON.stringify({ messages: [{ id: "m2" }, { id: "m3" }], nextPageToken: "p2" }));
+      return base(input, init);
+    }) as typeof fetch;
+    const part = await scanGmail("token-123", f, { from: 2, fromId: "m3", batchMs: 0 });
+    expect(part.scanned).toBe(3); // m3, m4, m5
+    expect(part.receipts.map((r) => r.merchant)).toEqual(["Uber BV"]);
   });
 
   it("does not retry other errors", async () => {

@@ -1,5 +1,8 @@
 import type { Institution } from "./types";
 
+/** The longest watch the app asks for (index.ts re-exports it). */
+export const WATCH_DAYS = 90;
+
 /** Remembers, for 15 minutes, which bank the user went to sign in to and the random state. */
 export const BANK_COOKIE = "sd_bank";
 
@@ -12,7 +15,8 @@ export function decodePending(value: string | undefined): { state: string; insti
   try {
     const v = JSON.parse(Buffer.from(value, "base64url").toString("utf8"));
     if (typeof v.state !== "string" || typeof v.name !== "string" || typeof v.country !== "string") return null;
-    const days = Number.isInteger(v.days) && v.days > 0 ? (v.days as number) : undefined;
+    // The cookie is not signed: never trust a longer watch than the app itself would ask for.
+    const days = Number.isInteger(v.days) && v.days > 0 ? Math.min(v.days as number, WATCH_DAYS) : undefined;
     return { state: v.state, institution: { name: v.name, country: v.country }, watch: v.watch === true, days };
   } catch {
     return null;

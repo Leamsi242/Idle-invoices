@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/crypto";
@@ -112,6 +112,7 @@ describe("store", () => {
   });
 
   it("reads a watched account again, alerts on what is new, and stops on request", async () => {
+    vi.stubEnv("BANK_DEMO", "1");
     const session = randomUUID();
     const today = new Date().toISOString().slice(0, 10);
     await saveUpload(session, "Bank connection: Demo bank (test data) (1 account)", "bank", demoTransactions(today).transactions);

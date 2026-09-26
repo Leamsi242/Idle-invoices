@@ -239,3 +239,11 @@ describe("watching an account", () => {
     expect(calls.at(-1)).toMatchObject({ method: "DELETE", url: "https://api.enablebanking.com/sessions/s1" });
   });
 });
+
+describe("bank cookie", () => {
+  it("never trusts a watch longer than the app asks for", () => {
+    const forged = Buffer.from(JSON.stringify({ state: "a", name: "Demo bank (test data)", country: "XX", watch: true, days: 36500 })).toString("base64url");
+    expect(decodePending(forged)!.days).toBe(90);
+    expect(decodePending(encodePending("s", { name: "PayPal", country: "FR" }, true, 30))!.days).toBe(30);
+  });
+});
