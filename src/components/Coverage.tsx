@@ -2,6 +2,8 @@ import type { SourceCoverage } from "@/lib/store";
 import { daysBetween } from "@/lib/dates";
 import { formatDate, type Locale, type Messages } from "@/lib/i18n";
 import { Icon } from "./ui";
+import { ServiceIcon } from "./ServiceIcon";
+import { brandOf } from "@/lib/brand";
 
 const ICON = { bank: "bank", paypal: "wallet", mail: "mail", file: "file" } as const;
 
@@ -16,9 +18,13 @@ export function CoverageLine({ s, m, locale }: { s: SourceCoverage; m: Messages;
   const limit = s.kind === "mail" ? u.limitMail : s.kind === "paypal" ? u.limitPaypal : s.kind === "bank" ? u.limitBank(days) : u.limitFile;
   return (
     <div className="flex gap-3">
-      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-ink-2">
-        <Icon name={s.kind === "bank" && /american express|amex/i.test(s.name) ? "card" : ICON[s.kind]} className="h-[18px] w-[18px]" />
-      </span>
+      {s.kind !== "file" && brandOf(s.name) ? (
+        <span className="mt-0.5"><ServiceIcon name={s.name} size="sm" /></span>
+      ) : (
+        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-2 text-ink-2">
+          <Icon name={s.kind === "bank" && /american express|amex/i.test(s.name) ? "card" : ICON[s.kind]} className="h-[18px] w-[18px]" />
+        </span>
+      )}
       <div className="min-w-0 text-sm">
         <p className="font-medium">
           {s.name} <span className="font-normal text-muted">· {what}</span>

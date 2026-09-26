@@ -4,7 +4,8 @@ import { listSubscriptions } from "@/lib/store";
 import { money } from "@/lib/i18n";
 import { getMessages } from "@/lib/locale";
 import { LabelQuestion, UsageQuestion } from "@/components/Questions";
-import { buttonClass, Icon, Monogram, SectionTitle } from "@/components/ui";
+import { ServiceIcon } from "@/components/ServiceIcon";
+import { buttonClass, Icon, SectionTitle } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +47,7 @@ export default async function Review() {
         {subs.map((s) => (
           <article key={s.id} className={`space-y-4 rounded-3xl border bg-surface p-5 shadow-card ${s.usage ? "border-line opacity-80" : "border-line"}`}>
             <div className="flex items-center gap-3">
-              <Monogram name={s.serviceName} size="lg" />
+              <ServiceIcon name={s.serviceName} size="lg" />
               <div className="min-w-0 flex-1">
                 <h3 className="truncate text-lg font-semibold tracking-tight">{s.serviceName}</h3>
                 <p className="tabular text-sm text-muted">{money(s.currentAmount, s.currency, locale)} {m.per[s.frequency]} · {money(s.yearlyCost, s.currency, locale)} {m.ui.aYear}</p>

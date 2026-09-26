@@ -12,7 +12,8 @@ import { DeleteEverythingButton } from "@/components/Questions";
 import { ReminderButton } from "@/components/Reminders";
 import { TrialList } from "@/components/TrialList";
 import { CoverageLine, CoverageTimeline } from "@/components/Coverage";
-import { buttonClass, Card, Eyebrow, Icon, Monogram, payColor, Pill, SectionTitle } from "@/components/ui";
+import { ServiceIcon } from "@/components/ServiceIcon";
+import { buttonClass, Card, Eyebrow, Icon, payColor, Pill, SectionTitle } from "@/components/ui";
 import { renewalReminder } from "@/lib/ics";
 import { cancellationSteps } from "@/lib/cancel-guide";
 import { upcomingCharges, type UpcomingCharge } from "@/lib/upcoming";
@@ -86,7 +87,7 @@ function CaseFile({ s, m, locale }: { s: StoredSubscription; m: Messages; locale
   return (
     <details className={`group rounded-3xl border border-line bg-surface shadow-card transition open:shadow-lg ${stopped ? "opacity-70" : ""}`}>
       <summary className="flex items-center gap-3 p-4 sm:gap-4">
-        <Monogram name={s.serviceName} />
+        <ServiceIcon name={s.serviceName} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold tracking-tight">{s.serviceName}</p>
           <p className="truncate text-sm text-muted">
@@ -180,7 +181,7 @@ function Agenda({ charges, currency, today, m, locale }: { charges: UpcomingChar
           return (
             <li key={`${c.key}:${c.date}`} className="flex items-center gap-3 py-2.5 text-sm">
               <span className="w-[4.5rem] shrink-0 text-xs text-muted">{formatDate(c.date, locale, true)}</span>
-              <Monogram name={c.serviceName} size="sm" />
+              <ServiceIcon name={c.serviceName} size="sm" />
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium">{c.serviceName}</span>
                 {c.kind !== "renewal" ? (
