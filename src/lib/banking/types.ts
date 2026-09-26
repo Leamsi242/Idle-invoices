@@ -13,11 +13,30 @@ export interface BankProvider {
   listInstitutions(country: string): Promise<Institution[]>;
   /** Returns the bank's sign-in page, and what we need to remember until the user comes back. */
   start(opts: { institution: Institution; redirectUrl: string; state: string; psu?: PsuContext }): Promise<{ url: string }>;
-  /** Called on the way back: reads every account of the connection since `since`, then closes the access. */
-  finish(opts: { code: string; since: string; psu?: PsuContext }): Promise<BankRead>;
+  /**
+   * Called on the way back: reads every account of the connection, then closes the access. The
+   * first date the bank accepts is used (`since` lists them, oldest first): many banks share
+   * 90 days only.
+   */
+  finish(opts: { code: string; since: string[]; psu?: PsuContext }): Promise<BankRead>;
 }
 
-/** The user's browser, passed on while they are present (banks rate-limit unattended reads). */
-export interface PsuContext { ip?: string; userAgent?: string }
+/**
+ * The user's browser, passed on while they are present: banks list the "PSU" headers they
+ * require (Crédit Mutuel among others) and rate-limit reads made without them.
+ */
+export type PsuContext = Record<string, string>;
+
+/** PSU headers from the user's request: IP address, user agent, accept headers, referer. */
+export function psuHeaders(req: Request): PsuContext {
+  const h: PsuContext = {};
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || undefined;
+  if (ip) h["psu-ip-address"] = ip;
+  for (const [from, to] of [["user-agent", "psu-user-agent"], ["accept", "psu-accept"], ["accept-language", "psu-accept-language"], ["accept-encoding", "psu-accept-encoding"], ["referer", "psu-referer"]]) {
+    const v = req.headers.get(from);
+    if (v) h[to] = v.slice(0, 500);
+  }
+  return h;
+}
 
 export interface BankRead { accounts: number; transactions: NormalizedTransaction[] }

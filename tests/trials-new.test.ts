@@ -19,9 +19,16 @@ describe("trials that keep charging", () => {
     expect(strava.forgottenReasons).toContain("Started with a €1.00 trial on 2026-07-28");
   });
 
-  it("does not accept 2 charges of an unknown merchant", () => {
-    const { subscriptions } = analyze([tx("2026-01-10", 20, "SOME SHOP"), tx("2026-02-10", 20, "SOME SHOP")]);
+  it("does not accept 2 charges of an unknown merchant when the statements go back further", () => {
+    const { subscriptions } = analyze([tx("2025-09-02", 42.1, "BOULANGERIE"), tx("2026-01-10", 20, "SOME SHOP"), tx("2026-02-10", 20, "SOME SHOP")]);
     expect(subscriptions).toHaveLength(0);
+  });
+
+  it("keeps 2 identical monthly charges when the bank shares only 90 days, and says so", () => {
+    const { subscriptions } = analyze([tx("2026-01-10", 20, "SOME SHOP"), tx("2026-02-10", 20, "SOME SHOP"), tx("2026-02-14", 7.5, "SOME SHOP"), tx("2026-03-30", 12, "CAFE")]);
+    expect(subscriptions.map((s) => [s.key, s.frequency, s.transactions.length, s.forgottenReasons[0]])).toEqual([
+      ["SOME SHOP", "monthly", 2, "Seen twice so far: your bank shares about 3 months of history"],
+    ]);
   });
 
   it("does not call a subscription new when the statements only just started", () => {

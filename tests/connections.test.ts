@@ -50,7 +50,7 @@ describe("Enable Banking", () => {
       if (init?.method === "DELETE") return json({}, 204);
       throw new Error(`unexpected ${url}`);
     }) as typeof fetch;
-    const read = await new EnableBanking("app-123", privateKey, f).finish({ code: "c0de", since: "2024-09-26", psu: { ip: "203.0.113.5", userAgent: "UA" } });
+    const read = await new EnableBanking("app-123", privateKey, f).finish({ code: "c0de", since: ["2024-09-26"], psu: { "psu-ip-address": "203.0.113.5", "psu-user-agent": "UA" } });
     expect(read.accounts).toBe(2);
     expect(read.transactions.map((t) => [t.date, t.amount])).toEqual([["2026-09-03", 15.99], ["2026-08-03", 13.49], ["2026-09-03", 19.99]]);
     expect(JSON.parse(calls[0].body!)).toEqual({ code: "c0de" });
@@ -67,7 +67,7 @@ describe("Enable Banking", () => {
       if (init?.method === "DELETE") return json({}, 204);
       return json({ error: "boom" }, 500);
     }) as typeof fetch;
-    await expect(new EnableBanking("app", privateKey, f).finish({ code: "x", since: "2025-01-01" })).rejects.toThrow(/500/);
+    await expect(new EnableBanking("app", privateKey, f).finish({ code: "x", since: ["2025-01-01"] })).rejects.toThrow(/500/);
     expect(methods.at(-1)).toBe("DELETE /sessions/s9");
   });
 
@@ -136,5 +136,43 @@ describe("Outlook scan", () => {
     const { scanned, receipts } = await scanOutlook("t", f);
     expect(scanned).toBe(3);
     expect(receipts.map((r) => r.merchant)).toEqual(["Duolingo"]);
+  });
+});
+
+describe("a Crédit Mutuel connection (90 days of history)", () => {
+  it("falls back to 90 days when the bank refuses a longer history, and still finds the subscriptions", async () => {
+    const today = "2026-09-26";
+    const dateFroms: string[] = [];
+    const cm = (date: string, amount: string, lines: string[]): EbTransaction => ({
+      transaction_amount: { amount, currency: "EUR" }, credit_debit_indicator: "DBIT", status: "BOOK", booking_date: date, remittance_information: lines,
+    });
+    const booked: EbTransaction[] = [
+      ...["2026-07-03", "2026-08-03", "2026-09-03"].map((d) => cm(d, "15.99", ["PAIEMENT CB 0207 PARIS", "NETFLIX.COM CARTE 4970XXXX1234"])),
+      ...["2026-07-06", "2026-08-06", "2026-09-07"].map((d) => cm(d, "29.99", ["PRLV SEPA BOUYGUES TELECOM"])),
+      ...["2026-08-05", "2026-09-05"].map((d) => cm(d, "23.99", ["PRLV SEPA PAYPAL EUROPE S.A.R.L", "1045987736512 PAYPAL"])),
+      ...["2026-07-12", "2026-07-19", "2026-08-02", "2026-08-23", "2026-09-13"].map((d, i) => cm(d, ["48.20", "61.75", "33.10", "72.40", "55.05"][i], ["PAIEMENT CB 1107 PARIS", "CARREFOUR CITY CARTE 4970XXXX1234"])),
+      { ...cm("2026-09-01", "2450.00", ["VIR SEPA SALAIRE ACME"]), credit_debit_indicator: "CRDT" },
+    ];
+    const f = (async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/sessions") && init?.method === "POST") return json({ session_id: "s1", accounts: [{ uid: "cm1" }] });
+      if (init?.method === "DELETE") return json({}, 204);
+      const from = new URL(url).searchParams.get("date_from")!;
+      dateFroms.push(from);
+      // Like Crédit Mutuel: no more than 90 days back.
+      if (from < "2026-06-28") return json({ error: "WRONG_TRANSACTIONS_PERIOD", message: "date_from is out of the allowed period" }, 422);
+      return json({ transactions: booked, continuation_key: null });
+    }) as typeof fetch;
+    const since = [730, 395, 89].map((d) => new Date(Date.parse(`${today}T00:00:00Z`) - d * 86_400_000).toISOString().slice(0, 10));
+    const { transactions } = await new EnableBanking("app", privateKey, f).finish({ code: "c", since, psu: { "psu-ip-address": "203.0.113.5" } });
+    expect(dateFroms).toEqual(["2024-09-26", "2025-08-27", "2026-06-29"]);
+
+    const { subscriptions } = analyze(transactions, { today });
+    expect(subscriptions.map((s) => [s.serviceName, s.frequency, s.transactions.length]).sort()).toEqual([
+      ["Bouygues Telecom", "monthly", 3], ["Netflix", "monthly", 3], ["Paypal", "monthly", 2],
+    ]);
+    const doubts = findDoubts(subscriptions, collectFacts(transactions, new Set()), { banks: ["Crédit Mutuel"], mailboxes: [], files: 0 });
+    expect(doubts[0]).toMatchObject({ kind: "mail" });
+    expect(doubts[0].detail).toMatch(/only shares the last 3 months/);
   });
 });

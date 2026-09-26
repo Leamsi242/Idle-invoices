@@ -3,9 +3,11 @@ import { EnableBanking, enableBankingConfigured } from "./enable-banking";
 import { DEMO_BANK, demoEnabled, demoTransactions } from "./demo";
 
 export type { Institution } from "./types";
+export { psuHeaders } from "./types";
 export { DEMO_BANK } from "./demo";
 
-export const HISTORY_DAYS = 730; // banks give what they can; many give 12 to 24 months at sign-in
+/** History asked for, longest first: many banks (Crédit Mutuel) share 90 days only. */
+export const HISTORY_DAYS = [730, 395, 89];
 
 export function bankingConfigured(): boolean {
   return enableBankingConfigured() || demoEnabled();
@@ -29,6 +31,6 @@ export async function startConnection(institution: Institution, redirectUrl: str
 
 export async function finishConnection(institution: Institution, code: string, today: string, psu?: PsuContext): Promise<BankRead> {
   if (isDemo(institution)) return demoTransactions(today);
-  const since = new Date(Date.parse(`${today}T00:00:00Z`) - HISTORY_DAYS * 86_400_000).toISOString().slice(0, 10);
+  const since = HISTORY_DAYS.map((days) => new Date(Date.parse(`${today}T00:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10));
   return new EnableBanking().finish({ code, since, psu });
 }

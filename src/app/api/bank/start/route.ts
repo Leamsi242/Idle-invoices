@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
-import { bankingConfigured, startConnection } from "@/lib/banking";
+import { bankingConfigured, psuHeaders, startConnection } from "@/lib/banking";
 import { BANK_COOKIE, encodePending } from "@/lib/banking/cookie";
 import { getOrCreateSessionId } from "@/lib/session";
 import { rateLimit } from "@/lib/rate-limit";
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   if (!rateLimit(`bank:${sessionId}`, 10, 60 * 60 * 1000).ok) return NextResponse.json({ error: "Too many connections this hour. Please try again later." }, { status: 429 });
   const origin = new URL(req.url).origin;
   const state = randomBytes(16).toString("base64url");
-  const psu = { ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim(), userAgent: req.headers.get("user-agent") ?? undefined };
+  const psu = psuHeaders(req);
   try {
     const url = await startConnection({ name, country }, `${origin}/api/bank/callback`, state, psu);
     const res = NextResponse.json({ url });

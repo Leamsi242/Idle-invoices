@@ -1,5 +1,7 @@
 import type { Channel, Frequency, Status } from "./types";
 import type { Facts } from "./onboarding";
+import { daysBetween } from "./dates";
+import { SHORT_HISTORY_DAYS } from "./engine/pipeline";
 
 /**
  * After an automatic analysis (bank and mailbox connected), the few points where the report is
@@ -30,13 +32,19 @@ const via: Partial<Record<Channel, string>> = { google: "Google Play", apple: "t
 export function findDoubts(subs: DoubtSub[], facts: Facts, connections: Connections): Doubt[] {
   const doubts: Doubt[] = [];
   const hidden = facts.intermediaries.paypal.unexplained + facts.intermediaries.google.unexplained + facts.intermediaries.apple.unexplained;
+  const shortHistory = !!facts.bankFrom && !!facts.bankTo && daysBetween(facts.bankFrom, facts.bankTo) < SHORT_HISTORY_DAYS;
   // One connection answers many questions at once: ask for it first.
-  if (connections.mailboxes.length === 0 && hidden > 0) {
+  if (connections.mailboxes.length === 0 && (hidden > 0 || shortHistory)) {
+    const yearly = "Your bank only shares the last 3 months, so yearly renewals (Amazon Prime, software, insurance) don't show. Receipts in your mailbox go back years.";
     doubts.push({
       kind: "mail",
       id: "mail",
-      title: `${hidden} payment${hidden === 1 ? "" : "s"} through PayPal, Google Play or Apple can't be named from your bank alone`,
-      detail: "Connect your mailbox: the receipts say which service each payment was for. Read-only, receipts only, access closed right after.",
+      title: hidden > 0
+        ? `${hidden} payment${hidden === 1 ? "" : "s"} through PayPal, Google Play or Apple can't be named from your bank alone`
+        : "Yearly subscriptions are missing from your bank's last 3 months",
+      detail: hidden > 0
+        ? `Connect your mailbox: the receipts say which service each payment was for.${shortHistory ? ` ${yearly}` : ""} Read-only, receipts only, access closed right after.`
+        : `${yearly} Connect your mailbox: read-only, receipts only, access closed right after.`,
     });
   }
   if (facts.amexSettlements > 0 && !facts.amexStatement) {

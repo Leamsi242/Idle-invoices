@@ -24,6 +24,8 @@ const titleCase = (s: string) => s.toLowerCase().replace(/(^|[\s*./-])([a-z])/g,
 /** A trial charge is small (at most half the full price) and comes shortly before the first full charge. */
 const TRIAL_MAX_RATIO = 0.5;
 const TRIAL_MAX_DAYS_BEFORE = 35;
+/** Bank data shorter than this (a 90-day PSD2 connection) relaxes the minimum number of charges. */
+export const SHORT_HISTORY_DAYS = 120;
 const PAID_TRIAL_MAX = 2; // "1 € for 7 days"
 const SOURCE_PRIORITY: Record<string, number> = { paypal: 0, apple: 1, google: 1, email: 2 };
 
@@ -143,6 +145,9 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
     leftovers = [...leftovers.filter((l) => !keys.has(l.key)), ...again.leftovers];
   }
   const unused = new Set(leftovers);
+  const bankDates = bankCharges.map((t) => t.date).sort();
+  const shortHistory = bankDates.length > 0 && daysBetween(bankDates[0], bankDates.at(-1)!) < SHORT_HISTORY_DAYS;
+  const seenTwice = new Set<RecurringGroup>();
   const converted: { group: RecurringGroup; reason: string }[] = [];
 
   for (const left of leftovers) {
@@ -189,6 +194,18 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
       if (reg && reg.frequency !== "yearly") {
         groups.push(toGroup(left.key, left.txs, reg.frequency, 0, 0.5));
         unused.delete(left);
+        continue;
+      }
+    }
+    // A bank connection often shares 90 days only (PSD2): a monthly charge shows two or three
+    // times. With such a short history, two charges of exactly the same amount a month apart
+    // are kept, and say so.
+    if (shortHistory && left.txs.length === 2 && left.txs[0].source === "bank" && Math.abs(left.txs[0].amount - left.txs[1].amount) < 0.005 && first.amount >= 1) {
+      if (regularity(left.txs.map((t) => t.date), 2)?.frequency === "monthly") {
+        const group = toGroup(left.key, left.txs, "monthly", 0, 0.4);
+        seenTwice.add(group);
+        groups.push(group);
+        unused.delete(left);
       }
     }
   }
@@ -232,6 +249,7 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
     );
     if (trial) unused.delete(trial);
     const sub = label(g, userDescriptors, matchedSources, trial?.txs[0]);
+    if (seenTwice.has(g)) sub.forgottenReasons = ["Seen twice so far: your bank shares about 3 months of history"];
     const note = converted.find((c) => c.group === g);
     if (note) sub.forgottenReasons = [note.reason];
     return sub;

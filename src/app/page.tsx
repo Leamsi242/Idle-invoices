@@ -31,6 +31,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
 function message(q: Record<string, string | undefined>): string | null {
   if (q.bank === "ok") return `Bank read: ${q.count ?? 0} transactions. The access is already closed.`;
   if (q.gmail === "ok" || q.mail === "ok") return `Mailbox read: ${q.scanned ?? 0} emails checked, ${q.receipts ?? 0} receipts kept. Access closed right after.`;
+  if (q.bank === "error" && q.reason) return `${MESSAGES.bank.error} (Bank error: ${q.reason.replace(/[^A-Z_]/g, "").slice(0, 60)})`;
   for (const key of ["bank", "gmail", "mail"]) if (q[key] && MESSAGES[key][q[key]!]) return MESSAGES[key][q[key]!];
   return null;
 }

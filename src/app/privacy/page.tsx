@@ -40,7 +40,7 @@ export default function Privacy() {
           <li>
             If you connect your bank, the connection goes through Enable Banking, a payment institution licensed under the European PSD2
             rules to read account information. The access is read-only (nobody can move money with it), limited to one day, and we close
-            it as soon as your transactions have been read. We read up to two years of history, depending on your bank.
+            it as soon as your transactions have been read. We read up to two years of history, depending on your bank (Crédit Mutuel shares the last 90 days).
           </li>
           <li>
             If you connect Outlook or Hotmail, we ask Microsoft for mail reading only, without a long-term token. We open only emails that

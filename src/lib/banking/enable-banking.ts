@@ -9,6 +9,12 @@ import { makeTx } from "../parsers/common";
  * application's private key; the application id is the key id.
  */
 const API = "https://api.enablebanking.com";
+
+export class EnableBankingError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
 type Fetch = typeof fetch;
 
 export function enableBankingConfigured(): boolean {
@@ -56,20 +62,37 @@ export class EnableBanking implements BankProvider {
   constructor(private appId = process.env.ENABLE_BANKING_APP_ID!, private key = (process.env.ENABLE_BANKING_PRIVATE_KEY ?? "").replace(/\\n/g, "\n"), private f: Fetch = fetch) {}
 
   private headers(psu?: PsuContext): Record<string, string> {
-    const h: Record<string, string> = { Authorization: `Bearer ${jwt(this.appId, this.key)}`, "Content-Type": "application/json" };
-    if (psu?.ip) h["psu-ip-address"] = psu.ip;
-    if (psu?.userAgent) h["psu-user-agent"] = psu.userAgent;
-    return h;
+    return { ...psu, Authorization: `Bearer ${jwt(this.appId, this.key)}`, "Content-Type": "application/json" };
   }
 
   private async call<T>(path: string, init: RequestInit & { psu?: PsuContext } = {}): Promise<T> {
     const res = await this.f(`${API}${path}`, { ...init, headers: this.headers(init.psu) });
-    if (!res.ok) throw new Error(`Enable Banking ${init.method ?? "GET"} ${path.split("?")[0]}: ${res.status}`);
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new EnableBankingError(res.status, `Enable Banking ${init.method ?? "GET"} ${path.split("?")[0]}: ${res.status} ${detail.slice(0, 300)}`);
+    }
     return (res.status === 204 ? {} : await res.json()) as T;
   }
 
+  /** Every transaction of one account from `dateFrom`, page by page. */
+  private async readAccount(uid: string, dateFrom: string, psu?: PsuContext): Promise<NormalizedTransaction[]> {
+    const out: NormalizedTransaction[] = [];
+    let continuation: string | undefined;
+    let pages = 0;
+    do {
+      const q = new URLSearchParams({ date_from: dateFrom, ...(continuation ? { continuation_key: continuation } : {}) });
+      const page = await this.call<{ transactions: EbTransaction[]; continuation_key?: string | null }>(`/accounts/${uid}/transactions?${q}`, { psu });
+      for (const t of page.transactions ?? []) {
+        const tx = toTransaction(t);
+        if (tx) out.push(tx);
+      }
+      continuation = page.continuation_key ?? undefined;
+    } while (continuation && ++pages < 200);
+    return out;
+  }
+
   async listInstitutions(country: string): Promise<Institution[]> {
-    const { aspsps } = await this.call<{ aspsps: { name: string; country: string; psu_types?: string[] }[] }>(`/aspsps?country=${encodeURIComponent(country)}&psu_type=personal`);
+    const { aspsps } = await this.call<{ aspsps: { name: string; country: string; psu_types?: string[] }[] }>(`/aspsps?country=${encodeURIComponent(country)}`);
     return aspsps.filter((a) => !a.psu_types || a.psu_types.includes("personal")).map((a) => ({ name: a.name, country: a.country }));
   }
 
@@ -84,22 +107,21 @@ export class EnableBanking implements BankProvider {
     return { url };
   }
 
-  async finish({ code, since, psu }: { code: string; since: string; psu?: PsuContext }): Promise<BankRead> {
+  async finish({ code, since, psu }: { code: string; since: string[]; psu?: PsuContext }): Promise<BankRead> {
     const session = await this.call<{ session_id: string; accounts: { uid: string }[] }>("/sessions", { method: "POST", psu, body: JSON.stringify({ code }) });
     try {
       const transactions: NormalizedTransaction[] = [];
       for (const { uid } of session.accounts) {
-        let continuation: string | undefined;
-        let pages = 0;
-        do {
-          const q = new URLSearchParams({ date_from: since, ...(continuation ? { continuation_key: continuation } : {}) });
-          const page = await this.call<{ transactions: EbTransaction[]; continuation_key?: string | null }>(`/accounts/${uid}/transactions?${q}`, { psu });
-          for (const t of page.transactions ?? []) {
-            const tx = toTransaction(t);
-            if (tx) transactions.push(tx);
+        // Ask for the longest history first; a bank that shares less (90 days) refuses the date.
+        for (const [i, dateFrom] of since.entries()) {
+          try {
+            transactions.push(...(await this.readAccount(uid, dateFrom, psu)));
+            break;
+          } catch (e) {
+            const tooOld = e instanceof EnableBankingError && (e.status === 400 || e.status === 422);
+            if (!tooOld || i === since.length - 1) throw e;
           }
-          continuation = page.continuation_key ?? undefined;
-        } while (continuation && ++pages < 200);
+        }
       }
       return { accounts: session.accounts.length, transactions };
     } finally {

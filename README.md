@@ -21,7 +21,7 @@ Then upload the files in [`samples/`](samples) to see a full report. Optional: s
 ## Run the tests
 
 ```bash
-npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, bank and mailbox connections, doubts (131 tests)
+npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, bank and mailbox connections, doubts (132 tests)
 npm run typecheck
 ```
 
@@ -71,7 +71,7 @@ Uploaded files
 
 ## User journey
 
-1. **Connect your bank** (`/`): search the bank, sign in on the bank's own page (PSD2 strong authentication), come back. The app reads up to 24 months of transactions of every account the user shared, once, then deletes the consent (`lib/banking`, `api/bank/*`). Cards with their own statement (American Express) are connected the same way.
+1. **Connect your bank** (`/`): search the bank, sign in on the bank's own page (PSD2 strong authentication), come back. The app reads the transactions of every account the user shared, up to 24 months (90 days at Crédit Mutuel, the bank's limit), once, then deletes the consent (`lib/banking`, `api/bank/*`). Cards with their own statement (American Express) are connected the same way.
 2. **Connect your mailbox**: Gmail or Outlook / Hotmail, one-time read-only scan of receipts (`lib/gmail.ts`, `lib/outlook.ts`).
 3. **Report**, with "We need your help" on top (`lib/doubts.ts`): only the points the data could not settle, each with one small action. Unnamed PayPal, Google Play or Apple payments without a mailbox connected ask for the mailbox (one action answers many); a bank paying an American Express card asks to connect the card; a recurring charge still unnamed asks for its name, or a screenshot of the store's subscription list.
 4. **Advanced** (`/advanced`, `/start`): manual import of files and the import checklist, for testing, for banks the provider does not cover, or for a PayPal export.
@@ -81,6 +81,15 @@ Uploaded files
 The connection goes through [Enable Banking](https://enablebanking.com), a licensed PSD2 account information provider with self-serve sign-up and coverage of French banks. (GoCardless Bank Account Data, formerly Nordigen, no longer accepts new customers.) Its "restricted production" mode is enough for the test phase: it connects real accounts that you whitelist. Other providers (Powens, Bridge, Tink) can be added behind the same `BankProvider` interface (`lib/banking/types.ts`).
 
 Setup: create an application in the Enable Banking control panel, register the redirect URL `https://<your-domain>/api/bank/callback`, and set `ENABLE_BANKING_APP_ID` and `ENABLE_BANKING_PRIVATE_KEY` (the application's PEM key). Requests are authenticated with a one-hour JWT signed with that key (RS256). Without it, `BANK_DEMO=1` shows a made-up "Demo bank (test data)" to try the whole journey; it is on by default in development.
+
+### Testing with a real bank (Crédit Mutuel)
+
+1. Create an account and an application on enablebanking.com (production, restricted mode is enough for your own accounts), with the redirect URL `https://<your-domain>/api/bank/callback`. The bank sign-in needs a public HTTPS address: deploy on Vercel first (see below).
+2. In the Enable Banking control panel, link your own Crédit Mutuel account to the application (restricted mode only reads the accounts linked there).
+3. Put the application id and its private key in `ENABLE_BANKING_APP_ID` and `ENABLE_BANKING_PRIVATE_KEY`, then run `npm run bank:check -- https://<your-domain>/api/bank/callback "Crédit Mutuel"`. It checks the key, the application, the redirect URL, and lists the Crédit Mutuel entries with the headers the bank requires. Nothing is connected.
+4. Open the app, search "Crédit Mutuel", sign in on the bank's page and confirm in the Crédit Mutuel app.
+
+What to expect: Crédit Mutuel shares 90 days of history through PSD2. The app asks for 24 months, then 13, then 90 days, and keeps the first period the bank accepts. With 90 days, a monthly charge shows two or three times: two identical charges a month apart count, marked "Seen twice so far". Yearly renewals are outside that window, so the report asks to connect the mailbox, whose receipts go back years. If the connection fails, the home page shows the bank's error code (for example `PSU_HEADER_NOT_PROVIDED`) and the server log has the details.
 
 ### Outlook setup
 
