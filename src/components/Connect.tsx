@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useI18n } from "./I18n";
 
 interface Institution { name: string; country: string }
 
@@ -18,6 +19,8 @@ const rank = (name: string) => {
 
 /** Search a bank, then go to its own sign-in page. We never see the password. */
 export function BankPicker({ initialQuery = "" }: { initialQuery?: string }) {
+  const { m } = useI18n();
+  const t = m.picker;
   const [country, setCountry] = useState("FR");
   const [query, setQuery] = useState(initialQuery);
   const [list, setList] = useState<Institution[] | null>(null);
@@ -31,10 +34,10 @@ export function BankPicker({ initialQuery = "" }: { initialQuery?: string }) {
     fetch(`/api/bank/institutions?country=${country}`)
       .then(async (r) => {
         const json = await r.json();
-        if (!r.ok) throw new Error(json.error ?? "The list of banks is unavailable.");
+        if (!r.ok) throw new Error(json.error ?? t.unavailable);
         if (live) setList(json.institutions);
       })
-      .catch((e) => live && setError(e instanceof Error ? e.message : "The list of banks is unavailable."));
+      .catch((e) => live && setError(e instanceof Error ? e.message : t.unavailable));
     return () => {
       live = false;
     };
@@ -53,10 +56,10 @@ export function BankPicker({ initialQuery = "" }: { initialQuery?: string }) {
     try {
       const res = await fetch("/api/bank/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(i) });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "This bank cannot be reached right now.");
+      if (!res.ok) throw new Error(json.error ?? t.unreachable);
       window.location.href = json.url;
     } catch (e) {
-      setError(e instanceof Error ? e.message : "This bank cannot be reached right now.");
+      setError(e instanceof Error ? e.message : t.unreachable);
       setGoing(null);
     }
   }
@@ -68,16 +71,16 @@ export function BankPicker({ initialQuery = "" }: { initialQuery?: string }) {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search your bank (Crédit Mutuel, BNP, Amex...)"
-          aria-label="Search your bank"
+          placeholder={t.placeholder}
+          aria-label={t.aria}
           className="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-2"
         />
-        <select value={country} onChange={(e) => setCountry(e.target.value)} aria-label="Country" className="rounded-xl border border-slate-300 px-2 py-2 text-sm">
+        <select value={country} onChange={(e) => setCountry(e.target.value)} aria-label={t.country} className="rounded-xl border border-slate-300 px-2 py-2 text-sm">
           {COUNTRIES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
         </select>
       </div>
       {error && <p className="text-sm text-red-700">{error}</p>}
-      {!list && !error && <p className="text-sm text-slate-500">Loading banks…</p>}
+      {!list && !error && <p className="text-sm text-slate-500">{t.loading}</p>}
       {list && (
         <ul className="grid gap-2 sm:grid-cols-2">
           {shown.map((i) => (
@@ -88,11 +91,11 @@ export function BankPicker({ initialQuery = "" }: { initialQuery?: string }) {
                 onClick={() => connect(i)}
                 className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-left text-sm font-medium hover:border-brand disabled:opacity-50"
               >
-                {going === i.name ? "Opening your bank…" : i.name}
+                {going === i.name ? t.opening : i.name}
               </button>
             </li>
           ))}
-          {shown.length === 0 && <li className="text-sm text-slate-500">No bank matches “{query}”.</li>}
+          {shown.length === 0 && <li className="text-sm text-slate-500">{t.noMatch(query)}</li>}
         </ul>
       )}
     </div>

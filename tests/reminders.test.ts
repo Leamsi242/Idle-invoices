@@ -15,7 +15,7 @@ describe("calendar reminders", () => {
     expect(ics).toContain("DTSTART;VALUE=DATE:20261008");
     expect(ics).toContain("DTEND;VALUE=DATE:20261009");
     expect(ics).toContain("TRIGGER:PT9H");
-    expect(ics).toContain("SUMMARY:Cancel the WeTransfer trial? It ends on 2026-10-10");
+    expect(ics).toContain("SUMMARY:Cancel the WeTransfer trial? It ends on 10 Oct 2026");
     expect(ics).toContain("DTSTAMP:20260923T100000Z");
     // Every line fits in 75 octets once unfolded lines are split.
     for (const line of ics.split("\r\n")) expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);

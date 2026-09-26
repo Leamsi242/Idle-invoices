@@ -8,6 +8,7 @@ import { maskSensitive } from "./mask";
 import { upcomingTrials, type UpcomingTrial } from "./engine/trials";
 import { reconcile } from "./engine/reconcile";
 import { findDoubts, type Connections, type Doubt } from "./doubts";
+import type { Locale } from "./i18n";
 import { buildPlan, collectFacts, EMPTY_ANSWERS, sanitizeAnswers, type Answers, type Facts, type PlanItem } from "./onboarding";
 
 /** Data older than this is purged automatically (see the privacy page). */
@@ -319,7 +320,7 @@ export async function getConnections(sessionId: string | null): Promise<Connecti
   return { banks: [...banks], mailboxes: [...mailboxes], files };
 }
 
-export async function getDoubts(sessionId: string): Promise<Doubt[]> {
+export async function getDoubts(sessionId: string, locale: Locale = "en"): Promise<Doubt[]> {
   const [subs, onboarding, connections] = await Promise.all([listSubscriptions(sessionId), getOnboarding(sessionId), getConnections(sessionId)]);
-  return findDoubts(subs, onboarding.facts, connections);
+  return findDoubts(subs, onboarding.facts, connections, locale);
 }

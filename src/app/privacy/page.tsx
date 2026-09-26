@@ -1,9 +1,12 @@
 import { RETENTION_DAYS } from "@/lib/store";
 import { DeleteEverythingButton } from "@/components/Questions";
+import { getLocale } from "@/lib/locale";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Privacy · Subscription Detective" };
 
-export default function Privacy() {
+export default async function Privacy() {
+  if ((await getLocale()) === "fr") return <PrivacyFr />;
   return (
     <article className="space-y-5 leading-relaxed">
       <h1 className="text-2xl font-bold">How we handle your data</h1>
@@ -72,6 +75,82 @@ export default function Privacy() {
       </section>
 
       <p className="text-sm text-slate-500">This is a prototype. A GDPR review and a security audit will happen before any public launch.</p>
+      <DeleteEverythingButton />
+    </article>
+  );
+}
+
+function PrivacyFr() {
+  return (
+    <article className="space-y-5 leading-relaxed">
+      <h1 className="text-2xl font-bold">Ce que nous faisons de vos données</h1>
+      <p>Vous nous confiez des données financières. Voici exactement ce qu&apos;elles deviennent, en termes simples.</p>
+
+      <section className="space-y-2">
+        <h2 className="font-semibold">Ce que nous gardons</h2>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>Pour chaque paiement : sa date, son montant, sa devise et son libellé. Rien d&apos;autre.</li>
+          <li>Les abonnements trouvés, et vos réponses à « Vous l&apos;utilisez encore ? » et « Qu&apos;est-ce que c&apos;est ? ».</li>
+          <li>Les essais gratuits que vous nous demandez de suivre (nom, date de fin, prix). Les rappels sont créés dans l&apos;agenda de votre téléphone, pas chez nous.</li>
+          <li>Les noms des fichiers envoyés et des banques et boîtes mail connectées, pour que vous sachiez ce qui a été lu.</li>
+          <li>Vos réponses à « Comment payez-vous ? » (quelles banques, cartes, applications de paiement, magasins et boîtes mail, jamais un numéro ni un mot de passe), chiffrées, pour construire votre liste.</li>
+        </ul>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="font-semibold">Ce que nous ne gardons jamais</h2>
+        <ul className="list-disc space-y-1 pl-5">
+          <li><strong>Vos fichiers.</strong> Ils sont lus en mémoire puis effacés aussitôt. Ils ne sont jamais écrits sur disque.</li>
+          <li><strong>Les numéros de compte, IBAN et numéros de carte.</strong> Ils sont masqués pendant la lecture, avant tout enregistrement (par exemple ••••7890).</li>
+          <li>Votre solde, votre nom ou votre adresse.</li>
+          <li><strong>Le mot de passe de votre banque ou de votre boîte mail.</strong> Vous le tapez sur la page de votre banque ou de votre messagerie, jamais sur la nôtre.</li>
+          <li><strong>Un accès permanent à votre banque ou à votre boîte mail.</strong> Chaque connexion sert une fois, juste après votre identification, puis elle est fermée.</li>
+        </ul>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="font-semibold">Comment c&apos;est protégé</h2>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>Les libellés de paiement sont chiffrés dans la base de données (AES-256).</li>
+          <li>Toutes les connexions passent en HTTPS.</li>
+          <li>Il n&apos;y a pas de compte : vos données sont liées à un identifiant aléatoire gardé dans un cookie de ce navigateur uniquement.</li>
+          <li>
+            Si vous connectez votre banque, la connexion passe par Enable Banking, un établissement de paiement agréé selon la directive
+            européenne DSP2 pour lire les informations de compte. L&apos;accès est en lecture seule (personne ne peut déplacer d&apos;argent avec),
+            limité à un jour, et nous le fermons dès que vos opérations sont lues. Nous lisons jusqu&apos;à deux ans d&apos;historique selon votre
+            banque (le Crédit Mutuel partage les 90 derniers jours).
+          </li>
+          <li>
+            Si vous connectez Outlook ou Hotmail, nous demandons à Microsoft la seule lecture des e-mails, sans jeton de longue durée. Nous
+            n&apos;ouvrons que les e-mails qui ressemblent à des reçus et gardons les mêmes informations que pour Gmail. L&apos;accès expire seul
+            en une heure environ et n&apos;est jamais conservé.
+          </li>
+          <li>
+            Si vous lisez Gmail, nous obtenons un accès en lecture seule le temps de la lecture. Nous n&apos;ouvrons que les e-mails dont
+            l&apos;objet parle de reçu, facture, abonnement, renouvellement ou essai, gardons le montant, le marchand et la date des vrais reçus,
+            et révoquons l&apos;accès juste après. Vos e-mails ne sont jamais conservés.
+          </li>
+          <li>
+            Si vous envoyez une capture de vos abonnements, seule cette image est transmise à Claude (l&apos;IA d&apos;Anthropic) pour en lire le
+            texte. Vos relevés ne sont jamais envoyés.
+          </li>
+        </ul>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="font-semibold">Combien de temps</h2>
+        <p>
+          Jusqu&apos;à ce que vous appuyiez sur « Tout supprimer », et jamais plus de {RETENTION_DAYS} jours après votre dernier envoi. Ensuite,
+          tout est effacé automatiquement.
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="font-semibold">Pourquoi</h2>
+        <p>Uniquement pour vous montrer votre rapport d&apos;abonnements. Nous ne vendons, ne partageons et n&apos;utilisons vos données pour rien d&apos;autre.</p>
+      </section>
+
+      <p className="text-sm text-slate-500">Ceci est un prototype. Un examen RGPD et un audit de sécurité auront lieu avant tout lancement public.</p>
       <DeleteEverythingButton />
     </article>
   );

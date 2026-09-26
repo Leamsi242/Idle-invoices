@@ -104,7 +104,7 @@ describe("demo bank, then the doubts left for the user", () => {
     const doubts = findDoubts(subscriptions, facts, { banks: ["Demo bank (test data)"], mailboxes: [], files: 0 });
     expect(doubts.map((d) => d.kind)).toEqual(["mail", "card", ...doubts.filter((d) => d.kind === "name").map(() => "name")]);
     const google = doubts.find((d) => d.kind === "name" && d.store === "google");
-    expect(google?.title).toBe("Which service is the 9.99 EUR a week paid through Google Play?");
+    expect(google?.title).toBe("Which service is the €9.99 a week paid through Google Play?");
     expect(names).not.toContain("Uber One");
 
     // Once the mailbox is connected, the mail question goes away.
@@ -174,5 +174,15 @@ describe("a Crédit Mutuel connection (90 days of history)", () => {
     const doubts = findDoubts(subscriptions, collectFacts(transactions, new Set()), { banks: ["Crédit Mutuel"], mailboxes: [], files: 0 });
     expect(doubts[0]).toMatchObject({ kind: "mail" });
     expect(doubts[0].detail).toMatch(/only shares the last 3 months/);
+  });
+});
+
+describe("doubts in French", () => {
+  it("asks the same questions in French, with French prices", () => {
+    const { transactions } = demoTransactions("2026-09-26");
+    const { subscriptions } = analyze(transactions, { today: "2026-09-26" });
+    const doubts = findDoubts(subscriptions, collectFacts(transactions, new Set()), { banks: ["Demo"], mailboxes: [], files: 0 }, "fr");
+    expect(doubts[1].title).toBe("Votre banque paie une carte American Express chaque mois");
+    expect(doubts.find((d) => d.kind === "name" && d.store === "google")?.title).toMatch(/^Quel service se cache derrière 9,99\s€ par semaine payés via Google Play \?$/);
   });
 });

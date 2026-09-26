@@ -1,3 +1,5 @@
+import { formatDate, messages, type Locale } from "./i18n";
+
 /**
  * Builds a calendar file (.ics) for a reminder. It is generated in the browser and opened by
  * the phone's calendar app, so reminders work without an account or an email address.
@@ -59,23 +61,25 @@ export function buildIcs(r: Reminder, now = new Date()): string {
 const addDays = (d: string, n: number) => new Date(Date.parse(d) + n * 86_400_000).toISOString().slice(0, 10);
 
 /** Two days before a trial ends: enough time to cancel. */
-export function trialReminder(serviceName: string, endsOn: string, price?: string, url?: string): Reminder {
+export function trialReminder(serviceName: string, endsOn: string, price?: string, url?: string, locale: Locale = "en"): Reminder {
+  const t = messages(locale).ics;
   return {
     uid: `trial-${serviceName}-${endsOn}`.replace(/[^A-Za-z0-9-]/g, ""),
-    title: `Cancel the ${serviceName} trial? It ends on ${endsOn}`,
+    title: t.trialTitle(serviceName, formatDate(endsOn, locale)),
     date: addDays(endsOn, -2),
-    description: `Your free trial of ${serviceName} ends on ${endsOn}.${price ? ` After that you pay ${price}.` : ""} Cancel now if you don't want to keep it.`,
+    description: t.trialText(serviceName, formatDate(endsOn, locale), price),
     url,
   };
 }
 
-/** Three days before the next expected charge. */
-export function renewalReminder(serviceName: string, nextCharge: string, price: string, url?: string): Reminder {
+/** Three days before a renewal. */
+export function renewalReminder(serviceName: string, nextCharge: string, price: string, url?: string, locale: Locale = "en"): Reminder {
+  const t = messages(locale).ics;
   return {
     uid: `renewal-${serviceName}-${nextCharge}`.replace(/[^A-Za-z0-9-]/g, ""),
-    title: `${serviceName} charges ${price} on ${nextCharge}`,
+    title: t.renewalTitle(serviceName, price, formatDate(nextCharge, locale)),
     date: addDays(nextCharge, -3),
-    description: `${serviceName} is expected to charge ${price} around ${nextCharge}. Still using it? If not, cancel before then.`,
+    description: t.renewalText(serviceName, price, formatDate(nextCharge, locale)),
     url,
   };
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ColumnMapping } from "@/lib/parsers/bank-csv";
+import { useI18n } from "./I18n";
 
 interface NeedsMapping { fileName: string; headers: string[]; preview: string[][] }
 interface UploadResponse {
@@ -16,6 +17,8 @@ type Hint = "apple" | "google" | "email";
 const needsHint = (f: File) => f.type.startsWith("image/") || f.name.toLowerCase().endsWith(".txt");
 
 export default function UploadForm() {
+  const { m } = useI18n();
+  const u = m.upload;
   const router = useRouter();
   const [files, setFiles] = useState<File[]>([]);
   const [hints, setHints] = useState<Record<string, Hint>>({});
@@ -44,7 +47,7 @@ export default function UploadForm() {
       }
       const res = await fetch("/api/upload", { method: "POST", body });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Upload failed");
+      if (!res.ok) throw new Error(json.error ?? u.failed);
       setResponse((prev) => ({
         results: [...(prev?.results ?? []), ...json.results],
         needsMapping: json.needsMapping,
@@ -54,7 +57,7 @@ export default function UploadForm() {
       setFiles([]);
       setPasted("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed");
+      setError(e instanceof Error ? e.message : u.failed);
     } finally {
       setBusy(false);
     }
@@ -78,8 +81,8 @@ export default function UploadForm() {
           }}
         >
           <span className="text-3xl" aria-hidden>📄</span>
-          <span className="font-medium">Drop files here or tap to choose</span>
-          <span className="text-sm text-slate-500">Bank statements (CSV, PDF), PayPal activity (CSV), receipts (.eml), app store screenshots</span>
+          <span className="font-medium">{u.drop}</span>
+          <span className="text-sm text-slate-500">{u.kinds}</span>
           <input
             type="file"
             multiple
@@ -97,17 +100,17 @@ export default function UploadForm() {
                 <span className="flex items-center gap-2">
                   {needsHint(f) && (
                     <select
-                      aria-label={`Source of ${f.name}`}
+                      aria-label={u.sourceOf(f.name)}
                       className="rounded border border-slate-300 px-2 py-1"
                       value={hints[f.name] ?? "apple"}
                       onChange={(e) => setHints({ ...hints, [f.name]: e.target.value as Hint })}
                     >
-                      <option value="apple">Apple subscriptions</option>
-                      <option value="google">Google Play subscriptions</option>
-                      <option value="email">Receipt</option>
+                      <option value="apple">{u.appleSubs}</option>
+                      <option value="google">{u.googleSubs}</option>
+                      <option value="email">{u.receipt}</option>
                     </select>
                   )}
-                  <button type="button" className="text-slate-400 hover:text-red-600" onClick={() => setFiles(files.filter((x) => x !== f))} aria-label={`Remove ${f.name}`}>
+                  <button type="button" className="text-slate-400 hover:text-red-600" onClick={() => setFiles(files.filter((x) => x !== f))} aria-label={u.remove(f.name)}>
                     ✕
                   </button>
                 </span>
@@ -117,14 +120,12 @@ export default function UploadForm() {
         )}
 
         <details className="rounded-xl bg-white p-4">
-          <summary className="cursor-pointer font-medium">Paste an app store list or a receipt</summary>
-          <p className="mt-2 text-sm text-slate-500">
-            iPhone: Settings, your name, Subscriptions. Android: Play Store, Payments &amp; subscriptions. Copy the list and paste it here.
-          </p>
-          <select className="mt-3 w-full rounded border border-slate-300 px-2 py-2 text-sm" value={pastedHint} onChange={(e) => setPastedHint(e.target.value as Hint)} aria-label="Pasted text source">
-            <option value="apple">Apple subscriptions list</option>
-            <option value="google">Google Play subscriptions list</option>
-            <option value="email">Receipt email</option>
+          <summary className="cursor-pointer font-medium">{u.paste}</summary>
+          <p className="mt-2 text-sm text-slate-500">{u.pasteHelp}</p>
+          <select className="mt-3 w-full rounded border border-slate-300 px-2 py-2 text-sm" value={pastedHint} onChange={(e) => setPastedHint(e.target.value as Hint)} aria-label={u.pastedAria}>
+            <option value="apple">{u.appleList}</option>
+            <option value="google">{u.googleList}</option>
+            <option value="email">{u.receiptEmail}</option>
           </select>
           <textarea
             className="mt-2 h-32 w-full rounded border border-slate-300 p-2 text-sm"
@@ -139,7 +140,7 @@ export default function UploadForm() {
           disabled={busy || (files.length === 0 && !pasted.trim())}
           className="w-full rounded-xl bg-brand px-4 py-3 font-semibold text-white disabled:opacity-40"
         >
-          {busy ? "Reading your files…" : "Find my subscriptions"}
+          {busy ? u.reading : u.find}
         </button>
       </form>
 
@@ -147,10 +148,10 @@ export default function UploadForm() {
 
       {response && (
         <section className="space-y-4 rounded-xl bg-white p-4">
-          <h2 className="font-semibold">Files read</h2>
+          <h2 className="font-semibold">{u.filesRead}</h2>
           <ul className="space-y-1 text-sm">
             {response.results.map((r, i) => (
-              <li key={i}>✅ {r.fileName}: {r.count} {r.source} records</li>
+              <li key={i}>✅ {r.fileName} : {u.records(r.count, r.source)}</li>
             ))}
             {response.errors.map((r, i) => (
               <li key={`e${i}`} className="text-red-700">⚠️ {r.fileName}: {r.error}</li>
@@ -160,11 +161,11 @@ export default function UploadForm() {
             <ColumnMapper key={m.fileName} info={m} busy={busy} onSubmit={(file, mapping) => send([file], { [file.name]: mapping })} />
           ))}
           {response.results.length > 0 && (
-            <a href="/start" className="block text-sm text-brand underline">See what is still missing from your checklist</a>
+            <a href="/start" className="block text-sm text-brand underline">{u.missing}</a>
           )}
           {response.results.length > 0 && response.needsMapping.length === 0 && (
             <button onClick={() => router.push("/review")} className="w-full rounded-xl bg-brand px-4 py-3 font-semibold text-white">
-              Continue: {response.subscriptions ?? 0} subscriptions found
+              {u.continue(response.subscriptions ?? 0)}
             </button>
           )}
         </section>

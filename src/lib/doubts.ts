@@ -2,6 +2,7 @@ import type { Channel, Frequency, Status } from "./types";
 import type { Facts } from "./onboarding";
 import { daysBetween } from "./dates";
 import { SHORT_HISTORY_DAYS } from "./engine/pipeline";
+import { messages, money, type Locale } from "./i18n";
 
 /**
  * After an automatic analysis (bank and mailbox connected), the few points where the report is
@@ -27,50 +28,36 @@ export type Doubt =
   | { kind: "name"; id: string; title: string; detail: string; labelKey: string; store?: "apple" | "google" };
 
 const MAX_NAME_QUESTIONS = 5;
-const via: Partial<Record<Channel, string>> = { google: "Google Play", apple: "the App Store", paypal: "PayPal" };
 
-export function findDoubts(subs: DoubtSub[], facts: Facts, connections: Connections): Doubt[] {
+export function findDoubts(subs: DoubtSub[], facts: Facts, connections: Connections, locale: Locale = "en"): Doubt[] {
+  const t = messages(locale).doubts;
   const doubts: Doubt[] = [];
   const hidden = facts.intermediaries.paypal.unexplained + facts.intermediaries.google.unexplained + facts.intermediaries.apple.unexplained;
   const shortHistory = !!facts.bankFrom && !!facts.bankTo && daysBetween(facts.bankFrom, facts.bankTo) < SHORT_HISTORY_DAYS;
   // One connection answers many questions at once: ask for it first.
   if (connections.mailboxes.length === 0 && (hidden > 0 || shortHistory)) {
-    const yearly = "Your bank only shares the last 3 months, so yearly renewals (Amazon Prime, software, insurance) don't show. Receipts in your mailbox go back years.";
     doubts.push({
       kind: "mail",
       id: "mail",
-      title: hidden > 0
-        ? `${hidden} payment${hidden === 1 ? "" : "s"} through PayPal, Google Play or Apple can't be named from your bank alone`
-        : "Yearly subscriptions are missing from your bank's last 3 months",
-      detail: hidden > 0
-        ? `Connect your mailbox: the receipts say which service each payment was for.${shortHistory ? ` ${yearly}` : ""} Read-only, receipts only, access closed right after.`
-        : `${yearly} Connect your mailbox: read-only, receipts only, access closed right after.`,
+      title: hidden > 0 ? t.mailTitleHidden(hidden) : t.mailTitleShort,
+      detail: hidden > 0 ? `${t.mailWhy}${shortHistory ? ` ${t.mailYearly}` : ""} ${t.mailSafe}` : `${t.mailYearly} ${t.connectMailbox} ${t.mailSafe}`,
     });
   }
   if (facts.amexSettlements > 0 && !facts.amexStatement) {
-    doubts.push({
-      kind: "card",
-      id: "card:amex",
-      bank: "American Express",
-      title: "Your bank pays an American Express card every month",
-      detail: "What that card pays for is only visible on the card itself. Connect it the same way as your bank.",
-    });
+    doubts.push({ kind: "card", id: "card:amex", bank: "American Express", title: t.cardTitle, detail: t.cardDetail });
   }
   const unnamed = subs.filter((s) => s.needsLabel && s.status !== "cancelled").slice(0, MAX_NAME_QUESTIONS);
   for (const s of unnamed) {
     const store = s.channel === "google" ? "google" : s.channel === "apple" ? "apple" : undefined;
-    const every = { weekly: "a week", monthly: "a month", quarterly: "a quarter", yearly: "a year" }[s.frequency];
+    const amount = money(s.currentAmount, s.currency, locale);
+    const via = t.via[s.channel];
     doubts.push({
       kind: "name",
       id: `name:${s.key}`,
       labelKey: s.key,
       store,
-      title: via[s.channel]
-        ? `Which service is the ${s.currentAmount.toFixed(2)} ${s.currency} ${every} paid through ${via[s.channel]}?`
-        : `What is "${s.serviceName}", ${s.currentAmount.toFixed(2)} ${s.currency} ${every}?`,
-      detail: store
-        ? `Type its name, or add a screenshot of your ${store === "google" ? "Google Play" : "App Store"} subscriptions and we will match it.`
-        : "Type its name so we can show how to cancel it. If you don't know, the charge date and amount are in your banking app.",
+      title: via ? t.nameVia(amount, t.every[s.frequency], via) : t.nameWhat(s.serviceName, amount, t.every[s.frequency]),
+      detail: store ? t.nameStore(t.storeName[store]) : t.nameOther,
     });
   }
   return doubts;

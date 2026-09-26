@@ -3,9 +3,11 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { buildIcs, type Reminder } from "@/lib/ics";
+import { useI18n } from "./I18n";
 
 /** Downloads a calendar reminder; the phone opens it in its calendar app. */
-export function ReminderButton({ reminder, label = "Remind me" }: { reminder: Reminder; label?: string }) {
+export function ReminderButton({ reminder, label }: { reminder: Reminder; label?: string }) {
+  const { m } = useI18n();
   return (
     <button
       type="button"
@@ -20,12 +22,14 @@ export function ReminderButton({ reminder, label = "Remind me" }: { reminder: Re
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       }}
     >
-      🔔 {label}
+      🔔 {label ?? m.report.remindMe}
     </button>
   );
 }
 
 export function TrialForm() {
+  const { m } = useI18n();
+  const t = m.trials;
   const router = useRouter();
   const [pending, start] = useTransition();
   const [serviceName, setServiceName] = useState("");
@@ -45,7 +49,7 @@ export function TrialForm() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ serviceName, endsOn, priceAfter: price ? Number(price.replace(",", ".")) : undefined, frequency }),
           });
-          if (!res.ok) return setError((await res.json()).error ?? "Could not save");
+          if (!res.ok) return setError((await res.json()).error ?? t.couldNotSave);
           setServiceName("");
           setEndsOn("");
           setPrice("");
@@ -53,31 +57,32 @@ export function TrialForm() {
         });
       }}
     >
-      <h2 className="font-semibold">Just started a free trial?</h2>
-      <p className="text-sm text-slate-600">Tell us when it ends. We&apos;ll show it here and you can add a reminder to your calendar two days before.</p>
-      <input required value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder="Service, e.g. WeTransfer" className="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+      <h2 className="font-semibold">{t.formTitle}</h2>
+      <p className="text-sm text-slate-600">{t.formIntro}</p>
+      <input required value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder={t.servicePh} className="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
       <div className="grid grid-cols-2 gap-2">
         <label className="text-sm">
-          <span className="text-slate-600">Trial ends on</span>
+          <span className="text-slate-600">{t.endsOn}</span>
           <input required type="date" value={endsOn} onChange={(e) => setEndsOn(e.target.value)} className="mt-1 w-full rounded border border-slate-300 px-3 py-2" />
         </label>
         <label className="text-sm">
-          <span className="text-slate-600">Then costs (€)</span>
+          <span className="text-slate-600">{t.thenCosts}</span>
           <input inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="9.99" className="mt-1 w-full rounded border border-slate-300 px-3 py-2" />
         </label>
       </div>
-      <select value={frequency} onChange={(e) => setFrequency(e.target.value)} className="w-full rounded border border-slate-300 px-2 py-2 text-sm" aria-label="Billing period after the trial">
-        <option value="weekly">per week</option>
-        <option value="monthly">per month</option>
-        <option value="yearly">per year</option>
+      <select value={frequency} onChange={(e) => setFrequency(e.target.value)} className="w-full rounded border border-slate-300 px-2 py-2 text-sm" aria-label={t.periodAria}>
+        <option value="weekly">{m.per.weekly}</option>
+        <option value="monthly">{m.per.monthly}</option>
+        <option value="yearly">{m.per.yearly}</option>
       </select>
       {error && <p className="text-sm text-red-700">{error}</p>}
-      <button disabled={pending} className="w-full rounded-lg bg-brand px-4 py-2 font-semibold text-white disabled:opacity-40">Track this trial</button>
+      <button disabled={pending} className="w-full rounded-lg bg-brand px-4 py-2 font-semibold text-white disabled:opacity-40">{t.track}</button>
     </form>
   );
 }
 
 export function RemoveTrialButton({ id }: { id: string }) {
+  const { m } = useI18n();
   const router = useRouter();
   const [pending, start] = useTransition();
   return (
@@ -89,7 +94,7 @@ export function RemoveTrialButton({ id }: { id: string }) {
         router.refresh();
       })}
     >
-      Done, remove
+      {m.trials.remove}
     </button>
   );
 }

@@ -21,7 +21,7 @@ Then upload the files in [`samples/`](samples) to see a full report. Optional: s
 ## Run the tests
 
 ```bash
-npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, bank and mailbox connections, doubts (143 tests)
+npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, bank and mailbox connections, doubts, French and English (149 tests)
 npm run typecheck
 ```
 
@@ -106,6 +106,10 @@ The checklist also reads what was uploaded (`lib/onboarding.ts`):
 - statements covering less than about 10 months get a note, since yearly renewals would be missed.
 
 The report shows "This report may be incomplete" while items are left to add. The answers hold known ids only, are encrypted, and are deleted with everything else.
+
+## Languages
+
+The interface is in French and English (`lib/i18n.ts`, one dictionary per language). The language comes from the browser (Accept-Language), and the link in the footer switches it and remembers the choice in a cookie. Texts made by the engine (reasons, doubts) are written in English and translated for display by `translateReason`, so the engine and its tests stay language-free; cancellation steps and calendar reminders take the locale. The import checklist (`/start`) and the column-mapping screen, both under "Advanced", are still in English only.
 
 ## Privacy and security
 
