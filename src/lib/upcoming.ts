@@ -17,7 +17,7 @@ export interface UpcomingCharge {
   cancellationUrl?: string;
 }
 
-interface Sub { key: string; serviceName: string; status: Status; nextCharge: string; currentAmount: number; currency: string; frequency: Frequency; cancellationUrl?: string }
+interface Sub { id?: string; key: string; serviceName: string; status: Status; nextCharge: string; currentAmount: number; currency: string; frequency: Frequency; cancellationUrl?: string }
 
 export function upcomingCharges(subs: Sub[], trials: UpcomingTrial[], today: string, days = 30): UpcomingCharge[] {
   const until = new Date(Date.parse(`${today}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
@@ -28,7 +28,8 @@ export function upcomingCharges(subs: Sub[], trials: UpcomingTrial[], today: str
     for (let i = 0; date < today && i < 60; i++) date = nextChargeDate(date, s.frequency);
     // Every charge in the window: a weekly plan charges four or five times in 30 days.
     for (let i = 0; date <= until && i < 6; i++, date = nextChargeDate(date, s.frequency)) {
-      out.push({ key: s.key, serviceName: s.serviceName, date, amount: s.currentAmount, currency: s.currency, kind: "renewal", cancellationUrl: s.cancellationUrl });
+      // The subscription's own id: two plans of one service share a label key.
+      out.push({ key: s.id ?? s.key, serviceName: s.serviceName, date, amount: s.currentAmount, currency: s.currency, kind: "renewal", cancellationUrl: s.cancellationUrl });
     }
   }
   for (const t of trials) {

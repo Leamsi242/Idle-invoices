@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSessionId } from "@/lib/session";
-import { getDoubts, getReport, listAlerts, type StoredSubscription } from "@/lib/store";
+import { getDoubts, getReport, listAlerts, PAID_WITH_FILE, PAID_WITH_RECEIPTS, type StoredSubscription } from "@/lib/store";
+import { buildReport } from "@/lib/engine/flags";
 import { AlertsPanel } from "@/components/Watch";
 import { alertLine } from "@/lib/notify";
 import { Doubts } from "@/components/Doubts";
@@ -17,6 +18,25 @@ import { getMessages } from "@/lib/locale";
 import { formatDate, money, translateReason, type Locale, type Messages } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
+
+const payName = (p: string, m: Messages) => (p === PAID_WITH_FILE ? m.report.viaFile : p === PAID_WITH_RECEIPTS ? m.report.viaReceipts : p);
+
+/** One chip per way of paying found in the data, each linking to the report filtered on it. */
+function PayFilter({ subs, active, m }: { subs: StoredSubscription[]; active?: string; m: Messages }) {
+  const counts = new Map<string, number>();
+  for (const s of subs) if (s.status !== "cancelled") for (const p of s.paidWith ?? []) counts.set(p, (counts.get(p) ?? 0) + 1);
+  if (counts.size < 2 && !active) return null;
+  const chip = (on: boolean) => `rounded-full border px-3 py-1 text-sm ${on ? "border-brand bg-brand text-white" : "border-slate-300 bg-white text-slate-700 hover:border-brand"}`;
+  return (
+    <nav className="flex flex-wrap items-center gap-2" aria-label={m.report.filterLabel}>
+      <span className="text-sm text-slate-500">{m.report.filterLabel}</span>
+      <Link href="/report" className={chip(!active)}>{m.report.filterAll}</Link>
+      {[...counts].sort((a, b) => b[1] - a[1]).map(([p, n]) => (
+        <Link key={p} href={`/report?pay=${encodeURIComponent(p)}`} className={chip(active === p)}>{payName(p, m)} ({n})</Link>
+      ))}
+    </nav>
+  );
+}
 
 function Card({ s, m, locale }: { s: StoredSubscription; m: Messages; locale: Locale }) {
   const t = m.report;
@@ -35,6 +55,9 @@ function Card({ s, m, locale }: { s: StoredSubscription; m: Messages; locale: Lo
         {$(s.currentAmount)} {m.per[s.frequency]} · {t.since} {d(s.firstSeen)} · {t.last} {d(s.lastSeen)}
         {unmasked.length > 0 && <> · {t.unmasked} {unmasked.join(", ")}</>}
       </p>
+      {s.paidWith && s.paidWith.length > 0 && (
+        <p className="text-xs text-slate-500">{t.paidWith} {s.paidWith.map((p) => payName(p, m)).join(", ")}</p>
+      )}
       {s.status !== "cancelled" && (
         <p className="text-sm text-slate-600">
           {t.nextCharge} <strong>{d(s.nextCharge)}</strong> · {t.paidSoFar} {$(s.totalPaid)}
@@ -121,7 +144,8 @@ function Section({ title, subs, note, m, locale }: { title: string; subs: Stored
   );
 }
 
-export default async function Report() {
+export default async function Report({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const pay = (await searchParams).pay;
   const { m, locale } = await getMessages();
   const t = m.report;
   const sessionId = await getSessionId();
@@ -133,7 +157,9 @@ export default async function Report() {
       </p>
     );
   }
-  const r = report;
+  // Filtered on one way of paying: every section, total and upcoming charge follows.
+  const shown = pay ? report.subscriptions.filter((s) => s.paidWith?.includes(pay)) : report.subscriptions;
+  const r = pay ? { ...report, ...buildReport(shown) } : report;
   const recent = [...r.forgotten, ...r.active, ...r.idle].filter((s) => s.isNew && s.usage !== "yes");
   const unanswered = [...r.forgotten, ...r.active].filter((s) => !s.usage).length;
   const today = new Date().toISOString().slice(0, 10);
@@ -142,6 +168,12 @@ export default async function Report() {
       <h1 className="text-2xl font-bold">{t.title}</h1>
       <AlertsPanel lines={alerts.map((a) => ({ id: a.id, text: alertLine(a.change, locale), date: formatDate(a.createdAt, locale) }))} />
       <Doubts doubts={doubts} gmail={gmailConfigured()} outlook={outlookConfigured()} banking={bankingConfigured()} />
+      <PayFilter subs={report.subscriptions} active={pay} m={m} />
+      {pay && (
+        <p className="text-sm text-slate-600">
+          {t.filtered(shown.filter((s) => s.status !== "cancelled").length, money(r.totalYearly, r.currency, locale), payName(pay, m))}
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl bg-white p-4 shadow-sm">
           <p className="text-sm text-slate-600">{t.yearly}</p>

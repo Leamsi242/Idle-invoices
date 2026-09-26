@@ -216,3 +216,36 @@ describe("PayPal review fixes", () => {
     expect(subs.map((s) => [s.serviceName, s.frequency, s.forgottenReasons[0]])).toEqual([["Kagi Inc", "monthly", "Seen twice so far: PayPal shares about 3 months of history"]]);
   });
 });
+
+describe("report by way of paying, and label changes", () => {
+  const bankLine = (date: string, amount: number, rawLabel: string, uploadId = "cm") => ({ id: `${rawLabel}-${date}`, uploadId, date, amount, currency: "EUR", rawLabel, source: "bank" as const });
+
+  it("joins a subscription whose bank label changed format mid-history", () => {
+    const before = ["2026-04-13", "2026-05-11", "2026-06-11"].map((d) => bankLine(d, 11, "PRLV SEPA ASSURANCE ACCIDENTS DE LA VIE P"));
+    const after = ["2026-07-13", "2026-08-11", "2026-09-11"].map((d) => bankLine(d, 11, "PRLV SEPA ASSURANCE ACCIDENTS DE LA VIE"));
+    const subs = analyze([...before, ...after], { today: "2026-09-20" }).subscriptions;
+    expect(subs).toHaveLength(1);
+    expect(subs[0]).toMatchObject({ serviceName: "Assurance Accidents De La Vie", firstSeen: "2026-04-13", status: "active" });
+    expect(subs[0].transactions).toHaveLength(6);
+  });
+
+  it("leaves tax payments out", () => {
+    const tax = ["2026-04-15", "2026-05-15", "2026-06-15"].map((d) => bankLine(d, 92, "PRLV SEPA DIRECTION GENERALE DE"));
+    expect(analyze(tax, { today: "2026-06-20" }).subscriptions).toEqual([]);
+  });
+
+  it("says which bank, card or PayPal pays each subscription", async () => {
+    const { paymentMethods, PAID_WITH_RECEIPTS } = await import("@/lib/store");
+    const paidWith = paymentMethods([
+      { id: "cm", fileName: "Bank connection: Crédit Mutuel (2 accounts)", sourceType: "bank" },
+      { id: "amex", fileName: "Bank connection: American Express (1 account)", sourceType: "bank" },
+      { id: "pp", fileName: "Bank connection: PayPal (1 account)", sourceType: "paypal" },
+      { id: "mail", fileName: "Gmail scan (10 emails checked)", sourceType: "email" },
+    ]);
+    const tx = (uploadId: string, rawLabel = "X") => ({ ...bankLine("2026-01-01", 1, rawLabel, uploadId) });
+    expect(paidWith({ transactions: [tx("cm")], matchedSources: ["bank", "paypal"] })).toEqual(["Crédit Mutuel", "PayPal"]);
+    expect(paidWith({ transactions: [tx("amex")], matchedSources: ["bank"] })).toEqual(["American Express"]);
+    expect(paidWith({ transactions: [tx("pp")], matchedSources: ["paypal"] })).toEqual(["PayPal"]);
+    expect(paidWith({ transactions: [tx("mail")], matchedSources: ["email"] })).toEqual([PAID_WITH_RECEIPTS]);
+  });
+});

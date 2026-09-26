@@ -27,7 +27,7 @@ export function cleanLabel(raw: string): string {
 export function isExcludedLabel(cleaned: string, opts: { paypalExport?: boolean } = {}): boolean {
   return (
     /^(TRANSFER|VIR|VIREMENT|RETRAIT|ATM|CASH|REMISE|TOP-?UP|ECH PRET|ECHEANCE PRET|COTIS ASS PRET)\b/.test(cleaned) ||
-    /\b(DGFIP|FINANCES PUBLIQ\w*|IMPOTS?|TRESOR PUBLIC|TIMBRE FISCAL|SDC|SYNDIC|AMERICAN EXPRESS|AMEX|FRANFINANCE|COFIDIS|CETELEM|SOFINCO|IMPAYE)\b/.test(cleaned) ||
+    /\b(DGFIP|FINANCES PUBLIQ\w*|IMPOTS?|TRESOR PUBLIC|TIMBRE FISCAL|DIRECTION GENERALE DES?|SDC|SYNDIC|AMERICAN EXPRESS|AMEX|FRANFINANCE|COFIDIS|CETELEM|SOFINCO|IMPAYE)\b/.test(cleaned) ||
     // Instalment plans (buy now, pay later) repeat monthly but are one purchase: PayPal's "4X" is
     // debited as "PAYPAL (EUROPE) S.A R", card payments as "PAYPAL *PAIEMENT".
     // In PayPal's own data (export or connection), the instalments of a 4X plan are paid to
@@ -110,5 +110,7 @@ export function displayLabel(cleaned: string): string {
   // The intermediary alone: "PAYPAL EUROPE S.A.R.L", "APPLE.COM/BILL ITUNES.COM".
   if (/^PAYPAL(?: \(?EUROPE\)?\b.*)?$/.test(name)) return "PAYPAL";
   if (/^APPLE\.COM\/BILL\b|^ITUNES\b/.test(name)) return "APPLE.COM/BILL";
-  return collapseRepeat(name || cleaned);
+  // A reference letter left at the end ("ASSURANCE ACCIDENTS DE LA VIE P") is not part of the name.
+  const readable = collapseRepeat(name || cleaned);
+  return readable.split(" ").length >= 3 ? readable.replace(/ [A-Z]$/, "") : readable;
 }

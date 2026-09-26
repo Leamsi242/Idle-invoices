@@ -86,6 +86,8 @@ export async function recompute(sessionId: string) {
   ]);
   const usage = Object.fromEntries(previous.filter((p) => p.usage).map((p) => [p.labelKey, p.usage as Usage]));
   const { subscriptions, matches } = analyze(txs, { userDescriptors, usage, today: new Date().toISOString().slice(0, 10) });
+  const uploads = await prisma.upload.findMany({ where: { sessionId }, select: { id: true, fileName: true, sourceType: true } });
+  const paidWith = paymentMethods(uploads);
 
   await prisma.$transaction([
     prisma.match.deleteMany({ where: { sessionId } }),
@@ -127,6 +129,7 @@ export async function recompute(sessionId: string) {
           isNew: s.isNew,
           cancelledOn: s.cancelledOn,
           endsOn: s.endsOn,
+          paidWith: paidWith(s),
         })),
       })),
     }),
@@ -134,7 +137,33 @@ export async function recompute(sessionId: string) {
   return { subscriptions: subscriptions.length, matches: matches.length };
 }
 
-export type StoredSubscription = Omit<DetectedSubscription, "transactions" | "key"> & { id: string; key: string; chargeCount: number };
+export type StoredSubscription = Omit<DetectedSubscription, "transactions" | "key"> & { id: string; key: string; chargeCount: number; paidWith?: string[] };
+
+/** A statement file, and receipts only: shown as such, the other names are banks, cards and PayPal. */
+export const PAID_WITH_FILE = "@file";
+export const PAID_WITH_RECEIPTS = "@receipts";
+
+/**
+ * How each subscription is paid, from where its charges were read: the connected bank or card
+ * ("Crédit Mutuel", "American Express"), PayPal, an imported statement, or receipts only.
+ */
+export function paymentMethods(uploads: { id: string; fileName: string; sourceType: string }[]) {
+  const byUpload = new Map<string, string | undefined>();
+  for (const u of uploads) {
+    const connection = u.fileName.match(/^Bank connection: (.+?) \(\d+ accounts?\)$/)?.[1];
+    byUpload.set(u.id, u.sourceType === "paypal" ? "PayPal" : connection ?? (u.sourceType === "bank" ? PAID_WITH_FILE : undefined));
+  }
+  return (s: Pick<DetectedSubscription, "transactions" | "matchedSources">): string[] => {
+    const names = new Set<string>();
+    for (const t of s.transactions) {
+      const name = t.rawLabel.startsWith("AMEX ") ? "American Express" : t.uploadId ? byUpload.get(t.uploadId) : undefined;
+      if (name) names.add(/^demo paypal/i.test(name) ? "PayPal" : name);
+    }
+    if (s.matchedSources.includes("paypal")) names.add("PayPal");
+    if (names.size === 0) names.add(PAID_WITH_RECEIPTS);
+    return [...names];
+  };
+}
 
 export async function listSubscriptions(sessionId: string): Promise<StoredSubscription[]> {
   const rows = await prisma.subscription.findMany({ where: { sessionId }, orderBy: { yearlyCost: "desc" } });
@@ -162,7 +191,9 @@ export async function listSubscriptions(sessionId: string): Promise<StoredSubscr
 
 export type ReportTrial = UpcomingTrial & { id?: string; tracked: boolean };
 
-export async function getReport(sessionId: string, today = new Date().toISOString().slice(0, 10)): Promise<Report<StoredSubscription> & { uploads: number; trials: ReportTrial[] }> {
+export async function getReport(sessionId: string, today = new Date().toISOString().slice(0, 10)): Promise<Report<StoredSubscription> & { subscriptions: StoredSubscription[]; uploads: number; trials: ReportTrial[] }> {
+  // Subscriptions computed before "paid with" existed get it now.
+  if ((await listSubscriptions(sessionId)).some((s) => !s.paidWith)) await recompute(sessionId);
   const [subs, uploads, txs, tracked] = await Promise.all([
     listSubscriptions(sessionId),
     prisma.upload.count({ where: { sessionId } }),
@@ -172,7 +203,7 @@ export async function getReport(sessionId: string, today = new Date().toISOStrin
   const found: ReportTrial[] = upcomingTrials(txs, today).map((t) => ({ ...t, tracked: false }));
   const trials = [...tracked.filter((t) => t.startsCharging >= today), ...found.filter((f) => !tracked.some((t) => t.serviceName === f.serviceName))]
     .sort((a, b) => a.startsCharging.localeCompare(b.startsCharging));
-  return { ...buildReport(subs), uploads, trials };
+  return { ...buildReport(subs), subscriptions: subs, uploads, trials };
 }
 
 // --- Free trials the user tracks by hand -------------------------------------------------

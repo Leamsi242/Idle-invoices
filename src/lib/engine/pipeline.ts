@@ -27,6 +27,7 @@ const TRIAL_MAX_DAYS_BEFORE = 35;
 /** Bank data shorter than this (a 90-day PSD2 connection) relaxes the minimum number of charges. */
 export const SHORT_HISTORY_DAYS = 120;
 const PAID_TRIAL_MAX = 2; // "1 € for 7 days"
+const PERIOD_DAYS = { weekly: 7, monthly: 31, quarterly: 92, yearly: 366 } as const;
 const SOURCE_PRIORITY: Record<string, number> = { paypal: 0, apple: 1, google: 1, email: 2 };
 
 /**
@@ -270,6 +271,35 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
   // Rides and deliveries (Uber, Bolt) repeat, sometimes at the same price: never a subscription.
   const purchase = (g: RecurringGroup) => !!findDescriptor([g.merchant, cleanLabel(g.transactions[0].rawLabel)], userDescriptors)?.notSubscription;
   for (let i = groups.length - 1; i >= 0; i--) if (!steady(groups[i]) || purchase(groups[i])) groups.splice(i, 1);
+
+  // A bank that changes its label format mid-history ("ASSURANCE ACCIDENTS DE LA VIE P" becomes
+  // "ASSURANCE ACCIDENTS DE LA VIE") splits one subscription in two: the same name, frequency and
+  // price, one series ending just before the other starts. They are joined under the newer label.
+  const nameOf = (g: RecurringGroup) => {
+    const cleaned = cleanLabel(g.transactions[0].rawLabel);
+    return subscriptionService([g.merchant, cleaned])?.serviceName ?? g.merchant ?? displayLabel(cleaned);
+  };
+  const joinable = (a: RecurringGroup, b: RecurringGroup) =>
+    a.frequency === b.frequency &&
+    a.currency === b.currency &&
+    a.lastSeen < b.firstSeen &&
+    daysBetween(a.lastSeen, b.firstSeen) <= PERIOD_DAYS[a.frequency] * 1.6 &&
+    Math.abs(a.currentAmount - b.transactions[0].amount) <= a.currentAmount * 0.02 &&
+    sameName(nameOf(a), nameOf(b)) &&
+    !converted.some((c) => c.group === a || c.group === b);
+  for (let joined = true; joined; ) {
+    joined = false;
+    groups.sort((a, b) => a.firstSeen.localeCompare(b.firstSeen));
+    for (let i = 0; i < groups.length && !joined; i++) {
+      const j = groups.findIndex((b) => joinable(groups[i], b));
+      if (j < 0) continue;
+      const [a, b] = [groups[i], groups[j]];
+      const merged = toGroup(b.key, [...a.transactions, ...b.transactions], b.frequency, a.missedPayments + b.missedPayments, Math.max(a.confidence, b.confidence));
+      groups.splice(Math.max(i, j), 1);
+      groups.splice(Math.min(i, j), 1, merged);
+      joined = true;
+    }
+  }
 
   const labelled = groups.map((g) => {
     // No trial guess behind a bare intermediary label: any small PayPal payment would qualify.
