@@ -21,7 +21,7 @@ Gardez-les dans un gestionnaire de mots de passe. Perdre `DATA_ENCRYPTION_KEY` r
 
 1. Créez un compte sur [turso.tech](https://turso.tech), puis une base, par exemple `subscription-detective`, dans une région européenne.
 2. Récupérez son adresse (`libsql://...`) et créez un jeton d'accès (« Create token »).
-3. Créez les tables. Dans le dépôt : `npm install` puis `npm run db:sql`, ce qui écrit `prisma/schema.sql`. Ensuite, soit `turso db shell subscription-detective < prisma/schema.sql` avec l'outil en ligne de commande, soit copiez le contenu du fichier dans la console SQL du tableau de bord Turso.
+3. Créez les tables. Le fichier prêt à coller est [`docs/turso-schema.sql`](turso-schema.sql) : ouvrez-le sur GitHub, cliquez sur l'icône « Copy raw file », puis collez tout dans la console SQL du tableau de bord Turso (« Edit Data » ou « SQL Console ») et exécutez. Si le schéma change, régénérez ce fichier avec `npm run db:sql` puis `cp prisma/schema.sql docs/turso-schema.sql`.
 
 Vérification : la console Turso liste les tables `Upload`, `Transaction`, `Subscription`, `Match`, `Descriptor`, `TrackedTrial`, `Profile`, `BankLink` et `Alert`.
 
