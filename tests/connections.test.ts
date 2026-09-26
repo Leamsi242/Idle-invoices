@@ -73,7 +73,7 @@ describe("Enable Banking", () => {
     expect(read.transactions).toEqual([]);
     expect(read.access).toBeUndefined();
     expect(read.stats).toMatchObject({ raw: 2, pending: 1, skipped: 1 });
-    expect(read.stats!.fields).toContain("transaction_amount");
+    expect(read.stats!.fields).toContain("transaction_amount.amount");
     expect(methods.at(-1)).toBe("DELETE");
   });
 
@@ -225,7 +225,8 @@ describe("watching an account", () => {
     }) as typeof fetch;
     const eb = new EnableBanking("app", privateKey, f);
     await eb.start({ institution: { name: "Crédit Mutuel", country: "FR" }, redirectUrl: "https://app.example/cb", state: "st", keepDays: 90 });
-    const days = (Date.parse(JSON.parse(calls[0].body!).access.valid_until) - Date.now()) / 86_400_000;
+    const auth = calls.find((c) => c.url.endsWith("/auth"))!;
+    const days = (Date.parse(JSON.parse(auth.body!).access.valid_until) - Date.now()) / 86_400_000;
     expect(Math.round(days)).toBe(90);
 
     const read = await eb.finish({ code: "c", since: ["2026-06-29"], keep: true });

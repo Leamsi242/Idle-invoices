@@ -21,7 +21,7 @@ Version 1 is a web app where a user uploads 3 to 12 months of statements and get
 | In version 1 | Out of version 1 (later) |
 | --- | --- |
 | Upload bank statements (CSV, PDF) | Live bank connection (Plaid, GoCardless, Tink) |
-| Upload PayPal activity export (CSV) | PayPal API connection |
+| Upload PayPal activity export (CSV) | PayPal API connection (since done through Enable Banking, see README) |
 | Paste or upload app store subscription lists | Automatic Apple and Google import |
 | Upload receipt emails (.eml files or forwarded) | Gmail and Outlook inbox connection |
 | Recurring charge detection and reconciliation | One-tap cancellation on the user's behalf |

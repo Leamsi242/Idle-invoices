@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { timingSafeEqual } from "node:crypto";
-import { finishConnection, providerOf, psuHeaders, WATCH_DAYS } from "@/lib/banking";
+import { connectionFileName, finishConnection, isPaypal, providerOf, psuHeaders, WATCH_DAYS } from "@/lib/banking";
 import { BANK_COOKIE, decodePending } from "@/lib/banking/cookie";
 import { getSessionId } from "@/lib/session";
 import { recompute, saveUpload, saveWatch } from "@/lib/store";
@@ -29,16 +29,20 @@ export async function GET(req: Request) {
     const psu = psuHeaders(req);
     const today = new Date().toISOString().slice(0, 10);
     const { accounts, transactions, access, stats } = await finishConnection(pending.institution, code, today, psu, pending.watch);
+    const paypal = isPaypal(pending.institution);
+    const via = paypal ? "&via=paypal" : "";
+    // PayPal's PSD2 lines are little documented: their field names (never values) help adjust the reading.
+    if (paypal && transactions.length > 0) console.warn("PayPal read shape:", JSON.stringify({ accounts, ...stats }));
     if (transactions.length === 0) {
       // Keep nothing, so the bank is not shown as read. The line shapes help support a new bank.
       console.warn("Bank read returned nothing:", JSON.stringify({ bank: pending.institution.name, accounts, ...stats }));
-      return back(`bank=empty&accounts=${accounts}&pending=${stats?.pending ?? 0}`);
+      return back(`bank=empty&accounts=${accounts}&pending=${stats?.pending ?? 0}${via}`);
     }
-    await saveUpload(sessionId, `Bank connection: ${pending.institution.name} (${accounts} account${accounts === 1 ? "" : "s"})`, "bank", transactions);
+    await saveUpload(sessionId, connectionFileName(pending.institution.name, accounts), paypal ? "paypal" : "bank", transactions);
     // The user asked to be watched: keep the access (encrypted) for the nightly reads.
-    if (access) await saveWatch(sessionId, { provider: providerOf(pending.institution), institution: pending.institution.name, access, locale: await getLocale(), days: WATCH_DAYS });
+    if (access) await saveWatch(sessionId, { provider: providerOf(pending.institution), institution: pending.institution.name, access, locale: await getLocale(), days: pending.days ?? WATCH_DAYS });
     await recompute(sessionId);
-    return back(`bank=ok&count=${transactions.length}${access ? "&watch=1" : ""}`);
+    return back(`bank=ok&count=${transactions.length}${access ? "&watch=1" : ""}${via}`);
   } catch (e) {
     // The provider's error code (e.g. PSU_HEADER_NOT_PROVIDED) helps when testing a new bank; no account data is in it.
     const message = e instanceof Error ? e.message : "";

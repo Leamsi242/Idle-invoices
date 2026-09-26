@@ -57,8 +57,8 @@ try {
   if (!found.length) ko(`no bank named like "${bankQuery}" (${aspsps.length} banks listed for ${country})`);
   for (const a of found) {
     ok(a.name);
-    if (a.psu_types) info(`customer types: ${a.psu_types.join(", ")}${a.psu_types.includes("personal") ? "" : "  <- no personal accounts"}`);
-    if (a.maximum_consent_validity) info(`longest access: ${Math.round(a.maximum_consent_validity / 86400)} days (the app asks for 1)`);
+    if (a.psu_types) info(`customer types: ${a.psu_types.join(", ")}${a.psu_types.includes("personal") ? "" : /^paypal\b/i.test(a.name) ? "  <- the app signs in as " + a.psu_types[0] : "  <- no personal accounts"}`);
+    if (a.maximum_consent_validity) info(`longest access: ${Math.round(a.maximum_consent_validity / 86400)} days (the app asks for 1, or 90 when watching, capped at this)`);
     if (a.required_psu_headers?.length) info(`headers the bank requires: ${a.required_psu_headers.join(", ")} (the app forwards the user's IP address, browser and accept headers)`);
     if (a.auth_methods?.length) info(`sign-in: ${a.auth_methods.map((m) => m.approach ?? m.name).filter(Boolean).join(", ")}`);
     if (a.beta) info("marked beta by Enable Banking");

@@ -73,15 +73,21 @@ export async function listOutlookIds(token: string, f: Fetch = fetch, max = MAX_
   return ids.slice(0, max);
 }
 
-/** Downloads each candidate as MIME (the same format as a .eml file) and keeps the receipts. */
-export async function scanOutlook(token: string, f: Fetch = fetch): Promise<ScanResult> {
+/**
+ * Downloads each candidate as MIME (the same format as a .eml file) and keeps the receipts. Stops
+ * starting downloads at `deadline`, within the server function's time: the newest come first.
+ */
+export async function scanOutlook(token: string, f: Fetch = fetch, deadline = Date.now() + 45_000): Promise<ScanResult> {
   const ids = await listOutlookIds(token, f);
   const receipts: NormalizedTransaction[] = [];
-  for (let i = 0; i < ids.length; i += 10) {
+  let scanned = 0;
+  for (let i = 0; i < ids.length && Date.now() < deadline; i += 10) {
+    const chunk = ids.slice(i, i + 10);
     const batch = await Promise.all(
-      ids.slice(i, i + 10).map(async (id) => receiptFromRaw(Buffer.from(await (await get(`${GRAPH}/messages/${id}/$value`, token, f)).arrayBuffer()))),
+      chunk.map(async (id) => receiptFromRaw(Buffer.from(await (await get(`${GRAPH}/messages/${id}/$value`, token, f)).arrayBuffer()))),
     );
+    scanned += chunk.length;
     receipts.push(...batch.filter((t): t is NormalizedTransaction => !!t));
   }
-  return { scanned: ids.length, receipts };
+  return { scanned, receipts, total: ids.length };
 }

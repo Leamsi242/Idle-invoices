@@ -78,7 +78,7 @@ export function Doubts({ doubts, gmail, outlook, banking }: { doubts: Doubt[]; g
                 {!gmail && !outlook && <span className="text-sm text-slate-500">{t.mailNotSetUp}</span>}
               </div>
             )}
-            {d.kind === "card" && banking && (
+            {(d.kind === "card" || d.kind === "paypal") && banking && (
               <a href={`/?bank=${encodeURIComponent(d.bank)}#bank`} className="inline-block rounded-full bg-brand px-3 py-1 text-sm font-medium text-white">{t.connectCard(d.bank)}</a>
             )}
             {d.kind === "name" && <NameAnswer labelKey={d.labelKey} store={d.store} />}

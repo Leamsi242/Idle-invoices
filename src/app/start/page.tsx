@@ -4,6 +4,7 @@ import { getOnboarding } from "@/lib/store";
 import { gmailConfigured } from "@/lib/gmail";
 import { EMPTY_ANSWERS, gdprRequest, progress } from "@/lib/onboarding";
 import { Checklist, OnboardingQuestions } from "@/components/Onboarding";
+import { bankingConfigured } from "@/lib/banking";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Import checklist · Subscription Detective" };
@@ -53,7 +54,7 @@ export default async function Start({ searchParams }: { searchParams: Promise<Re
           )}
         </div>
       </section>
-      <Checklist plan={plan} ticked={answers.done} gmail={gmailConfigured()} gdpr={gdprRequest("PayPal", "the opening of my account")} />
+      <Checklist plan={plan} ticked={answers.done} gmail={gmailConfigured()} gdpr={gdprRequest("PayPal", "the opening of my account")} banking={bankingConfigured()} />
       <div className="flex flex-wrap gap-3 text-sm">
         <Link href="/advanced#upload" className="rounded-xl bg-brand px-4 py-3 font-semibold text-white">Add files</Link>
         <Link href="/report" className="rounded-xl border border-slate-300 px-4 py-3 font-semibold">See my report</Link>

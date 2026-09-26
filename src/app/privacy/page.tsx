@@ -15,7 +15,7 @@ export default async function Privacy() {
       <section className="space-y-2">
         <h2 className="font-semibold">What we keep</h2>
         <ul className="list-disc space-y-1 pl-5">
-          <li>For each payment: its date, amount, currency and description. Nothing else.</li>
+          <li>For each payment: its date, amount, currency and description (for PayPal payments, also who was paid and the item title). Nothing else.</li>
           <li>The subscriptions we found, and your answers to &quot;Still using this?&quot; and &quot;What is this charge?&quot;.</li>
           <li>Free trials you asked us to track (name, end date, price). Calendar reminders are created on your phone, not by us.</li>
           <li>The names of the files you uploaded and of the banks and mailboxes you connected, so you know what was read.</li>
@@ -46,13 +46,20 @@ export default async function Privacy() {
             it as soon as your transactions have been read. We read up to two years of history, depending on your bank (Crédit Mutuel shares the last 90 days).
           </li>
           <li>
+            If you connect PayPal, it goes the same way through Enable Banking: you sign in on PayPal&apos;s own page, the access is
+            read-only and closed right after the read. We keep your completed payments (date, amount, who was paid), not the money you
+            received, and not your balance. PayPal usually shares the last 90 days.
+          </li>
+          <li>
             If you connect Outlook or Hotmail, we ask Microsoft for mail reading only, without a long-term token. We open only emails that
             look like receipts and keep the same fields as for Gmail. The access expires by itself within about an hour and is never stored.
           </li>
           <li>
             If you scan Gmail, we get read-only access for the length of the scan. We only open emails whose subject
             mentions a receipt, invoice, subscription, renewal or trial, keep the amount, merchant and date of real receipts, and revoke our
-            access right after. Your emails are never stored.
+            access right after. Your emails are never stored. A large mailbox is read in parts, while you keep the page open: in between,
+            the read-only access (which Google limits to one hour) stays encrypted in a cookie of your own browser for at most 10 minutes,
+            then it is revoked.
           </li>
           <li>
             If you upload a screenshot of your app store subscriptions, only that image is sent to Claude (Anthropic&apos;s AI) to read the
@@ -89,7 +96,7 @@ function PrivacyFr() {
       <section className="space-y-2">
         <h2 className="font-semibold">Ce que nous gardons</h2>
         <ul className="list-disc space-y-1 pl-5">
-          <li>Pour chaque paiement : sa date, son montant, sa devise et son libellé. Rien d&apos;autre.</li>
+          <li>Pour chaque paiement : sa date, son montant, sa devise et son libellé (pour les paiements PayPal, aussi le bénéficiaire et l&apos;intitulé de l&apos;achat). Rien d&apos;autre.</li>
           <li>Les abonnements trouvés, et vos réponses à « Vous l&apos;utilisez encore ? » et « Qu&apos;est-ce que c&apos;est ? ».</li>
           <li>Les essais gratuits que vous nous demandez de suivre (nom, date de fin, prix). Les rappels sont créés dans l&apos;agenda de votre téléphone, pas chez nous.</li>
           <li>Les noms des fichiers envoyés et des banques et boîtes mail connectées, pour que vous sachiez ce qui a été lu.</li>
@@ -121,6 +128,11 @@ function PrivacyFr() {
             banque (le Crédit Mutuel partage les 90 derniers jours).
           </li>
           <li>
+            Si vous connectez PayPal, cela passe de la même façon par Enable Banking : vous vous identifiez sur la page de PayPal, l&apos;accès
+            est en lecture seule et fermé juste après la lecture. Nous gardons vos paiements terminés (date, montant, bénéficiaire), pas
+            l&apos;argent reçu, ni votre solde. PayPal partage en général les 90 derniers jours.
+          </li>
+          <li>
             Si vous connectez Outlook ou Hotmail, nous demandons à Microsoft la seule lecture des e-mails, sans jeton de longue durée. Nous
             n&apos;ouvrons que les e-mails qui ressemblent à des reçus et gardons les mêmes informations que pour Gmail. L&apos;accès expire seul
             en une heure environ et n&apos;est jamais conservé.
@@ -128,7 +140,9 @@ function PrivacyFr() {
           <li>
             Si vous lisez Gmail, nous obtenons un accès en lecture seule le temps de la lecture. Nous n&apos;ouvrons que les e-mails dont
             l&apos;objet parle de reçu, facture, abonnement, renouvellement ou essai, gardons le montant, le marchand et la date des vrais reçus,
-            et révoquons l&apos;accès juste après. Vos e-mails ne sont jamais conservés.
+            et révoquons l&apos;accès juste après. Vos e-mails ne sont jamais conservés. Une grosse boîte mail est lue en plusieurs fois, pendant
+            que vous gardez la page ouverte : entre deux parties, l&apos;accès en lecture seule (que Google limite à une heure) reste chiffré dans
+            un cookie de votre propre navigateur, 10 minutes au plus, puis il est révoqué.
           </li>
           <li>
             Si vous envoyez une capture de vos abonnements, seule cette image est transmise à Claude (l&apos;IA d&apos;Anthropic) pour en lire le

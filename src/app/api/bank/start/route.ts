@@ -19,9 +19,9 @@ export async function POST(req: Request) {
   const state = randomBytes(16).toString("base64url");
   const psu = psuHeaders(req);
   try {
-    const url = await startConnection({ name, country }, `${origin}/api/bank/callback`, state, psu, watch);
+    const { url, days } = await startConnection({ name, country }, `${origin}/api/bank/callback`, state, psu, watch);
     const res = NextResponse.json({ url });
-    res.cookies.set(BANK_COOKIE, encodePending(state, { name, country }, watch), { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/api/bank", maxAge: 900 });
+    res.cookies.set(BANK_COOKIE, encodePending(state, { name, country }, watch, days), { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/api/bank", maxAge: 900 });
     return res;
   } catch {
     return NextResponse.json({ error: "This bank cannot be reached right now. Please try again." }, { status: 502 });

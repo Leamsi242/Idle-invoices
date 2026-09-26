@@ -70,10 +70,49 @@ describe("receipt filter", () => {
   });
 });
 
-describe("Gmail scan time limit", () => {
-  it("stops starting downloads once the deadline has passed", async () => {
-    const { scanned, receipts } = await scanGmail("token-123", fakeGmail([]), Date.now() - 1);
-    expect(scanned).toBe(0);
-    expect(receipts).toEqual([]);
+describe("Gmail scan time limit and quota", () => {
+  it("stops starting downloads once the deadline has passed, and says where to resume", async () => {
+    const { scanned, receipts, next, total } = await scanGmail("token-123", fakeGmail([]), { deadline: Date.now() - 1 });
+    expect([scanned, receipts, next, total]).toEqual([0, [], 0, 5]);
+  });
+
+  it("reads a large mailbox in parts", async () => {
+    const part1 = await scanGmail("token-123", fakeGmail([]), { from: 0, batchMs: 0 });
+    expect(part1).toMatchObject({ scanned: 5, next: undefined, total: 5 });
+    const part2 = await scanGmail("token-123", fakeGmail([]), { from: 3, batchMs: 0 });
+    expect(part2.scanned).toBe(2);
+    expect(part2.receipts.map((r) => r.merchant)).toEqual(["Uber BV"]);
+  });
+
+  it("waits and retries when Gmail answers with its per-minute limit", async () => {
+    let refused = 0;
+    const base = fakeGmail([]);
+    const f = (async (input: string | URL | Request, init?: RequestInit) => {
+      if (String(input).includes("/m2?") && refused < 2) {
+        refused++;
+        return new Response(JSON.stringify({ error: { errors: [{ reason: "rateLimitExceeded" }] } }), { status: 403 });
+      }
+      return base(input, init);
+    }) as typeof fetch;
+    const { scanned, receipts } = await scanGmail("token-123", f, { backoffMs: 1, batchMs: 0 });
+    expect(refused).toBe(2);
+    expect(scanned).toBe(5);
+    expect(receipts.map((r) => r.merchant)).toContain("WeTransfer");
+  });
+
+  it("stops without losing the part read when Gmail keeps refusing", async () => {
+    const base = fakeGmail([]);
+    const f = (async (input: string | URL | Request, init?: RequestInit) =>
+      String(input).includes("/m2?") ? new Response("", { status: 429 }) : base(input, init)) as typeof fetch;
+    const { scanned, next, receipts } = await scanGmail("token-123", f, { backoffMs: 1, batchMs: 0 });
+    expect([scanned, next]).toEqual([0, 0]);
+    expect(receipts.length).toBeGreaterThan(0); // the other emails of the batch were read
+  });
+
+  it("does not retry other errors", async () => {
+    const base = fakeGmail([]);
+    const f = (async (input: string | URL | Request, init?: RequestInit) =>
+      String(input).includes("/m2?") ? new Response("forbidden", { status: 403 }) : base(input, init)) as typeof fetch;
+    await expect(scanGmail("token-123", f, { backoffMs: 1, batchMs: 0 })).rejects.toThrow(/403/);
   });
 });

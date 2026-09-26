@@ -7,6 +7,7 @@ import { getConnections, listWatches } from "@/lib/store";
 import { WatchControls } from "@/components/Watch";
 import { emailConfigured } from "@/lib/notify";
 import { BankPicker } from "@/components/Connect";
+import { GmailContinue } from "@/components/GmailContinue";
 import { getMessages } from "@/lib/locale";
 import type { Messages } from "@/lib/i18n";
 
@@ -44,7 +45,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const banking = bankingConfigured();
   const gmail = gmailConfigured();
   const outlook = outlookConfigured();
-  const anything = c.banks.length + c.mailboxes.length + c.files > 0;
+  const wallets = c.wallets ?? [];
+  const anything = c.banks.length + wallets.length + c.mailboxes.length + c.files > 0;
   const pickBank = q.bank && q.bank !== "ok" && q.bank !== "empty" && !h.messages.bank[q.bank] ? q.bank : "";
 
   return (
@@ -54,11 +56,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
         <p className="text-slate-600">{h.intro}</p>
       </section>
       {note && <p className="rounded-xl bg-white p-4 text-sm shadow-sm">{note}</p>}
+      {q.gmail === "partial" && <GmailContinue scanned={Number(q.scanned) || 0} total={Number(q.total) || 0} />}
 
       <Step n={1} title={h.step1} done={c.banks.length > 0}>
-        {c.banks.length > 0 && (
+        {c.banks.length + wallets.length > 0 && (
           <ul className="text-sm text-slate-700">
-            {c.banks.map((b) => <li key={b}>✓ {b}{m.lang === "fr" ? " : " : ": "}{watches.some((w) => w.institution === b) ? h.bankWatched : h.bankDone}</li>)}
+            {[...c.banks, ...wallets].map((b) => <li key={b}>✓ {b}{m.lang === "fr" ? " : " : ": "}{watches.some((w) => w.institution === b) ? h.bankWatched : h.bankDone}</li>)}
           </ul>
         )}
         {watches.map((w) => <WatchControls key={w.id} watch={w} emailEnabled={emailConfigured()} />)}
@@ -73,6 +76,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
           )
         ) : (
           <p className="text-sm text-slate-500">{h.bankNotSetUp} <Link href="/advanced" className="text-brand underline">{h.importStatement}</Link> {h.instead}</p>
+        )}
+        {banking && wallets.length === 0 && pickBank.toLowerCase() !== "paypal" && (
+          <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
+            {h.paypalHint}{" "}
+            <Link href="/?bank=PayPal#bank" className="font-medium text-brand underline">{h.paypalConnect}</Link>
+          </p>
         )}
         <p className="text-xs text-slate-500">{h.bankNote}</p>
       </Step>

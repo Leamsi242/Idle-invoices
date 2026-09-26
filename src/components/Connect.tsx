@@ -10,7 +10,7 @@ const COUNTRIES = [
 ] as const;
 
 // Shown first before the user types, in this order, when the provider lists them.
-const POPULAR = [/demo bank/i, /cr[ée]dit mutuel/i, /bnp/i, /soci[ée]t[ée] g[ée]n[ée]rale/i, /cr[ée]dit agricole/i, /caisse d.[ée]pargne/i, /banque populaire/i, /banque postale/i, /lcl/i, /bourso/i, /\bcic\b/i, /american express|amex/i, /revolut/i, /n26/i];
+const POPULAR = [/demo bank/i, /cr[ée]dit mutuel/i, /paypal/i, /bnp/i, /soci[ée]t[ée] g[ée]n[ée]rale/i, /cr[ée]dit agricole/i, /caisse d.[ée]pargne/i, /banque populaire/i, /banque postale/i, /lcl/i, /bourso/i, /\bcic\b/i, /american express|amex/i, /revolut/i, /n26/i];
 
 const rank = (name: string) => {
   const i = POPULAR.findIndex((re) => re.test(name));

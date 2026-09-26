@@ -21,7 +21,7 @@ Then upload the files in [`samples/`](samples) to see a full report. Optional: s
 ## Run the tests
 
 ```bash
-npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, bank and mailbox connections, doubts, French and English, watching (155 tests)
+npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, bank and mailbox connections, doubts, French and English, watching, PayPal connection (172 tests)
 npm run typecheck
 ```
 
@@ -42,7 +42,7 @@ Uploaded files
 | Source | Accepted formats |
 | --- | --- |
 | Bank statements | CSV from N26, Revolut, French banks (Débit / Crédit), UK banks (Debit / Credit Amount), and any CSV with usual column names ("Date", "Libellé" or "Description", "Débit" and "Crédit" or "Amount"); any other CSV through the column-mapping screen; PDF statements with one line per operation, including those with a single unsigned amount column and the card merchant on the next line (Crédit Mutuel, CIC); American Express France card statements (both layouts, since 2019, checked against the statement's debit total) |
-| PayPal | Activity download CSV (English or French headers, 12 months per download); authorizations, holds and 4X instalments ("PayPal Inc.") are left out, and the service behind Google Play or Paddle is read from the item title |
+| PayPal | Connected like a bank through Enable Banking (ASPSP "PayPal", usually the last 90 days), or the Activity download CSV (English or French headers, 12 months per download). Both give the same rows (`paypalPayment` in `lib/parsers/paypal-csv.ts`): completed payments only; money received, refunds, payouts to the bank, conversions, authorizations, holds and 4X instalments ("PayPal Inc.") are left out; payments to a personal mailbox are transfers; the service behind Google Play or Paddle is read from the item title |
 | Receipts | `.eml` files, pasted text, or a one-time Gmail scan |
 | Apple / Google Play | Pasted text of the subscriptions screen, or a screenshot (read by Claude) |
 
@@ -73,7 +73,7 @@ Uploaded files
 
 1. **Connect your bank** (`/`): search the bank, sign in on the bank's own page (PSD2 strong authentication), come back. The app reads the transactions of every account the user shared, up to 24 months (90 days at Crédit Mutuel, the bank's limit), once, then deletes the consent (`lib/banking`, `api/bank/*`). Cards with their own statement (American Express) are connected the same way.
 2. **Connect your mailbox**: Gmail or Outlook / Hotmail, one-time read-only scan of receipts (`lib/gmail.ts`, `lib/outlook.ts`).
-3. **Report**, with "We need your help" on top (`lib/doubts.ts`): only the points the data could not settle, each with one small action. Unnamed PayPal, Google Play or Apple payments without a mailbox connected ask for the mailbox (one action answers many); a bank paying an American Express card asks to connect the card; a recurring charge still unnamed asks for its name, or a screenshot of the store's subscription list.
+3. **Report**, with "We need your help" on top (`lib/doubts.ts`): only the points the data could not settle, each with one small action. Unnamed PayPal subscriptions ask to connect PayPal (one action names them all, and no name question is asked meanwhile); unnamed Google Play or Apple payments without a mailbox connected ask for the mailbox; a bank paying an American Express card asks to connect the card; a recurring charge still unnamed asks for its name, or a screenshot of the store's subscription list.
 4. **Watching (optional)**: ticking "Keep watching for 90 days" at the bank step keeps the read-only access (encrypted, `BankLink`). Every night `/api/cron/refresh` reads the account again from a few days before the last read, re-analyses, and compares with the previous analysis (`engine/changes.ts`): a new subscription, a price increase or a stopped subscription charging again becomes an alert on top of the report, and an email when the user gave an address and Resend is set up (`lib/notify.ts`). Stopping the watch, "Delete everything" or the 90-day end close the access at the bank. No account is needed: the watch belongs to the browser session.
 5. **Advanced** (`/advanced`, `/start`): manual import of files and the import checklist, for testing, for banks the provider does not cover, or for a PayPal export.
 

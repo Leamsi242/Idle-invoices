@@ -25,10 +25,26 @@ export function gmailConfigured(): boolean {
 type Fetch = typeof fetch;
 const API = "https://gmail.googleapis.com/gmail/v1/users/me";
 
-async function getJson<T>(url: string, token: string, f: Fetch): Promise<T> {
-  const res = await f(url, { headers: { Authorization: `Bearer ${token}` } });
-  if (!res.ok) throw new Error(`Gmail API error ${res.status}`);
-  return (await res.json()) as T;
+class RateLimited extends Error {}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * One Gmail API call. Gmail limits reads per user and per minute: a "rate limit" answer is retried
+ * after a pause (1, 2, then 4 times `backoffMs`) as long as the pause ends before `deadline`.
+ */
+async function getJson<T>(url: string, token: string, f: Fetch, retry: { backoffMs: number; deadline: number } = { backoffMs: 1_000, deadline: Infinity }): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    const res = await f(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) return (await res.json()) as T;
+    const limited = res.status === 429 || (res.status === 403 && /rate ?limit/i.test(await res.text().catch(() => "")));
+    const wait = retry.backoffMs * 2 ** attempt;
+    if (limited && attempt < 3 && Date.now() + wait < retry.deadline) {
+      await sleep(wait);
+      continue;
+    }
+    throw limited ? new RateLimited(`Gmail API rate limit ${res.status}`) : new Error(`Gmail API error ${res.status}`);
+  }
 }
 
 export async function listMessageIds(token: string, f: Fetch = fetch, max = MAX_MESSAGES): Promise<string[]> {
@@ -43,7 +59,23 @@ export async function listMessageIds(token: string, f: Fetch = fetch, max = MAX_
   return ids.slice(0, max);
 }
 
-export interface ScanResult { scanned: number; receipts: NormalizedTransaction[] }
+/** `next`: where a scan cut short by the time limit resumes; `total`: candidate emails in all. */
+export interface ScanResult { scanned: number; receipts: NormalizedTransaction[]; next?: number; total: number }
+
+export interface ScanOptions {
+  /** The first candidate to read (0, or the `next` of a previous part). */
+  from?: number;
+  /** No new download starts after this time: a server function has about a minute. */
+  deadline?: number;
+  /** The shortest time per batch of 10 downloads, to stay within Gmail's per-minute quota. */
+  batchMs?: number;
+  backoffMs?: number;
+}
+
+const BATCH = 10;
+// Since May 2026 a message read costs 20 of the 6,000 quota units a user gets per minute: about
+// 300 reads a minute at most. Ten every 2.4 seconds is 250.
+const BATCH_MS = 2_400;
 
 /**
  * Keeps an email only if it reads as a receipt or a cancellation notice (amount 0, evidence that
@@ -61,26 +93,40 @@ export async function receiptFromRaw(raw: Buffer): Promise<NormalizedTransaction
 }
 
 /**
- * Downloads each candidate email, keeps the ones that read as receipts, and discards the rest.
- * Stops starting new downloads at `deadline` (a server function has about a minute): the newest
- * emails come first, so a cut-off scan still covers the most recent year or so.
+ * Downloads each candidate email, keeps the ones that read as receipts, and discards the rest. The
+ * newest come first. A mailbox with many candidates is read in parts: the scan stops at `deadline`
+ * (or when Gmail keeps refusing for its quota) and returns `next`, where the following part starts.
  */
-export async function scanGmail(token: string, f: Fetch = fetch, deadline = Date.now() + 45_000): Promise<ScanResult> {
+export async function scanGmail(token: string, f: Fetch = fetch, opts: ScanOptions = {}): Promise<ScanResult> {
+  const { from = 0, deadline = Date.now() + 45_000, batchMs = BATCH_MS, backoffMs = 1_000 } = opts;
   const ids = await listMessageIds(token, f);
   const receipts: NormalizedTransaction[] = [];
-  let scanned = 0;
-  for (let i = 0; i < ids.length && Date.now() < deadline; i += 10) {
-    const chunk = ids.slice(i, i + 10);
+  let i = from;
+  while (i < ids.length && Date.now() < deadline) {
+    const started = Date.now();
+    const chunk = ids.slice(i, i + BATCH);
     const batch = await Promise.all(
       chunk.map(async (id) => {
-        const msg = await getJson<{ raw: string }>(`${API}/messages/${id}?format=raw`, token, f);
-        return receiptFromRaw(Buffer.from(msg.raw, "base64url"));
+        try {
+          const msg = await getJson<{ raw: string }>(`${API}/messages/${id}?format=raw`, token, f, { backoffMs, deadline });
+          return receiptFromRaw(Buffer.from(msg.raw, "base64url"));
+        } catch (e) {
+          if (e instanceof RateLimited) return "limited" as const;
+          throw e;
+        }
       }),
     );
-    scanned += chunk.length;
-    receipts.push(...batch.filter((t): t is NormalizedTransaction => !!t));
+    receipts.push(...batch.filter((t): t is NormalizedTransaction => !!t && t !== "limited"));
+    // Still refused after the pauses: this batch is read again in the next part (copies are merged later).
+    if (batch.includes("limited")) break;
+    i += chunk.length;
+    const wait = batchMs - (Date.now() - started);
+    if (wait > 0 && i < ids.length) {
+      if (Date.now() + wait >= deadline) break;
+      await sleep(wait);
+    }
   }
-  return { scanned, receipts };
+  return { scanned: i - from, receipts, next: i < ids.length ? i : undefined, total: ids.length };
 }
 
 export function authUrl(opts: { clientId: string; redirectUri: string; state: string; codeChallenge: string }): string {

@@ -27,7 +27,7 @@ export function looksLikePaypalCsv(text: string): boolean {
  * préapprouvé...", or "Autre" / "Other" when it captures the authorization). Holds, voids,
  * funding, conversions, refunds and transfers are left out too.
  */
-const NOT_A_PAYMENT = /autori[sz]ation|suspension|hold|annulation|void|reversal|remboursement|refund|conversion|approvisionnement|funding|d[ée]p[ôo]t|deposit|transfer|virement|withdraw|retrait/i;
+export const NOT_A_PAYMENT = /autori[sz]ation|suspension|hold|annulation|void|reversal|remboursement|refund|conversion|approvisionnement|funding|d[ée]p[ôo]t|deposit|transfer|virement|withdraw|retrait/i;
 
 /**
  * Stores and payment processors hide the service in the item title: Google Play writes
@@ -46,7 +46,26 @@ export function serviceBehind(name: string, title: string): string | undefined {
   return undefined;
 }
 
-const PERSONAL_MAILBOX = /@(?:gmail|googlemail|hotmail|outlook|live|msn|yahoo|ymail|icloud|me|mac|aol|gmx|proton|protonmail|orange|wanadoo|free|sfr|neuf|laposte|bbox)\.[a-z.]+$/i;
+export const PERSONAL_MAILBOX = /@(?:gmail|googlemail|hotmail|outlook|live|msn|yahoo|ymail|icloud|me|mac|aol|gmx|proton|protonmail|orange|wanadoo|free|sfr|neuf|laposte|bbox)\.[a-z.]+$/i;
+
+/**
+ * One PayPal payment, from the Activity download or from a PayPal connection: both must give the
+ * same row, so that reconciliation and de-duplication treat them alike.
+ */
+export function paypalPayment(p: { date: string; name: string; amount: number; currency: string; toPerson: boolean; title?: string }): NormalizedTransaction {
+  const named = serviceBehind(p.name, p.title ?? "");
+  return makeTx({
+    date: p.date,
+    amount: p.amount,
+    currency: p.currency,
+    // The label keeps who PayPal paid ("Google Payment Ireland"): banks print it after "PAYPAL *".
+    // Money sent to a person is kept as a transfer, so the matching bank line is recognised and left out too.
+    rawLabel: `${p.toPerson ? "TRANSFER " : ""}PAYPAL ${p.name}`,
+    source: "paypal",
+    merchant: named ?? p.name,
+    plan: p.title || undefined,
+  });
+}
 
 /** Keeps outgoing, completed payments; the Name column is the real merchant. */
 export function parsePaypalCsv(text: string): NormalizedTransaction[] {
@@ -66,18 +85,7 @@ export function parsePaypalCsv(text: string): NormalizedTransaction[] {
     const toPerson = PERSONAL_MAILBOX.test(get(row, H.to));
     const date = parseDate(get(row, H.date), "DMY");
     if (!date) continue;
-    const title = get(row, H.title);
-    const named = serviceBehind(name, title);
-    out.push(makeTx({
-      date,
-      amount: -gross,
-      currency: get(row, H.currency) || "EUR",
-      // The label keeps who PayPal paid ("Google Payment Ireland"): banks print it after "PAYPAL *".
-      rawLabel: `${toPerson ? "TRANSFER " : ""}PAYPAL ${name}`,
-      source: "paypal",
-      merchant: named ?? name,
-      plan: title || undefined,
-    }));
+    out.push(paypalPayment({ date, name, amount: -gross, currency: get(row, H.currency) || "EUR", toPerson, title: get(row, H.title) }));
   }
   return out;
 }

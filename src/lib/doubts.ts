@@ -20,27 +20,36 @@ export interface DoubtSub {
   channel: Channel;
 }
 
-export interface Connections { banks: string[]; mailboxes: string[]; files: number }
+export interface Connections { banks: string[]; mailboxes: string[]; files: number; wallets?: string[] }
 
 export type Doubt =
   | { kind: "mail"; id: string; title: string; detail: string }
   | { kind: "card"; id: string; title: string; detail: string; bank: string }
+  | { kind: "paypal"; id: string; title: string; detail: string; bank: string }
   | { kind: "name"; id: string; title: string; detail: string; labelKey: string; store?: "apple" | "google" };
 
 const MAX_NAME_QUESTIONS = 5;
 
-export function findDoubts(subs: DoubtSub[], facts: Facts, connections: Connections, locale: Locale = "en"): Doubt[] {
+/** `canConnect`: this server can connect accounts (PayPal included), so it may suggest one. */
+export function findDoubts(subs: DoubtSub[], facts: Facts, connections: Connections, locale: Locale = "en", opts: { canConnect?: boolean } = {}): Doubt[] {
   const t = messages(locale).doubts;
   const doubts: Doubt[] = [];
+  const open = subs.filter((s) => s.needsLabel && s.status !== "cancelled");
   // Count the subscriptions behind PayPal or a store, not every payment: one-off purchases don't matter here.
-  const hidden = subs.filter((s) => s.needsLabel && s.status !== "cancelled" && ["paypal", "google", "apple"].includes(s.channel)).length;
+  const viaPaypal = open.filter((s) => s.channel === "paypal").length;
+  const viaStores = open.filter((s) => s.channel === "google" || s.channel === "apple").length;
   const shortHistory = !!facts.bankFrom && !!facts.bankTo && daysBetween(facts.bankFrom, facts.bankTo) < SHORT_HISTORY_DAYS;
-  // One connection answers many questions at once: ask for it first.
+  // PayPal names every payment it made: one connection answers all the PayPal questions at once.
+  const paypalRead = (connections.wallets?.length ?? 0) > 0 || (facts.uploads.paypal ?? 0) > 0;
+  const askPaypal = !!opts.canConnect && viaPaypal > 0 && !paypalRead;
+  if (askPaypal) doubts.push({ kind: "paypal", id: "connect:paypal", bank: "PayPal", title: t.paypalTitle(viaPaypal), detail: t.paypalDetail });
+  // The mailbox answers the rest (and PayPal too, when PayPal is not suggested).
+  const hidden = viaStores + (askPaypal ? 0 : viaPaypal);
   if (connections.mailboxes.length === 0 && (hidden > 0 || shortHistory)) {
     doubts.push({
       kind: "mail",
       id: "mail",
-      title: hidden > 0 ? t.mailTitleHidden(hidden) : t.mailTitleShort,
+      title: hidden > 0 ? (askPaypal ? t.mailTitleStores(hidden) : t.mailTitleHidden(hidden)) : t.mailTitleShort,
       detail: hidden > 0 ? `${t.mailWhy}${shortHistory ? ` ${t.mailYearly}` : ""} ${t.mailSafe}` : `${t.mailYearly} ${t.connectMailbox} ${t.mailSafe}`,
     });
   }
@@ -48,7 +57,8 @@ export function findDoubts(subs: DoubtSub[], facts: Facts, connections: Connecti
   if (facts.amexSettlements > 0 && !facts.amexStatement && !amexConnected) {
     doubts.push({ kind: "card", id: "card:amex", bank: "American Express", title: t.cardTitle, detail: t.cardDetail });
   }
-  const unnamed = subs.filter((s) => s.needsLabel && s.status !== "cancelled").slice(0, MAX_NAME_QUESTIONS);
+  // Not while a PayPal connection would name them without the user typing anything.
+  const unnamed = open.filter((s) => !(askPaypal && s.channel === "paypal")).slice(0, MAX_NAME_QUESTIONS);
   for (const s of unnamed) {
     const store = s.channel === "google" ? "google" : s.channel === "apple" ? "apple" : undefined;
     const amount = money(s.currentAmount, s.currency, locale);

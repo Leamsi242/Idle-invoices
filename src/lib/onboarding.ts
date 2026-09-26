@@ -139,6 +139,8 @@ export interface PlanItem {
   /** Shown when the user did not mention this source but the data points to it. */
   detected?: boolean;
   action?: "upload" | "gmail" | "paste" | "gdpr";
+  /** This source can be connected directly (PayPal, through the bank connection provider). */
+  connect?: string;
 }
 
 const bankSteps = (id: string): string[] => {
@@ -241,17 +243,19 @@ export function buildPlan(answers: Answers, facts: Facts): PlanItem[] {
   if (answers.wallets.includes("paypal") || paypalDetected) {
     items.push(item({
       id: "paypal",
-      title: "PayPal: activity download",
-      why: "On a bank statement every PayPal payment reads \"PAYPAL\". PayPal's own export says which service each one paid.",
+      title: "PayPal: connect it, or download its activity",
+      why: "On a bank statement every PayPal payment reads \"PAYPAL\". PayPal's own data says which service each one paid.",
       steps: [
+        "Simplest: connect PayPal from the home page, like your bank (read-only, you sign in on PayPal's page). Or, without a connection:",
         "Sign in on paypal.com (the website, not the app).",
         "Open Activity, then Statements (Relevés), then Activity download (Télécharger l'activité).",
         "Choose Completed payments, CSV format, and the longest period offered.",
         "Upload the CSV here. PayPal receipts found by the Gmail scan also help.",
         "If PayPal only offers a few months, ask for your full history under the GDPR right of access (template below).",
       ],
-      accepts: "CSV",
+      accepts: "a PayPal connection or its CSV",
       action: "gdpr",
+      connect: "PayPal",
       detected: paypalDetected,
       status: has("paypal") ? "done" : "todo",
       alert: pp.unexplained ? `${plural(pp.unexplained, "PayPal payment")} on your statements ${pp.unexplained === 1 ? "is" : "are"} still unnamed.` : undefined,

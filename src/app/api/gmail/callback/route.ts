@@ -5,6 +5,7 @@ import { exchangeCode, gmailConfigured, revokeToken, scanGmail } from "@/lib/gma
 import { getSessionId } from "@/lib/session";
 import { recompute, saveUpload } from "@/lib/store";
 import { rateLimit } from "@/lib/rate-limit";
+import { encodeProgress, GMAIL_SCAN_COOKIE, GMAIL_SCAN_MAX_AGE } from "@/lib/gmail-scan-cookie";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -28,17 +29,24 @@ export async function GET(req: Request) {
   if (!rateLimit(`gmail:${sessionId}`, 3, 60 * 60 * 1000).ok) return back("gmail=limit");
 
   let token: string | null = null;
+  let keepToken = false;
   try {
     token = await exchangeCode(code, verifier, `${url.origin}/api/gmail/callback`);
-    const { scanned, receipts } = await scanGmail(token);
+    const { scanned, receipts, next, total } = await scanGmail(token);
     await saveUpload(sessionId, `Gmail scan (${scanned} emails checked)`, "email", receipts);
     await recompute(sessionId);
-    return back(`gmail=ok&receipts=${receipts.length}&scanned=${scanned}`);
+    if (next === undefined) return back(`gmail=ok&receipts=${receipts.length}&scanned=${scanned}`);
+    // A large mailbox: the home page carries on reading in parts, then the access is revoked.
+    keepToken = true;
+    const res = back(`gmail=partial&scanned=${scanned}&total=${total}`);
+    const progress = encodeProgress({ token, session: sessionId, next, total, scanned, receipts: receipts.length, stalls: scanned === 0 ? 1 : 0 });
+    res.cookies.set(GMAIL_SCAN_COOKIE, progress, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/api/gmail", maxAge: GMAIL_SCAN_MAX_AGE });
+    return res;
   } catch (e) {
     // Status codes only ("Gmail API error 403"): no email content is ever in these messages.
     console.error("Gmail scan failed:", e instanceof Error ? e.message : "unknown");
     return back("gmail=error");
   } finally {
-    if (token) await revokeToken(token);
+    if (token && !keepToken) await revokeToken(token);
   }
 }

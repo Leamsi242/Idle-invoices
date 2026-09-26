@@ -140,7 +140,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-export function Checklist({ plan, ticked, gmail, gdpr }: { plan: PlanItem[]; ticked: string[]; gmail: boolean; gdpr: string }) {
+export function Checklist({ plan, ticked, gmail, gdpr, banking = false }: { plan: PlanItem[]; ticked: string[]; gmail: boolean; gdpr: string; banking?: boolean }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const tick = (itemId: string, done: boolean) =>
@@ -176,6 +176,9 @@ export function Checklist({ plan, ticked, gmail, gdpr }: { plan: PlanItem[]; tic
               )}
             </details>
             <div className="flex flex-wrap items-center gap-2">
+              {i.status !== "done" && i.connect && banking && (
+                <Link href={`/?bank=${encodeURIComponent(i.connect)}#bank`} className="rounded-full bg-brand px-3 py-1 text-sm font-medium text-white">Connect {i.connect}</Link>
+              )}
               {i.status !== "done" && i.action === "gmail" && gmail && (
                 <a href="/api/gmail/start" className="rounded-full bg-brand px-3 py-1 text-sm font-medium text-white">Connect Gmail and scan</a>
               )}

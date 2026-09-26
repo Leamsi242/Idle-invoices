@@ -47,12 +47,18 @@ function receiptOnlyCharges(transactions: NormalizedTransaction[], matched: Set<
     .filter((r) => !(r.isTrial && r.nextChargeAmount && r.nextChargeAmount > r.amount))
     .sort((a, b) => SOURCE_PRIORITY[a.source] - SOURCE_PRIORITY[b.source] || a.date.localeCompare(b.date));
   const kept: NormalizedTransaction[] = [];
+  // A kept row absorbs at most one copy from another upload (the PayPal export and a PayPal connection).
+  const absorbed = new Set<string>();
   for (const r of candidates) {
     // Only across senders (a PayPal receipt and the merchant's own email, or the PayPal export):
     // two purchases of the same price from the same sender are two purchases.
     const sender = (t: NormalizedTransaction) => `${t.source}:${t.rawLabel.split(":")[0].split(" ").slice(0, 2).join(" ")}`;
-    const duplicate = kept.some((k) => sender(k) !== sender(r) && sameName(k.merchant!, r.merchant!) && Math.abs(k.amount - r.amount) < 0.005 && Math.abs(daysBetween(k.date, r.date)) <= 3);
-    if (!duplicate) kept.push(r);
+    const same = (k: NormalizedTransaction) => sameName(k.merchant!, r.merchant!) && Math.abs(k.amount - r.amount) < 0.005 && Math.abs(daysBetween(k.date, r.date)) <= 3;
+    const duplicate = kept.some((k) => sender(k) !== sender(r) && same(k));
+    // The same sender in two uploads, a day or so apart: the same payment dated differently.
+    const copy = !duplicate && kept.find((k) => sender(k) === sender(r) && k.uploadId && r.uploadId && k.uploadId !== r.uploadId && !absorbed.has(k.id) && same(k));
+    if (copy) absorbed.add(copy.id);
+    else if (!duplicate) kept.push(r);
   }
   return kept;
 }
@@ -206,7 +212,8 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
     // A bank connection often shares 90 days only (PSD2): a monthly charge shows two or three
     // times. With such a short history, two charges of exactly the same amount a month apart
     // are kept, and say so.
-    if (shortHistory && left.txs.length === 2 && left.txs[0].source === "bank" && Math.abs(left.txs[0].amount - left.txs[1].amount) < 0.005 && first.amount >= 1) {
+    // PayPal's connection shares about 90 days too.
+    if (shortHistory && left.txs.length === 2 && (left.txs[0].source === "bank" || left.txs[0].source === "paypal") && Math.abs(left.txs[0].amount - left.txs[1].amount) < 0.005 && first.amount >= 1) {
       if (regularity(left.txs.map((t) => t.date), 2)?.frequency === "monthly") {
         const group = toGroup(left.key, left.txs, "monthly", 0, 0.4);
         seenTwice.add(group);

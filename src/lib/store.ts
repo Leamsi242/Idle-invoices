@@ -10,7 +10,7 @@ import { reconcile } from "./engine/reconcile";
 import { findDoubts, type Connections, type Doubt } from "./doubts";
 import type { Locale } from "./i18n";
 import { diffSubscriptions, type Change } from "./engine/changes";
-import { closeAccess, readAgain, type BankAccess } from "./banking";
+import { bankingConfigured, closeAccess, connectionFileName, isPaypal, readAgain, type BankAccess } from "./banking";
 import { sendAlertEmail } from "./notify";
 import { buildPlan, collectFacts, EMPTY_ANSWERS, sanitizeAnswers, type Answers, type Facts, type PlanItem } from "./onboarding";
 
@@ -307,15 +307,17 @@ export async function getOnboarding(sessionId: string | null): Promise<Onboardin
 
 /** What the session has connected: banks and mailboxes read through an API, and manual files. */
 export async function getConnections(sessionId: string | null): Promise<Connections> {
-  if (!sessionId) return { banks: [], mailboxes: [], files: 0 };
+  if (!sessionId) return { banks: [], mailboxes: [], files: 0, wallets: [] };
   const uploads = await prisma.upload.findMany({ where: { sessionId }, select: { fileName: true, sourceType: true }, orderBy: { uploadedAt: "asc" } });
   const banks = new Set<string>();
+  const wallets = new Set<string>();
   const mailboxes = new Set<string>();
   let files = 0;
   for (const { fileName, sourceType } of uploads) {
     const bank = fileName.match(/^Bank connection: (.+?) \(\d+ accounts?\)$/)?.[1];
     const mail = fileName.match(/^(Gmail|Outlook) scan\b/)?.[1];
-    if (bank) banks.add(bank);
+    // A PayPal connection is read like a bank but holds PayPal payments.
+    if (bank) (sourceType === "paypal" ? wallets : banks).add(bank);
     else if (mail) mailboxes.add(mail);
     else {
       files++;
@@ -323,12 +325,12 @@ export async function getConnections(sessionId: string | null): Promise<Connecti
       if (sourceType === "email") mailboxes.add("Receipts");
     }
   }
-  return { banks: [...banks], mailboxes: [...mailboxes], files };
+  return { banks: [...banks], mailboxes: [...mailboxes], files, wallets: [...wallets] };
 }
 
 export async function getDoubts(sessionId: string, locale: Locale = "en"): Promise<Doubt[]> {
   const [subs, onboarding, connections] = await Promise.all([listSubscriptions(sessionId), getOnboarding(sessionId), getConnections(sessionId)]);
-  return findDoubts(subs, onboarding.facts, connections, locale);
+  return findDoubts(subs, onboarding.facts, connections, locale, { canConnect: bankingConfigured() });
 }
 
 // --- Watching: a bank access kept open and read again every night --------------------------------
@@ -389,9 +391,10 @@ export async function refreshWatch(link: LinkRow, now = new Date(), appUrl = "")
   const today = iso(now);
   const since = iso(new Date(link.lastReadAt.getTime() - 7 * 86_400_000));
   const access = JSON.parse(decrypt(link.access)) as BankAccess;
-  const transactions = await readAgain(link.provider, access, since, today);
+  const institution = decrypt(link.institution);
+  const transactions = await readAgain(link.provider, access, since, today, institution);
   const before = await listSubscriptions(link.sessionId);
-  await saveUpload(link.sessionId, `Bank connection: ${decrypt(link.institution)} (${access.accounts.length} account${access.accounts.length === 1 ? "" : "s"})`, "bank", transactions);
+  await saveUpload(link.sessionId, connectionFileName(institution, access.accounts.length), isPaypal(institution) ? "paypal" : "bank", transactions);
   await recompute(link.sessionId);
   const changes = diffSubscriptions(before, await listSubscriptions(link.sessionId));
   if (changes.length) await prisma.alert.createMany({ data: changes.map((c) => ({ sessionId: link.sessionId, kind: c.kind, details: encrypt(JSON.stringify(c)) })) });

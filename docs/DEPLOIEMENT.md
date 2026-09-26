@@ -57,14 +57,33 @@ Vérification :
 
 À savoir : le Crédit Mutuel ne partage que les 90 derniers jours par cette voie. L'application le sait et s'appuie sur la boîte mail pour les abonnements annuels.
 
+### Connecter PayPal (sans télécharger de relevé)
+
+PayPal se connecte comme une banque, par Enable Banking : il donne le vrai service derrière chaque paiement « PAYPAL » de la banque.
+
+1. Dans le tableau de bord Enable Banking, ouvrez votre application, « Link accounts », choisissez le pays **France** puis **PayPal**, et connectez-vous sur la page de PayPal. En mode restreint, un compte PayPal non relié ici ne renvoie aucun compte.
+2. Sur l'application, « Connecter PayPal » (ou cherchez « PayPal » dans la liste des banques).
+
+Vérification, facultative : `npm run bank:check -- https://<domaine>/api/bank/callback "PayPal"` affiche les types de clients acceptés et la durée d'accès maximale de PayPal.
+
+À savoir : PayPal partage en général les 90 derniers jours. Les virements à des particuliers, les remboursements et les versements vers votre banque sont écartés, comme avec l'export CSV.
+
 ## 5. Connecter Gmail
 
-1. Dans [console.cloud.google.com](https://console.cloud.google.com), créez un projet, puis activez « Gmail API ».
-2. Écran de consentement OAuth : type « External », statut « Testing ». Ajoutez votre adresse Gmail (et celles de vos testeurs, jusqu'à 100) dans « Test users ».
-3. Identifiants, « Create credentials », « OAuth client ID », type « Web application », avec l'URI de redirection `https://<domaine>/api/gmail/callback`.
-4. Dans Vercel, ajoutez `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET`, puis redéployez.
+Google a rangé ces réglages dans « Google Auth Platform » en 2025. Comptez 10 minutes. Les noms de menus ci-dessous sont ceux de la console en anglais (si la vôtre est en français, les intitulés sont traduits mais au même endroit).
 
-Vérification : `/api/health` affiche `"gmail": true`, et le bouton Gmail apparaît sur la page d'accueil. Google affiche un avertissement « application non validée » pendant la phase de test : c'est normal, cliquez sur « Continuer ».
+1. Dans [console.cloud.google.com](https://console.cloud.google.com), créez un projet, puis **APIs & Services**, **Library**, cherchez **Gmail API** et cliquez sur **Enable**.
+2. Menu, **Google Auth Platform**, **Branding**, **Get started** : nom de l'application, votre e-mail d'assistance, audience **External**, votre e-mail de contact, puis acceptez les règles et **Create**.
+3. **Audience**, **Test users**, **Add users** : ajoutez **votre propre adresse Gmail** (être propriétaire du projet ne suffit pas) et celles de vos testeurs, jusqu'à 100.
+4. **Clients**, **Create client**, type **Web application**, avec l'URI de redirection autorisée `https://<domaine>/api/gmail/callback`.
+5. **Copiez tout de suite l'ID client et le code secret** : le code secret ne s'affiche en entier qu'une fois.
+6. Dans Vercel, ajoutez `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET`, puis redéployez.
+
+Vérification : `/api/health` affiche `"gmail": true`, et le bouton Gmail apparaît sur la page d'accueil. Pendant la phase de test, Google prévient que l'application est en cours de test : cliquez sur « Continuer » (« Continue »).
+
+À savoir :
+- Google limite la lecture à environ 300 e-mails par minute et par utilisateur. Une grosse boîte mail est donc lue en plusieurs parties : gardez la page ouverte, la progression s'affiche.
+- En mode test, l'accès est limité aux utilisateurs test (100 au plus). Pour un lancement public, Google exige une validation de l'application et un audit de sécurité annuel (CASA) par un laboratoire agréé, payant, parce que la lecture de Gmail est une autorisation « restreinte ».
 
 ## 6. Facultatif
 

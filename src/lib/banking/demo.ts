@@ -1,6 +1,7 @@
 import type { BankRead, Institution } from "./types";
 import type { NormalizedTransaction } from "../types";
 import { makeTx } from "../parsers/common";
+import { toPaypalTransaction, type EbTransaction } from "./enable-banking";
 import { addDays, addMonths } from "../dates";
 
 /**
@@ -9,6 +10,8 @@ import { addDays, addMonths } from "../dates";
  * user's help: charges behind PayPal, Google Play and Apple, and an American Express card.
  */
 export const DEMO_BANK: Institution = { name: "Demo bank (test data)", country: "XX" };
+
+export const DEMO_PAYPAL: Institution = { name: "Demo PayPal (test data)", country: "XX" };
 
 export function demoEnabled(): boolean {
   return process.env.BANK_DEMO === "1" || (process.env.BANK_DEMO !== "0" && process.env.NODE_ENV === "development");
@@ -52,4 +55,25 @@ export function demoRefresh(today: string): NormalizedTransaction[] {
   const { transactions } = demoTransactions(today);
   const extra = [addDays(today, -31), addDays(today, -1)].map((date) => makeTx({ date, amount: 11.99, currency: "EUR", rawLabel: "CB DISNEY PLUS", source: "bank" }));
   return [...transactions, ...extra];
+}
+
+/**
+ * The PayPal account behind the demo bank's monthly "PAYPAL EUROPE" 23.99, as PayPal's PSD2 feed
+ * shapes it (date in transaction_date, payee in creditor): the subscription it pays, money sent to
+ * a friend, a one-off purchase from the balance and a payout to the bank, which is not a payment.
+ */
+export function demoPaypalTransactions(today: string): BankRead {
+  const lines: EbTransaction[] = [];
+  const line = (date: string, amount: number, creditor: EbTransaction["creditor"], indicator: "DBIT" | "CRDT" = "DBIT") => {
+    if (date <= today) lines.push({ transaction_date: date, status: "BOOK", credit_debit_indicator: indicator, transaction_amount: { amount: amount.toFixed(2), currency: "EUR" }, creditor, remittance_information: [] });
+  };
+  const start = addMonths(today.slice(0, 8) + "01", -3);
+  for (let m = 0; m <= 3; m++) {
+    const month = addMonths(start, m);
+    line(addDays(month, 2), 23.99, { name: "Adobe Systems Software Ireland Ltd", contact_details: { email_address: "paypal@adobe.com" } });
+  }
+  line(addDays(today, -40), 50, { name: "Marie Martin", contact_details: { email_address: "marie.martin@gmail.com" } });
+  line(addDays(today, -25), 18.5, { name: "Vinted UAB" });
+  line(addDays(today, -20), 120, { name: null });
+  return { accounts: 1, transactions: lines.map(toPaypalTransaction).filter((t): t is NormalizedTransaction => !!t) };
 }
