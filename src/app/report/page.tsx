@@ -11,6 +11,7 @@ import { ReminderButton } from "@/components/Reminders";
 import { TrialList } from "@/components/TrialList";
 import { renewalReminder } from "@/lib/ics";
 import { cancellationSteps } from "@/lib/cancel-guide";
+import { upcomingCharges, type UpcomingCharge } from "@/lib/upcoming";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +73,40 @@ function Card({ s }: { s: StoredSubscription }) {
   );
 }
 
+const shortDate = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+
+/** The charges due in the next 30 days: what the user can still stop. */
+function NextCharges({ charges, currency }: { charges: UpcomingCharge[]; currency: string }) {
+  if (charges.length === 0) return null;
+  const total = charges.reduce((t, c) => t + c.amount, 0);
+  return (
+    <section className="space-y-2 rounded-xl bg-white p-4 shadow-sm">
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 className="font-semibold">Next 30 days</h2>
+        <span className="font-semibold">{money(total, currency)}</span>
+      </div>
+      <ul className="divide-y divide-slate-100">
+        {charges.map((c, i) => (
+          <li key={`${c.key}:${c.date}`} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+            <span className="w-24 shrink-0 text-slate-500">{shortDate(c.date)}</span>
+            <span className="min-w-0 flex-1 font-medium">
+              {c.serviceName}
+              {c.kind === "trial" && <span className="ml-1 text-xs text-amber-700">(trial ends)</span>}
+              {c.kind === "price-increase" && <span className="ml-1 text-xs text-amber-700">(new price)</span>}
+            </span>
+            <span className="whitespace-nowrap">{money(c.amount, c.currency)}</span>
+            {/* Buttons on the first charge of each subscription only: a weekly plan shows four times. */}
+            {charges.findIndex((x) => x.key === c.key) === i && <span className="flex w-full items-center justify-end gap-3 sm:w-auto">
+              {c.cancellationUrl && <a href={c.cancellationUrl} target="_blank" rel="noopener noreferrer" className="text-brand underline">Cancel ↗</a>}
+              <ReminderButton reminder={renewalReminder(c.serviceName, c.date, money(c.amount, c.currency), c.cancellationUrl)} label="Remind me" />
+            </span>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function Section({ title, subs, note }: { title: string; subs: StoredSubscription[]; note?: string }) {
   if (subs.length === 0) return null;
   return (
@@ -110,6 +145,7 @@ export default async function Report() {
           <p className="text-2xl font-bold text-emerald-800">{money(r.potentialSavings, r.currency)}</p>
         </div>
       </div>
+      <NextCharges charges={upcomingCharges([...r.forgotten, ...r.active, ...r.idle], r.trials, new Date().toISOString().slice(0, 10))} currency={r.currency} />
       {unanswered > 0 && (
         <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
           {unanswered} subscriptions still need a &quot;Still using this?&quot; answer. <Link href="/review" className="underline">Answer now</Link> to see your full savings.
