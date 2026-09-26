@@ -34,7 +34,9 @@ export async function GET(req: Request) {
     await saveUpload(sessionId, `Gmail scan (${scanned} emails checked)`, "email", receipts);
     await recompute(sessionId);
     return back(`gmail=ok&receipts=${receipts.length}&scanned=${scanned}`);
-  } catch {
+  } catch (e) {
+    // Status codes only ("Gmail API error 403"): no email content is ever in these messages.
+    console.error("Gmail scan failed:", e instanceof Error ? e.message : "unknown");
     return back("gmail=error");
   } finally {
     if (token) await revokeToken(token);

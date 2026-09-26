@@ -69,3 +69,11 @@ describe("receipt filter", () => {
     expect(tx?.merchant).toBe("Disney Plus");
   });
 });
+
+describe("Gmail scan time limit", () => {
+  it("stops starting downloads once the deadline has passed", async () => {
+    const { scanned, receipts } = await scanGmail("token-123", fakeGmail([]), Date.now() - 1);
+    expect(scanned).toBe(0);
+    expect(receipts).toEqual([]);
+  });
+});

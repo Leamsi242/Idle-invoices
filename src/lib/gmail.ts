@@ -60,20 +60,27 @@ export async function receiptFromRaw(raw: Buffer): Promise<NormalizedTransaction
   }
 }
 
-/** Downloads each candidate email, keeps the ones that read as receipts, and discards the rest. */
-export async function scanGmail(token: string, f: Fetch = fetch): Promise<ScanResult> {
+/**
+ * Downloads each candidate email, keeps the ones that read as receipts, and discards the rest.
+ * Stops starting new downloads at `deadline` (a server function has about a minute): the newest
+ * emails come first, so a cut-off scan still covers the most recent year or so.
+ */
+export async function scanGmail(token: string, f: Fetch = fetch, deadline = Date.now() + 45_000): Promise<ScanResult> {
   const ids = await listMessageIds(token, f);
   const receipts: NormalizedTransaction[] = [];
-  for (let i = 0; i < ids.length; i += 10) {
+  let scanned = 0;
+  for (let i = 0; i < ids.length && Date.now() < deadline; i += 10) {
+    const chunk = ids.slice(i, i + 10);
     const batch = await Promise.all(
-      ids.slice(i, i + 10).map(async (id) => {
+      chunk.map(async (id) => {
         const msg = await getJson<{ raw: string }>(`${API}/messages/${id}?format=raw`, token, f);
         return receiptFromRaw(Buffer.from(msg.raw, "base64url"));
       }),
     );
+    scanned += chunk.length;
     receipts.push(...batch.filter((t): t is NormalizedTransaction => !!t));
   }
-  return { scanned: ids.length, receipts };
+  return { scanned, receipts };
 }
 
 export function authUrl(opts: { clientId: string; redirectUri: string; state: string; codeChallenge: string }): string {
