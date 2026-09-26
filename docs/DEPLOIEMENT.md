@@ -6,12 +6,14 @@ Tous les services utilisés ont une offre gratuite suffisante pour la phase de t
 
 ## 1. Préparer deux secrets
 
-Sur votre ordinateur, dans un terminal :
+Sur votre ordinateur, dans un terminal, tapez ces deux commandes une par une :
 
 ```bash
-openssl rand -base64 32   # DATA_ENCRYPTION_KEY : chiffre les libellés en base
-openssl rand -hex 32      # CRON_SECRET : protège la purge automatique quotidienne
+openssl rand -base64 32
+openssl rand -hex 32
 ```
+
+La première ligne affichée est `DATA_ENCRYPTION_KEY` (elle chiffre les libellés en base), la seconde est `CRON_SECRET` (elle protège les tâches automatiques de la nuit). Sur Mac, ne recopiez pas de commentaire `# ...` à la suite de la commande : le terminal zsh le prend pour des arguments et répond « too many arguments ».
 
 Gardez-les dans un gestionnaire de mots de passe. Perdre `DATA_ENCRYPTION_KEY` rend les données enregistrées illisibles (il suffit alors de repartir d'une base vide).
 
