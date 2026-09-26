@@ -1,5 +1,5 @@
 import type { NormalizedTransaction, Source } from "./types";
-import { cleanLabel } from "./engine/labels";
+import { cleanLabel, isExcludedLabel } from "./engine/labels";
 import { daysBetween } from "./dates";
 
 /**
@@ -102,8 +102,9 @@ export function collectFacts(transactions: NormalizedTransaction[], explained: S
     if (t.amount <= 0) continue;
     const onAmex = t.rawLabel.startsWith("AMEX ");
     const label = cleanLabel(t.rawLabel);
+    const excluded = isExcludedLabel(label);
     for (const key of Object.keys(PATTERNS) as (keyof typeof PATTERNS)[]) {
-      if (!PATTERNS[key].test(label)) continue;
+      if (excluded || !PATTERNS[key].test(label)) continue;
       intermediaries[key].charges++;
       if (!explained.has(t.id)) intermediaries[key].unexplained++;
       break;

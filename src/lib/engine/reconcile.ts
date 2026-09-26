@@ -2,15 +2,27 @@ import type { MatchResult, NormalizedTransaction } from "../types";
 import { daysBetween } from "../dates";
 import { round2 } from "../amount";
 import { cleanLabel, findIntermediary, nameKey } from "./labels";
+import { findDescriptor } from "./descriptors";
 
 export const DATE_WINDOW_DAYS = 3;
+/**
+ * A payment funded by a card is booked by the bank a few days after the intermediary took it
+ * (Crédit Mutuel: 2 to 5 days, more around weekends), so a bank line may come up to 6 days later.
+ */
+export const BOOKING_LAG_DAYS = 6;
+
+/** True when a bank line dated `bank` can be the booking of a record dated `record`. */
+export const withinBookingWindow = (record: string, bank: string) => {
+  const lag = daysBetween(record, bank);
+  return lag >= -DATE_WINDOW_DAYS && lag <= BOOKING_LAG_DAYS;
+};
 
 interface Pair { bank: NormalizedTransaction; record: NormalizedTransaction; days: number; score: number }
 
 /**
  * Step 2 of the core logic. For each vague bank charge (PayPal, Apple, Google, Stripe, Paddle,
  * Klarna), finds a record in the other sources with the same amount and currency within
- * 3 days. Closest date wins; confidence drops with the date gap and with competing candidates
+ * 3 days (up to 6 days later for a card booking). Closest date wins; confidence drops with the date gap and with competing candidates
  * from other merchants. Each record is used at most once.
  */
 export function reconcile(transactions: NormalizedTransaction[]): MatchResult[] {
@@ -25,9 +37,13 @@ export function reconcile(transactions: NormalizedTransaction[]): MatchResult[] 
     for (const r of records) {
       if (!intermediary.sources.includes(r.source)) continue;
       if (r.currency !== b.currency || Math.abs(r.amount - b.amount) >= 0.005) continue;
+      if (!withinBookingWindow(r.date, b.date)) continue;
       const days = Math.abs(daysBetween(r.date, b.date));
-      if (days > DATE_WINDOW_DAYS) continue;
-      const score = 1 - days * 0.1;
+      // "PAYPAL *UBER": the name after the star says who PayPal paid. A record for someone else
+      // is a poor match (Sony's 5.99 must not take Uber One's 5.99 line).
+      const hint = cleanLabel(b.rawLabel).match(/\*\s*([A-Z]{3,})/)?.[1];
+      const payee = nameKey(`${r.rawLabel} ${r.merchant ?? ""} ${findDescriptor([r.merchant])?.serviceName ?? ""}`);
+      const score = 1 - days * 0.1 - (hint && !payee.includes(hint) && !payee.split(" ").some((w) => w.length >= 4 && hint.startsWith(w)) ? 0.5 : 0);
       const pair = { bank: b, record: r, days, score };
       pairs.push(pair);
       candidatesPerBank.set(b.id, [...(candidatesPerBank.get(b.id) ?? []), pair]);

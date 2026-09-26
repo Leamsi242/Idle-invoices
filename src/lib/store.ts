@@ -301,16 +301,20 @@ export async function getOnboarding(sessionId: string | null): Promise<Onboardin
 /** What the session has connected: banks and mailboxes read through an API, and manual files. */
 export async function getConnections(sessionId: string | null): Promise<Connections> {
   if (!sessionId) return { banks: [], mailboxes: [], files: 0 };
-  const uploads = await prisma.upload.findMany({ where: { sessionId }, select: { fileName: true }, orderBy: { uploadedAt: "asc" } });
+  const uploads = await prisma.upload.findMany({ where: { sessionId }, select: { fileName: true, sourceType: true }, orderBy: { uploadedAt: "asc" } });
   const banks = new Set<string>();
   const mailboxes = new Set<string>();
   let files = 0;
-  for (const { fileName } of uploads) {
+  for (const { fileName, sourceType } of uploads) {
     const bank = fileName.match(/^Bank connection: (.+?) \(\d+ accounts?\)$/)?.[1];
     const mail = fileName.match(/^(Gmail|Outlook) scan\b/)?.[1];
     if (bank) banks.add(bank);
     else if (mail) mailboxes.add(mail);
-    else files++;
+    else {
+      files++;
+      // Receipts added by hand answer the same questions as a mailbox scan.
+      if (sourceType === "email") mailboxes.add("Receipts");
+    }
   }
   return { banks: [...banks], mailboxes: [...mailboxes], files };
 }

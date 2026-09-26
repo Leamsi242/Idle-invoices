@@ -24,14 +24,16 @@ export function cleanLabel(raw: string): string {
  * Neither are loan instalments, taxes, co-ownership charges or the monthly settlement of a
  * credit card (its own charges are on the card statement).
  */
-export function isExcludedLabel(cleaned: string): boolean {
+export function isExcludedLabel(cleaned: string, opts: { paypalExport?: boolean } = {}): boolean {
   return (
     /^(TRANSFER|VIR|VIREMENT|RETRAIT|ATM|CASH|REMISE|TOP-?UP|ECH PRET|ECHEANCE PRET|COTIS ASS PRET)\b/.test(cleaned) ||
     /\b(DGFIP|FINANCES PUBLIQ\w*|IMPOTS?|TRESOR PUBLIC|TIMBRE FISCAL|SDC|SYNDIC|AMERICAN EXPRESS|AMEX|FRANFINANCE|COFIDIS|CETELEM|SOFINCO|IMPAYE)\b/.test(cleaned) ||
     // Instalment plans (buy now, pay later) repeat monthly but are one purchase: PayPal's "4X" is
     // debited as "PAYPAL (EUROPE) S.A R", card payments as "PAYPAL *PAIEMENT".
-    // In a PayPal export, the instalments of a 4X plan are paid to "PayPal Inc.".
-    /PAYPAL EUROPE S\.A R\b|PAYPAL \*PAIEMENT|PAYPAL PAYPAL INC\b|\b(ONEY|ALMA|FLOA|PAIEMENT EN \dX|\dX CB)\b/.test(cleaned)
+    // In a PayPal export, the instalments of a 4X plan are paid to "PayPal Inc.". Without the
+    // export, the bank label "PAYPAL EUROPE S.A R" is taken as one (with it, reconciliation says).
+    (!opts.paypalExport && /PAYPAL EUROPE S\.A R\b/.test(cleaned)) ||
+    /PAYPAL \*PAIEMENT|PAYPAL PAYPAL INC\b|\b(ONEY|ALMA|FLOA|PAIEMENT EN \dX|\dX CB)\b/.test(cleaned)
   );
 }
 
@@ -69,7 +71,7 @@ export function displayLabel(cleaned: string): string {
   const behind = s.match(/^(?:PAYPAL|GOOGLE|APPLE\.COM\/BILL|PADDLE\.NET|STRIPE)\s*\*\s*(.+)$/);
   const name = (behind ? behind[1] : s).replace(/\s*G\.CO[ /]HELPPAY.*$/, "").replace(/\.(?:COM|NET|C|N)$/, "").trim();
   // "GOOGLE*GOOGLE PLAY APPS G.CO HELPPAY": the app is not named.
-  if (/^GOOGLE PLAY(?: AP\w*)?$/.test(name)) return "GOOGLE PLAY";
+  if (/^GOOGLE PLAY(?: AP\w*)?$|^GOOGLE PAYMENT\b/.test(name)) return "GOOGLE PLAY";
   // The intermediary alone: "PAYPAL EUROPE S.A.R.L", "APPLE.COM/BILL ITUNES.COM".
   if (/^PAYPAL(?: \(?EUROPE\)?\b.*)?$/.test(name)) return "PAYPAL";
   if (/^APPLE\.COM\/BILL\b|^ITUNES\b/.test(name)) return "APPLE.COM/BILL";

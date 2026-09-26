@@ -13,6 +13,7 @@ const H = {
   currency: ["Currency", "Devise"],
   gross: ["Gross", "Brut", "Avant commission"],
   title: ["Item Title", "Titre de l'objet"],
+  to: ["To Email Address", "À l'adresse email", "A l'adresse email"],
 };
 
 export function looksLikePaypalCsv(text: string): boolean {
@@ -45,6 +46,8 @@ export function serviceBehind(name: string, title: string): string | undefined {
   return undefined;
 }
 
+const PERSONAL_MAILBOX = /@(?:gmail|googlemail|hotmail|outlook|live|msn|yahoo|ymail|icloud|me|mac|aol|gmx|proton|protonmail|orange|wanadoo|free|sfr|neuf|laposte|bbox)\.[a-z.]+$/i;
+
 /** Keeps outgoing, completed payments; the Name column is the real merchant. */
 export function parsePaypalCsv(text: string): NormalizedTransaction[] {
   const { data } = Papa.parse<Record<string, string>>(text.replace(/^﻿/, ""), { header: true, skipEmptyLines: "greedy" });
@@ -58,6 +61,9 @@ export function parsePaypalCsv(text: string): NormalizedTransaction[] {
     if (!name || gross === null || gross >= 0) continue; // funding rows and incoming money
     if (status && !/completed|terminé|termine/i.test(status)) continue;
     if (NOT_A_PAYMENT.test(type)) continue;
+    // Money sent to a person (rent, a friend) goes to a personal mailbox, a shop's to its own domain.
+    // Kept as a transfer, so the matching bank line is recognised and left out too.
+    const toPerson = PERSONAL_MAILBOX.test(get(row, H.to));
     const date = parseDate(get(row, H.date), "DMY");
     if (!date) continue;
     const title = get(row, H.title);
@@ -66,7 +72,8 @@ export function parsePaypalCsv(text: string): NormalizedTransaction[] {
       date,
       amount: -gross,
       currency: get(row, H.currency) || "EUR",
-      rawLabel: `PAYPAL ${named ?? name}`,
+      // The label keeps who PayPal paid ("Google Payment Ireland"): banks print it after "PAYPAL *".
+      rawLabel: `${toPerson ? "TRANSFER " : ""}PAYPAL ${name}`,
       source: "paypal",
       merchant: named ?? name,
       plan: title || undefined,

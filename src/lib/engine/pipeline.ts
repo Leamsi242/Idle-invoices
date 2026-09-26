@@ -1,6 +1,6 @@
 import type { Channel, DescriptorEntry, DetectedSubscription, MatchResult, NormalizedTransaction, RecurringGroup, Usage } from "../types";
 import { cleanLabel, displayLabel, findIntermediary, isExcludedLabel, nameKey, sameName } from "./labels";
-import { reconcile } from "./reconcile";
+import { reconcile, withinBookingWindow } from "./reconcile";
 import { detectRecurring, regularity, toGroup, PER_YEAR } from "./recurring";
 import { findDescriptor } from "./descriptors";
 import { flagSubscriptions } from "./flags";
@@ -37,7 +37,7 @@ const SOURCE_PRIORITY: Record<string, number> = { paypal: 0, apple: 1, google: 1
 function receiptOnlyCharges(transactions: NormalizedTransaction[], matched: Set<string>): NormalizedTransaction[] {
   const bank = transactions.filter((t) => t.source === "bank" && t.amount > 0);
   const coveredByBank = (r: NormalizedTransaction) =>
-    bank.some((b) => b.currency === r.currency && Math.abs(b.amount - r.amount) < 0.005 && Math.abs(daysBetween(b.date, r.date)) <= 3);
+    bank.some((b) => b.currency === r.currency && Math.abs(b.amount - r.amount) < 0.005 && withinBookingWindow(r.date, b.date));
   // Records dated after every real payment are announcements (a trial ending next month), not charges.
   const lastPayment = transactions.filter((t) => t.amount > 0 && !t.isTrial).reduce((max, t) => (t.date > max ? t.date : max), "");
   const candidates = transactions
@@ -91,7 +91,13 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
   const byId = new Map(transactions.map((t) => [t.id, t]));
   for (const m of matches) matchedSources.set(m.bankTransactionId, byId.get(m.intermediaryTransactionId)!);
 
-  const bankCharges = transactions.filter((t) => t.source === "bank" && t.amount > 0 && !isExcludedLabel(cleanLabel(t.rawLabel)));
+  // A bank line explained by a transfer to a person (PayPal to a friend) is not a charge either.
+  const excludedRecord = (t: NormalizedTransaction) => {
+    const r = matchedSources.get(t.id);
+    return !!r && isExcludedLabel(cleanLabel(r.rawLabel));
+  };
+  const paypalExport = transactions.some((t) => t.source === "paypal");
+  const bankCharges = transactions.filter((t) => t.source === "bank" && t.amount > 0 && !isExcludedLabel(cleanLabel(t.rawLabel), { paypalExport }) && !excludedRecord(t));
   const charges = [...bankCharges, ...receiptOnlyCharges(transactions, new Set(matches.map((m) => m.intermediaryTransactionId)))];
   const records = transactions.filter((t) => t.source !== "bank");
   const userDescriptors = opts.userDescriptors ?? [];
@@ -217,7 +223,11 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
     // Only recent conversions are worth a "check your statement"; older ones would show up in the charges.
     if (daysBetween(r.nextChargeDate, today) > 90) continue;
     const cancelled = records.some((c) => c.isCancellation && c.merchant && sameName(c.merchant, r.merchant!) && c.date >= r.date);
-    const known = groups.some((g) => g.merchant && sameName(g.merchant, r.merchant!));
+    // Already charging on a statement, under its merchant or its bank label (PDF Guru on the card).
+    const known = groups.some((g) => {
+      const name = g.merchant ?? subscriptionService([cleanLabel(g.transactions[0].rawLabel)])?.serviceName;
+      return !!name && (sameName(name, r.merchant!) || subscriptionService([name])?.serviceName === subscriptionService([r.merchant])?.serviceName && !!subscriptionService([name]));
+    });
     if (cancelled || known) continue;
     const expected = { ...r, id: `${r.id}-expected`, date: r.nextChargeDate, amount: r.nextChargeAmount, isTrial: false, rawLabel: `EXPECTED ${r.merchant}` };
     const group = toGroup(nameKey(r.merchant), [expected], r.frequency ?? "monthly", 0, 0.4);
@@ -258,10 +268,21 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
   });
 
   const dates = charges.map((t) => t.date).sort();
+  // Each statement ends on its own date: a charge missing after the end of the bank statements is
+  // not a sign that the subscription stopped when the card or PayPal data goes further.
+  const streamOf = (t: NormalizedTransaction) => (t.source === "bank" ? (t.rawLabel.startsWith("AMEX ") ? "amex" : "bank") : t.source);
+  const streamEnd = new Map<string, string>();
+  const dataEnd = dates.at(-1) ?? "";
+  for (const t of transactions) {
+    // Real payments only: a trial or a renewal announced for later is not data.
+    if (t.amount <= 0 || t.isTrial || t.date > dataEnd) continue;
+    if ((streamEnd.get(streamOf(t)) ?? "") < t.date) streamEnd.set(streamOf(t), t.date);
+  }
   const flagged = flagSubscriptions(labelled, {
     records,
     dataStart: dates[0] ?? "",
-    dataEnd: dates.at(-1) ?? "",
+    dataEnd,
+    endFor: (sub) => sub.transactions.map((t) => streamEnd.get(streamOf(t)) ?? "").reduce((a, b) => (b > a ? b : a), ""),
     usage: opts.usage ?? {},
   });
   return { subscriptions: flagged.sort((a, b) => b.yearlyCost - a.yearlyCost), matches };

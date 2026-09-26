@@ -165,7 +165,9 @@ export function receiptToTransaction(r: ReceiptFields): NormalizedTransaction | 
     amount = p.amount;
   }
 
-  const isCancellation = CANCELLED.test(r.subject) || (CANCELLED.test(r.body.slice(0, 600)) && !MONEY.test(r.body.slice(0, 600)));
+  // A cancelled order ("Your Amazon.fr order has been canceled") is not a cancelled subscription.
+  const orderOnly = /\b(order|commande)\b/i.test(r.subject) && !/abonnement|subscription|membership|adh[ée]sion/i.test(r.subject);
+  const isCancellation = !orderOnly && (CANCELLED.test(r.subject) || (CANCELLED.test(r.body.slice(0, 600)) && !MONEY.test(r.body.slice(0, 600))));
   if (!isCancellation && SKIP.test(r.subject)) return null;
   const next = nextCharge(all, r.date);
   // The service is often named in the subject: "Votre abonnement à CleanShot a été annulé",

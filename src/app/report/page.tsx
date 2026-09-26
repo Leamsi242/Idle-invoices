@@ -33,9 +33,11 @@ function Card({ s }: { s: StoredSubscription }) {
           Next charge around <strong>{s.nextCharge}</strong> · paid so far {money(s.totalPaid, s.currency)}
         </p>
       )}
-      {s.priceChanges.length > 0 && (
+      {/* Currency conversion moves a price by a few cents every month: only real changes are shown. */}
+      {s.priceChanges.filter((p) => Math.abs(p.to - p.from) / p.from >= 0.02).length > 0 && (
         <p className="text-sm text-amber-700">
-          Price went up: {s.priceChanges.map((p) => `${money(p.from, s.currency)} to ${money(p.to, s.currency)} on ${p.date}`).join("; ")}
+          Price changed:{" "}
+          {s.priceChanges.filter((p) => Math.abs(p.to - p.from) / p.from >= 0.02).map((p) => `${money(p.from, s.currency)} to ${money(p.to, s.currency)} on ${p.date}`).join("; ")}
         </p>
       )}
       {s.bundle && <p className="text-sm text-slate-600">Bundle, counted once: {s.bundle.join(", ")}</p>}

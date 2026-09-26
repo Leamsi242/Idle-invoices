@@ -203,3 +203,14 @@ Date: 3 December 2025
     expect([r.merchant, r.plan, r.amount]).toEqual(["Google AI Pro", "Google AI Pro (2 TB)", 21.99]);
   });
 });
+
+describe("cancelled orders", () => {
+  it("does not take a cancelled shop order for a cancelled subscription", () => {
+    const r = parseReceiptText(`From: Amazon.fr <order-update@amazon.fr>
+Subject: Order update: Your Amazon.fr order has been canceled as suspicious activity is detected
+Date: 29 August 2026
+
+Your order has been cancelled. You have not been charged.`);
+    expect(r?.isCancellation ?? false).toBe(false);
+  });
+});

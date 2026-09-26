@@ -15,8 +15,21 @@ describe("reconcile", () => {
     const bank = tx("2026-03-10", 9.99, "PAYPAL *");
     const near = tx("2026-03-08", 9.99, "PAYPAL Disney", "paypal", { merchant: "Disney Plus" });
     expect(reconcile([bank, near])[0].confidence).toBe(0.8);
-    const far = tx("2026-03-06", 9.99, "PAYPAL Disney", "paypal", { merchant: "Disney Plus" });
-    expect(reconcile([bank, far])).toEqual([]);
+    const after = tx("2026-03-14", 9.99, "PAYPAL Disney", "paypal", { merchant: "Disney Plus" });
+    expect(reconcile([bank, after])).toEqual([]);
+  });
+
+  it("gives a bank line to the payee named after the star", () => {
+    const bank = tx("2024-10-17", 5.99, "PAIEMENT CB 1510 LUXEMBOURG PAYPAL *UBER");
+    const uber = tx("2024-10-15", 5.99, "PAYPAL Uber BV", "paypal", { merchant: "Uber BV" });
+    const sony = tx("2024-10-16", 5.99, "PAYPAL Sony Interactive Entertainment", "paypal", { merchant: "Sony Interactive Entertainment" });
+    expect(reconcile([bank, sony, uber]).map((m) => m.merchant)).toEqual(["Uber BV"]);
+  });
+
+  it("accepts a card booking up to 6 days after the PayPal payment", () => {
+    const record = tx("2024-12-13", 10.99, "PAYPAL Google Payment Ireland Limited", "paypal", { merchant: "SoundType AI" });
+    expect(reconcile([tx("2024-12-17", 10.99, "PAIEMENT CB 1312 LUXEMBOURG PAYPAL *GOOGLE"), record])[0].confidence).toBe(0.6);
+    expect(reconcile([tx("2024-12-20", 10.99, "PAIEMENT CB 1312 LUXEMBOURG PAYPAL *GOOGLE"), record])).toEqual([]);
   });
 
   it("requires the same amount and currency", () => {

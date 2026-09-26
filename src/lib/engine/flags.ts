@@ -6,6 +6,7 @@ import { sameName } from "./labels";
 export const SMALL_MONTHLY_AMOUNT = 10;
 /** A subscription first charged this recently is "new": check it was meant to continue. */
 export const NEW_WITHIN_DAYS = 60;
+const CONTRACTS = new Set(["telecom", "energy", "insurance", "transport", "bank fees"]);
 
 const SYMBOL: Record<string, string> = { EUR: "€", USD: "$", GBP: "£" };
 const price = (amount: number, currency: string) => (SYMBOL[currency] ? `${SYMBOL[currency]}${amount.toFixed(2)}` : `${amount.toFixed(2)} ${currency}`);
@@ -16,6 +17,8 @@ export interface FlagContext {
   /** First and last dates covered by the uploaded statements. */
   dataStart: string;
   dataEnd: string;
+  /** Last date covered by the statements this subscription was seen in (an Amex statement ends later than a bank's). */
+  endFor?: (s: DetectedSubscription) => string;
   usage: Record<string, Usage | undefined>;
 }
 
@@ -40,7 +43,10 @@ export function flagSubscriptions(subs: DetectedSubscription[], ctx: FlagContext
     if (monthlyEquivalent(s) < SMALL_MONTHLY_AMOUNT) reasons.push("Small charge, under €10 a month");
     if (related.some((r) => r.isTrial)) reasons.push("Started as a free trial");
     // Only meaningful if the user gave us some receipts to look through.
-    if (emailsUploaded && !related.some((r) => r.source === "email")) reasons.push("No receipt email found");
+    // Phone, energy, insurance, transport passes and bank fees are contracts that rarely send
+    // receipts and are rarely forgotten for lack of one; a gym or an app is.
+    const receiptExpected = !CONTRACTS.has(s.category ?? "");
+    if (emailsUploaded && receiptExpected && !related.some((r) => r.source === "email")) reasons.push("No receipt email found");
     const bundle = bundles.find((b) => b !== s && b.bundle!.some((part) => sameName(part, s.serviceName)));
     if (bundle) reasons.push(`Already included in ${bundle.serviceName}`);
     if (s.frequency === "weekly") reasons.push(`Billed every week, about ${price(monthlyEquivalent(s), s.currency)} a month`);
@@ -59,7 +65,7 @@ export function flagSubscriptions(subs: DetectedSubscription[], ctx: FlagContext
     if (twin) reasons.push("Charged twice: two accounts or a duplicate subscription?");
 
     const usage = ctx.usage[s.key] ?? s.usage;
-    const overdue = daysBetween(s.lastSeen, ctx.dataEnd) > PERIOD_DAYS[s.frequency] * 1.5 + 3;
+    const overdue = daysBetween(s.lastSeen, ctx.endFor?.(s) ?? ctx.dataEnd) > PERIOD_DAYS[s.frequency] * 1.5 + 3;
     // A cancellation email sent after the last charges ends the subscription. One sent before
     // the first charge was for an earlier plan (Google One monthly, then yearly).
     const cancellation = related

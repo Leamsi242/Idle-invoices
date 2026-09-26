@@ -560,5 +560,17 @@
     "serviceName": "American Express card fee",
     "category": "bank fees",
     "cancellationUrl": "https://www.americanexpress.com/fr-fr/"
+  },
+  {
+    "pattern": "ASSURANCE HABITATION",
+    "serviceName": "Assurance habitation",
+    "category": "insurance",
+    "cancellationUrl": "https://www.service-public.fr/particuliers/vosdroits/F2586"
+  },
+  {
+    "pattern": "PROTECTION JURIDIQUE",
+    "serviceName": "Protection juridique",
+    "category": "insurance",
+    "cancellationUrl": "https://www.service-public.fr/particuliers/vosdroits/F2586"
   }
 ]
