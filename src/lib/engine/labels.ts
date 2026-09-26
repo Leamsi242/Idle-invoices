@@ -30,7 +30,8 @@ export function isExcludedLabel(cleaned: string): boolean {
     /\b(DGFIP|FINANCES PUBLIQ\w*|IMPOTS?|TRESOR PUBLIC|TIMBRE FISCAL|SDC|SYNDIC|AMERICAN EXPRESS|AMEX|FRANFINANCE|COFIDIS|CETELEM|SOFINCO|IMPAYE)\b/.test(cleaned) ||
     // Instalment plans (buy now, pay later) repeat monthly but are one purchase: PayPal's "4X" is
     // debited as "PAYPAL (EUROPE) S.A R", card payments as "PAYPAL *PAIEMENT".
-    /PAYPAL EUROPE S\.A R\b|PAYPAL \*PAIEMENT|\b(ONEY|ALMA|FLOA|PAIEMENT EN \dX|\dX CB)\b/.test(cleaned)
+    // In a PayPal export, the instalments of a 4X plan are paid to "PayPal Inc.".
+    /PAYPAL EUROPE S\.A R\b|PAYPAL \*PAIEMENT|PAYPAL PAYPAL INC\b|\b(ONEY|ALMA|FLOA|PAIEMENT EN \dX|\dX CB)\b/.test(cleaned)
   );
 }
 

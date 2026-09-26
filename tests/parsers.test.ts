@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { parseSample, readSample, TODAY } from "./helpers";
 import { NeedsMappingError, parseBankCsv, previewCsv } from "@/lib/parsers/bank-csv";
 import { parseBankStatementText, parseStatementText } from "@/lib/parsers/bank-pdf";
-import { parsePaypalCsv } from "@/lib/parsers/paypal-csv";
+import { looksLikePaypalCsv, parsePaypalCsv } from "@/lib/parsers/paypal-csv";
+import { analyze } from "@/lib/engine/pipeline";
 import { parseReceiptText } from "@/lib/parsers/email";
 import { appStoreEntriesToTransactions, parseAppStoreList } from "@/lib/parsers/app-store";
 import { parseText } from "@/lib/parsers";
@@ -259,5 +260,50 @@ describe("American Express statement", () => {
 
   it("is used for PDF statements", () => {
     expect(parseStatementText(older)).toHaveLength(3);
+  });
+});
+
+describe("PayPal activity download, French layout of 2026", () => {
+  // Made-up rows in the real column layout ("Avant commission", not "Brut").
+  const head = `"Date","Heure","Fuseau horaire","Nom","Type","État","Devise","Avant commission","Commission","Net","De l'adresse email","À l'adresse email","Numéro de transaction","Titre de l'objet","Numéro de la transaction de référence"`;
+  const row = (date: string, name: string, type: string, status: string, amount: string, id: string, title = "", ref = "") =>
+    `"${date}","10:00:00","Europe/Paris","${name}","${type}","${status}","EUR","${amount}","0,00","${amount}","a@example.com","b@example.com","${id}","${title}","${ref}"`;
+  const csv = [
+    head,
+    row("08/09/2026", "WeTransfer B.V.", "Paiement préapprouvé d'un utilisateur de facture de paiement", "Terminé", "-9,99", "T1", "WeTransfer Ultimate, Tax"),
+    row("10/09/2026", "Uber Payments BV", "Autorisation standard", "Terminé", "-14,20", "A1"),
+    row("10/09/2026", "Uber Payments BV", "Paiement préapprouvé d'un utilisateur de facture de paiement", "Terminé", "-14,20", "T2", "", "A1"),
+    row("11/09/2026", "Bolt Operations OÜ", "Autorisation standard", "En attente", "-8,00", "A2"),
+    row("11/09/2026", "Bolt Operations OÜ", "Autre", "Terminé", "-8,40", "T3", "", "A2"),
+    row("12/09/2026", "Google Payment Ireland Limited", "Paiement préapprouvé d'un utilisateur de facture de paiement", "Terminé", "-10,99", "T4", "Pro (SoundType AI - Voice To Text)"),
+    row("13/09/2026", "Paddle.net", "Paiement préapprouvé d'un utilisateur de facture de paiement", "Terminé", "-12,00", "T5", "[CLEANSHOTX] 1x CleanShot Cloud Pro Monthly"),
+    row("14/09/2026", "PayPal Inc.", "Paiement standard", "Terminé", "-34,36", "T6"),
+    row("15/09/2026", "", "Virement bancaire sur le compte PayPal ", "En attente", "34,36", "T7"),
+    row("16/09/2026", "Uber Payments BV", "Annulation de l'autorisation", "Annulé", "-5,00", "T8"),
+  ].join("\n");
+
+  it("is recognised, keeps each payment once and names the service behind stores and processors", () => {
+    expect(looksLikePaypalCsv(csv)).toBe(true);
+    expect(parsePaypalCsv(csv).map((t) => [t.date, t.merchant, t.amount])).toEqual([
+      ["2026-09-08", "WeTransfer B.V.", 9.99],
+      ["2026-09-10", "Uber Payments BV", 14.2],
+      ["2026-09-11", "Bolt Operations OÜ", 8.4],
+      ["2026-09-12", "SoundType AI", 10.99],
+      ["2026-09-13", "CleanShot Cloud Pro", 12],
+      ["2026-09-14", "PayPal Inc.", 34.36],
+    ]);
+  });
+
+  it("leaves 4X instalments and rides out of the subscriptions", () => {
+    const monthly = (name: string, type: string, amount: string, title = "") =>
+      ["14/06/2026", "14/07/2026", "14/08/2026"].map((d, i) => row(d, name, type, "Terminé", amount, `${name}${i}`, title));
+    const text = [
+      head,
+      ...monthly("PayPal Inc.", "Paiement standard", "-34,36"),
+      ...monthly("Bolt Operations OÜ", "Autre", "-12,80"),
+      ...monthly("Google Payment Ireland Limited", "Paiement préapprouvé d'un utilisateur de facture de paiement", "-10,99", "Pro (SoundType AI - Voice To Text)"),
+    ].join("\n");
+    const { subscriptions } = analyze(parsePaypalCsv(text), { today: "2026-08-20" });
+    expect(subscriptions.map((s) => [s.serviceName, s.frequency, s.transactions.length])).toEqual([["SoundType AI", "monthly", 3]]);
   });
 });

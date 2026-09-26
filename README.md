@@ -21,7 +21,7 @@ Then upload the files in [`samples/`](samples) to see a full report. Optional: s
 ## Run the tests
 
 ```bash
-npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, bank and mailbox connections, doubts (133 tests)
+npm test            # Vitest: parsers, engine, storage, reminders, Gmail, privacy checks, bank and mailbox connections, doubts (135 tests)
 npm run typecheck
 ```
 
@@ -42,7 +42,7 @@ Uploaded files
 | Source | Accepted formats |
 | --- | --- |
 | Bank statements | CSV from N26, Revolut, French banks (Débit / Crédit), UK banks (Debit / Credit Amount), and any CSV with usual column names ("Date", "Libellé" or "Description", "Débit" and "Crédit" or "Amount"); any other CSV through the column-mapping screen; PDF statements with one line per operation, including those with a single unsigned amount column and the card merchant on the next line (Crédit Mutuel, CIC); American Express France card statements (both layouts, since 2019, checked against the statement's debit total) |
-| PayPal | Activity download CSV (English or French headers) |
+| PayPal | Activity download CSV (English or French headers, 12 months per download); authorizations, holds and 4X instalments ("PayPal Inc.") are left out, and the service behind Google Play or Paddle is read from the item title |
 | Receipts | `.eml` files, pasted text, or a one-time Gmail scan |
 | Apple / Google Play | Pasted text of the subscriptions screen, or a screenshot (read by Claude) |
 

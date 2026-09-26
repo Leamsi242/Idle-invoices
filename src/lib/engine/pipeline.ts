@@ -41,7 +41,7 @@ function receiptOnlyCharges(transactions: NormalizedTransaction[], matched: Set<
   // Records dated after every real payment are announcements (a trial ending next month), not charges.
   const lastPayment = transactions.filter((t) => t.amount > 0 && !t.isTrial).reduce((max, t) => (t.date > max ? t.date : max), "");
   const candidates = transactions
-    .filter((r) => r.source !== "bank" && r.amount > 0 && !r.isCancellation && r.merchant && !matched.has(r.id) && !coveredByBank(r))
+    .filter((r) => r.source !== "bank" && r.amount > 0 && !r.isCancellation && r.merchant && !matched.has(r.id) && !coveredByBank(r) && !isExcludedLabel(cleanLabel(r.rawLabel)))
     .filter((r) => r.date <= lastPayment)
     // A trial charge that announces a bigger price later is handled as a trial, not a charge.
     .filter((r) => !(r.isTrial && r.nextChargeAmount && r.nextChargeAmount > r.amount))
@@ -176,7 +176,7 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
     // A paid trial followed by one full-price charge of a known service (PDF Guru: 0.99, then
     // 49.99 a week later): the trial has converted. The billing period is a guess (monthly).
     // Only token amounts count as a trial, so two meals from a delivery app are not one.
-    if (left.txs.length === 1 && isKnown(left.key)) {
+    if (left.txs.length === 1 && isKnown(left.key) && first.amount >= 2) {
       const trial = leftovers.find(
         (l) => l !== left && l.key === left.key && l.txs.length === 1 && l.txs[0].amount <= Math.min(PAID_TRIAL_MAX, first.amount * TRIAL_MAX_RATIO) &&
           daysBetween(l.txs[0].date, first.date) > 0 && daysBetween(l.txs[0].date, first.date) <= TRIAL_MAX_DAYS_BEFORE,
@@ -238,7 +238,9 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
     const wiggles = g.priceChanges.filter((p) => Math.abs(p.to - p.from) / p.from > 0.01).length;
     return !(range > 0.05 && wiggles >= 2);
   };
-  for (let i = groups.length - 1; i >= 0; i--) if (!steady(groups[i])) groups.splice(i, 1);
+  // Rides and deliveries (Uber, Bolt) repeat, sometimes at the same price: never a subscription.
+  const purchase = (g: RecurringGroup) => !!findDescriptor([g.merchant, cleanLabel(g.transactions[0].rawLabel)], userDescriptors)?.notSubscription;
+  for (let i = groups.length - 1; i >= 0; i--) if (!steady(groups[i]) || purchase(groups[i])) groups.splice(i, 1);
 
   const labelled = groups.map((g) => {
     // No trial guess behind a bare intermediary label: any small PayPal payment would qualify.

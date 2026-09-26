@@ -149,10 +149,22 @@
     "cancellationUrl": "https://account.microsoft.com/services"
   },
   {
+    "pattern": "MICROSOFT PAYMENTS",
+    "serviceName": "Microsoft (Xbox, 365)",
+    "category": "gaming",
+    "cancellationUrl": "https://account.microsoft.com/services"
+  },
+  {
     "pattern": "PLAYSTATION",
     "serviceName": "PlayStation Plus",
     "category": "gaming",
     "cancellationUrl": "https://store.playstation.com/subscriptions"
+  },
+  {
+    "pattern": "SONY INTERACTIVE",
+    "serviceName": "PlayStation (Sony)",
+    "category": "gaming",
+    "cancellationUrl": "https://www.playstation.com/acct/management"
   },
   {
     "pattern": "NINTENDO",
@@ -195,6 +207,12 @@
     "serviceName": "ChatGPT Plus",
     "category": "productivity",
     "cancellationUrl": "https://chatgpt.com/"
+  },
+  {
+    "pattern": "CHATGPT",
+    "serviceName": "ChatGPT Plus",
+    "category": "productivity",
+    "cancellationUrl": "https://chatgpt.com/#settings/Subscription"
   },
   {
     "pattern": "ANTHROPIC",
@@ -269,6 +287,20 @@
     "serviceName": "Uber rides",
     "category": "transport",
     "cancellationUrl": "https://www.uber.com/",
+    "notSubscription": true
+  },
+  {
+    "pattern": "UBER PAYMENTS",
+    "serviceName": "Uber rides",
+    "category": "transport",
+    "cancellationUrl": "https://www.uber.com/",
+    "notSubscription": true
+  },
+  {
+    "pattern": "BOLT",
+    "serviceName": "Bolt rides",
+    "category": "transport",
+    "cancellationUrl": "https://bolt.eu/",
     "notSubscription": true
   },
   {
