@@ -46,9 +46,10 @@ export interface Intermediary { id: string; pattern: RegExp; sources: Source[] }
  * PayPal connection often does not).
  */
 export function storeOf(name: string): "google" | "apple" | "processor" | undefined {
-  if (/^google (?:payment|play|commerce)\b/i.test(name)) return "google";
-  if (/^(?:apple (?:services|distribution)|itunes)\b/i.test(name)) return "apple";
-  if (/^(?:paddle|fastspring|stripe)\b/i.test(name)) return "processor";
+  // The companies PayPal pays, not products named after the store ("Google Play Pass", "iTunes Match").
+  if (/^google (?:payment|commerce)\b/i.test(name)) return "google";
+  if (/^apple (?:services|distribution)\b/i.test(name)) return "apple";
+  if (/^(?:paddle(?:\.com)?|fastspring|stripe)(?: (?:market|payments|inc|ltd|limited|europe)\b.*)?$/i.test(name)) return "processor";
   return undefined;
 }
 

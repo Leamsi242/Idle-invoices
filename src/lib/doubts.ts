@@ -18,6 +18,8 @@ export interface DoubtSub {
   status: Status;
   needsLabel: boolean;
   channel: Channel;
+  /** Where the name came from: a store screenshot cannot name a PayPal payment to that store. */
+  matchedSources?: string[];
 }
 
 export interface Connections { banks: string[]; mailboxes: string[]; files: number; wallets?: string[] }
@@ -61,12 +63,14 @@ export function findDoubts(subs: DoubtSub[], facts: Facts, connections: Connecti
   // Not while a PayPal connection would name them without the user typing anything.
   const unnamed = open.filter((s) => !(askPaypal && s.channel === "paypal")).slice(0, MAX_NAME_QUESTIONS);
   for (const s of unnamed) {
-    const store = s.channel === "google" ? "google" : s.channel === "apple" ? "apple" : undefined;
+    const viaPaypalRow = s.matchedSources?.includes("paypal");
+    const store = viaPaypalRow ? undefined : s.channel === "google" ? "google" : s.channel === "apple" ? "apple" : undefined;
     const amount = money(s.currentAmount, s.currency, locale);
     const via = t.via[s.channel];
     doubts.push({
       kind: "name",
-      id: `name:${s.key}`,
+      // Two apps bought through the same store share a key: the amount keeps the questions apart.
+      id: `name:${s.key}:${s.currentAmount}`,
       labelKey: s.key,
       store,
       title: via ? t.nameVia(amount, t.every[s.frequency], via) : t.nameWhat(s.serviceName, amount, t.every[s.frequency]),

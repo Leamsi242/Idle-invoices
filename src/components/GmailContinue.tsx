@@ -11,6 +11,8 @@ type Outcome = { done: true; scanned?: number; receipts?: number; cut?: boolean;
  * One scan loop per page load, shared by every mount of the component: React mounts twice in
  * development, and two parts at once would read the same emails.
  */
+const PROGRESS_KEY = "sd_gmail_progress";
+
 let loop: { listeners: Set<(p: Progress) => void>; result: Promise<Outcome>; stopped: boolean } | null = null;
 let stopTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -47,7 +49,15 @@ export function GmailContinue({ scanned, total }: { scanned: number; total: numb
     const show = (p: Progress) => {
       latest.current = p;
       setProgress(p);
+      // A reload stops the scan (leaving the page revokes the access): remember how far it got.
+      try {
+        sessionStorage.setItem(PROGRESS_KEY, JSON.stringify(p));
+      } catch {}
     };
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(PROGRESS_KEY) ?? "null") as Progress | null;
+      if (saved && saved.total === total && saved.scanned > latest.current.scanned) show(saved);
+    } catch {}
     clearTimeout(stopTimer);
     loop ??= startLoop();
     const current = loop;
@@ -56,8 +66,14 @@ export function GmailContinue({ scanned, total }: { scanned: number; total: numb
     current.result.then((r) => {
       if (!mounted || current !== loop) return;
       loop = null;
-      // Stopped without an answer: the emails read so far are kept, their receipts count is unknown here.
-      if ("failed" in r) return router.replace(`/?gmail=cut&scanned=${latest.current.scanned}`);
+      try {
+        sessionStorage.removeItem(PROGRESS_KEY);
+      } catch {}
+      if ("failed" in r) {
+        // Stopped without an answer (network, server time limit): end the access now, keep what was read.
+        stopScan();
+        return router.replace(`/?gmail=cut&scanned=${latest.current.scanned}`);
+      }
       if (r.gone) return router.replace("/");
       router.replace(`/?gmail=${r.cut ? "cut" : "ok"}&scanned=${r.scanned ?? 0}&receipts=${r.receipts ?? 0}`);
     });

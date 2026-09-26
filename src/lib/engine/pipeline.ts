@@ -107,7 +107,12 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
   const paypalDates = transactions.filter((t) => t.source === "paypal").map((t) => t.date).sort();
   const coveredByPaypal = (date: string) =>
     paypalDates.length > 0 && date >= addDays(paypalDates[0], -BOOKING_LAG_DAYS) && date <= addDays(paypalDates.at(-1)!, BOOKING_LAG_DAYS);
-  const bankCharges = transactions.filter((t) => t.source === "bank" && t.amount > 0 && !isExcludedLabel(cleanLabel(t.rawLabel), { paypalExport: coveredByPaypal(t.date) }) && !excludedRecord(t));
+  // Older lines with the label and price of a line PayPal explained are the same subscription, not a 4X plan.
+  const reconciledLines = matches.map((m) => byId.get(m.bankTransactionId)!).map((b) => ({ label: cleanLabel(b.rawLabel), amount: b.amount }));
+  const likeReconciled = (t: NormalizedTransaction) => reconciledLines.some((l) => l.label === cleanLabel(t.rawLabel) && Math.abs(l.amount - t.amount) <= l.amount * 0.1);
+  const bankCharges = transactions.filter(
+    (t) => t.source === "bank" && t.amount > 0 && !isExcludedLabel(cleanLabel(t.rawLabel), { paypalExport: coveredByPaypal(t.date) || likeReconciled(t) }) && !excludedRecord(t),
+  );
   const charges = [...bankCharges, ...receiptOnlyCharges(transactions, new Set(matches.map((m) => m.intermediaryTransactionId)))];
   const records = transactions.filter((t) => t.source !== "bank");
   const userDescriptors = opts.userDescriptors ?? [];
@@ -163,10 +168,9 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
   const unused = new Set(leftovers);
   const bankDates = bankCharges.map((t) => t.date).sort();
   const shortHistory = bankDates.length > 0 && daysBetween(bankDates[0], bankDates.at(-1)!) < SHORT_HISTORY_DAYS;
-  // PayPal alone (a connection shares about 90 days): short when its first payment is recent.
-  const lastDate = transactions.reduce((max, t) => (t.date > max ? t.date : max), "");
-  const paypalShort = paypalDates.length > 0 && daysBetween(paypalDates[0], lastDate) < SHORT_HISTORY_DAYS;
-  const seenTwice = new Set<RecurringGroup>();
+  // PayPal alone (a connection shares about 90 days): judged on PayPal's own span.
+  const paypalShort = paypalDates.length > 0 && daysBetween(paypalDates[0], paypalDates.at(-1)!) < SHORT_HISTORY_DAYS;
+  const seenTwice = new Map<RecurringGroup, "bank" | "PayPal">();
   const converted: { group: RecurringGroup; reason: string }[] = [];
 
   for (const left of leftovers) {
@@ -224,7 +228,7 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
     if (short && left.txs.length === 2 && Math.abs(left.txs[0].amount - left.txs[1].amount) < 0.005 && first.amount >= 1) {
       if (regularity(left.txs.map((t) => t.date), 2)?.frequency === "monthly") {
         const group = toGroup(left.key, left.txs, "monthly", 0, 0.4);
-        seenTwice.add(group);
+        seenTwice.set(group, left.txs[0].source === "paypal" ? "PayPal" : "bank");
         groups.push(group);
         unused.delete(left);
       }
@@ -276,7 +280,8 @@ export function analyze(input: NormalizedTransaction[], opts: AnalyzeOptions = {
     );
     if (trial) unused.delete(trial);
     const sub = label(g, userDescriptors, matchedSources, trial?.txs[0]);
-    if (seenTwice.has(g)) sub.forgottenReasons = ["Seen twice so far: your bank shares about 3 months of history"];
+    const twice = seenTwice.get(g);
+    if (twice) sub.forgottenReasons = [twice === "PayPal" ? "Seen twice so far: PayPal shares about 3 months of history" : "Seen twice so far: your bank shares about 3 months of history"];
     const note = converted.find((c) => c.group === g);
     if (note) sub.forgottenReasons = [note.reason];
     return sub;

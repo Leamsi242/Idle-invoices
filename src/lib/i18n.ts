@@ -594,6 +594,7 @@ const REASONS: [RegExp, (m: RegExpMatchArray) => string][] = [
   [/^New: first charged on (.+), check you meant to keep it$/, (m) => `Nouveau : premier prélèvement le ${fdate(m[1])}, vérifiez que vous vouliez le garder`],
   [/^Charged twice: two accounts or a duplicate subscription\?$/, () => "Payé deux fois : deux comptes ou un abonnement en double ?"],
   [/^Seen twice so far: your bank shares about 3 months of history$/, () => "Vu deux fois pour l'instant : votre banque ne partage qu'environ 3 mois d'historique"],
+  [/^Seen twice so far: PayPal shares about 3 months of history$/, () => "Vu deux fois pour l'instant : PayPal ne partage qu'environ 3 mois d'historique"],
   [/^Trial ended on (.+) and no cancellation was found: check your statement for ([\d.]+) (\w+)$/, (m) => `L'essai s'est terminé le ${fdate(m[1])} sans résiliation trouvée : cherchez ${m[2].replace(".", ",")} ${m[3]} sur votre relevé`],
 ];
 

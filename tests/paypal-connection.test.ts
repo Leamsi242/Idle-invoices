@@ -5,6 +5,7 @@ import { demoPaypalTransactions, demoTransactions } from "@/lib/banking/demo";
 import { isPaypal, kindOf } from "@/lib/banking";
 import { paypalPayment } from "@/lib/parsers/paypal-csv";
 import { analyze } from "@/lib/engine/pipeline";
+import { addDays, addMonths } from "@/lib/dates";
 import { collectFacts } from "@/lib/onboarding";
 import { reconcile } from "@/lib/engine/reconcile";
 import { findDoubts } from "@/lib/doubts";
@@ -172,7 +173,34 @@ describe("PayPal review fixes", () => {
     const [sub] = analyze([...bank, ...paypal], { today: "2026-09-10" }).subscriptions;
     expect(sub).toMatchObject({ needsLabel: true, channel: "google" });
     const doubts = findDoubts([sub], collectFacts([...bank, ...paypal], new Set()), { banks: ["B"], mailboxes: [], files: 0, wallets: ["PayPal"] }, "en", { canConnect: true });
-    expect(doubts.find((d) => d.kind === "name")).toMatchObject({ store: "google" });
+    // A Play Store screenshot could not name a PayPal payment: only the name is asked.
+    const name = doubts.find((d) => d.kind === "name")!;
+    expect(name).toMatchObject({ title: "Which service is the €4.99 a month paid through Google Play?" });
+    expect(name.kind === "name" && name.store).toBeUndefined();
+  });
+
+  it("keeps products named after a store as they are", async () => {
+    const { storeOf } = await import("@/lib/engine/labels");
+    expect(["Google Payment Ireland Limited", "Apple Services", "Paddle.com Market Ltd", "Stripe Payments Europe"].map(storeOf)).toEqual(["google", "apple", "processor", "processor"]);
+    expect(["Google Play Pass", "iTunes Match", "Google One", "Stripe Press Books"].map(storeOf)).toEqual([undefined, undefined, undefined, undefined]);
+  });
+
+  it("asks one question per app when two apps were bought through the same store", () => {
+    const months = ["2026-06", "2026-07", "2026-08"];
+    const rows = [4.99, 11.99].flatMap((amount) => months.map((m) => toPaypalTransaction(line({ transaction_date: `${m}-03`, transaction_amount: { amount: String(amount), currency: "EUR" }, creditor: { name: "Google Payment Ireland Limited" } }))!));
+    const subs = analyze(rows, { today: "2026-08-20" }).subscriptions;
+    const ids = findDoubts(subs, collectFacts(rows, new Set()), { banks: [], mailboxes: [], files: 0, wallets: ["PayPal"] }).filter((d) => d.kind === "name").map((d) => d.id);
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+  });
+
+  it("keeps the older bank lines of a subscription PayPal named, beyond PayPal's window", () => {
+    const months = Array.from({ length: 24 }, (_, i) => addMonths("2024-10-05", i));
+    const bank = months.map((d) => bankLine(d, 10.99, "PRLV SEPA PAYPAL (EUROPE) S.A R.L. ET CIE"));
+    const paypal = months.slice(-3).map((d) => toPaypalTransaction(line({ transaction_date: addDays(d, -2), transaction_amount: { amount: "10.99", currency: "EUR" } }))!);
+    const [spotify] = analyze([...bank, ...paypal], { today: "2026-09-20" }).subscriptions;
+    expect(spotify.serviceName).toMatch(/spotify/i);
+    expect(spotify.transactions).toHaveLength(24);
   });
 
   it("keeps the 4X rule for bank lines older than the PayPal data", () => {
@@ -185,6 +213,6 @@ describe("PayPal review fixes", () => {
   it("accepts a monthly PayPal payment seen twice when PayPal is all there is", () => {
     const rows = ["2026-07-12", "2026-08-12"].map((d) => toPaypalTransaction(line({ transaction_date: d, transaction_amount: { amount: "7.49", currency: "EUR" }, creditor: { name: "Kagi Inc" } }))!);
     const subs = analyze(rows, { today: "2026-08-20" }).subscriptions;
-    expect(subs.map((s) => [s.serviceName, s.frequency])).toEqual([["Kagi Inc", "monthly"]]);
+    expect(subs.map((s) => [s.serviceName, s.frequency, s.forgottenReasons[0]])).toEqual([["Kagi Inc", "monthly", "Seen twice so far: PayPal shares about 3 months of history"]]);
   });
 });

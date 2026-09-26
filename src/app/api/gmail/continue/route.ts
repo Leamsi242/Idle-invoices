@@ -18,6 +18,8 @@ const MAX_STALLS = 3;
  */
 export async function POST() {
   const progress = decodeProgress((await cookies()).get(GMAIL_SCAN_COOKIE)?.value);
+  // "Delete everything" (which also ends the session) ran meanwhile: back to an empty home page.
+  if (!progress && !(await getSessionId())) return NextResponse.json({ done: true, gone: true });
   if (!progress) return NextResponse.json({ error: "No scan in progress." }, { status: 404 });
   const end = async (body: Record<string, unknown>) => {
     await revokeToken(progress.token);
@@ -53,6 +55,7 @@ export async function POST() {
   } catch (e) {
     // Status codes only. A 401 means the access was revoked meanwhile (the user left or started again).
     console.error("Gmail scan part failed:", e instanceof Error ? e.message : "unknown");
+    if (!(await sessionHasData(sessionId).catch(() => false))) return end({ gone: true });
     return end({ ...totals, cut: true });
   }
 }
