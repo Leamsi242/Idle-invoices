@@ -7,7 +7,7 @@ export const WINDOWS: Record<Frequency, [number, number]> = {
   weekly: [6, 8],
   monthly: [26, 35], // banks post a few days late around weekends and holidays
   quarterly: [85, 97],
-  yearly: [360, 370],
+  yearly: [360, 375], // a bank books a card or PayPal payment a few days late
 };
 // Yearly needs only 2 charges (12 months of statements rarely show more); the others need 3.
 const MIN_OCCURRENCES: Record<Frequency, number> = { weekly: 3, monthly: 3, quarterly: 3, yearly: 2 };

@@ -86,8 +86,13 @@ function merchantFrom(name: string | undefined, address: string | undefined, sub
   if (paddle) return clean(paddle.replace(/\s+(?:Pro\s+)?(?:Monthly|Yearly|Annual|Quarterly|Weekly)$/i, ""));
   const stripeLike = subject.match(/(?:your receipt from|reçu de|votre reçu de)\s+(.+?)(?:\s*[#[(]|$)/i)?.[1];
   if (stripeLike && !/paypal/i.test(stripeLike)) return clean(stripeLike.replace(/,?\s+(?:Limited|Ltd|Inc|PBC|SAS|BV|B\.V\.)\b.*$/i, ""));
-  if (name) return name.replace(/["']/g, "").replace(/\b(team|billing|receipts?|no-?reply|service clients?)\b/gi, "").trim() || "Unknown";
+  // A mailbox name ("servicenotification", "noreply") is not a brand: use the domain instead.
+  if (name && !/^[a-z0-9._-]*(notification|no-?reply|service|info|contact|mail|news)[a-z0-9._-]*$/i.test(name.trim()))
+    return name.replace(/["']/g, "").replace(/\b(team|billing|receipts?|no-?reply|service clients?)\b/gi, "").trim() || "Unknown";
   const domain = address?.split("@")[1]?.split(".").slice(-2, -1)[0] ?? "unknown";
+  // Emailing platforms send for many brands: the brand opens the subject ("Cdiscount à volonté : ...").
+  const brand = subject.match(/^([^:|–-]{3,40}?)\s*[:|–-]\s/)?.[1];
+  if (SENDING_PLATFORMS.test(domain) && brand) return clean(brand);
   return domain.charAt(0).toUpperCase() + domain.slice(1);
 }
 
@@ -127,7 +132,8 @@ export function nextCharge(text: string, baseDate?: string): { date?: string; am
   return {};
 }
 
-const SKIP = /échec du renouvellement|renewal failed|paiement en 4x|payer en plusieurs fois|échéance de votre paiement|4x sans frais|pay in 4|\bvous avez envoyé un paiement\b|you sent money|remboursement|refund|information de paiement|échec de (?:votre )?paiement|payment failed|a échoué/i;
+const SENDING_PLATFORMS = /^(servicenotification|sendgrid|mailchimp|mcsv|mandrillapp|amazonses|sparkpostmail|mailgun|emarsys|sendinblue|brevo|mailjet|selligent|splio|cmail\d*)$/i;
+const SKIP = /credit note|note de crédit|\bavoir\b|échec du renouvellement|renewal failed|paiement en 4x|payer en plusieurs fois|échéance de votre paiement|4x sans frais|pay in 4|\bvous avez envoyé un paiement\b|you sent money|remboursement|refund|information de paiement|échec de (?:votre )?paiement|payment failed|a échoué/i;
 // No trailing \b: "é" is not a word character for JavaScript regexes.
 const CANCELLED = /\b(has been cancel+ed|cancel+ation confirmed|you(?:'ve| have) cancel+ed|a été (?:annulé|résilié)|sera annulé|avez résilié|résiliation|prendront bientôt fin|subscription (?:has )?ended|will be cancel+ed)(?![a-z])/i;
 

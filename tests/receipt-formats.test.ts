@@ -214,3 +214,22 @@ Your order has been cancelled. You have not been charged.`);
     expect(r?.isCancellation ?? false).toBe(false);
   });
 });
+
+describe("more real-mailbox cases", () => {
+  it("skips a credit note, which is money back", () => {
+    expect(parseReceiptText(`From: Anthropic <invoice+statements@mail.anthropic.com>
+Subject: Credit note from Anthropic, PBC for invoice #ABCD-0001
+Date: 11 April 2026
+
+Credit note. Amount credited €18.00. Total €21.60`)).toBeNull();
+  });
+
+  it("takes the brand from the subject when an emailing platform sends the receipt", () => {
+    const r = parseReceiptText(`From: <news@servicenotification.net>
+Subject: Cdiscount à volonté : prolongement de votre abonnement
+Date: 4 March 2026
+
+Votre abonnement a été prolongé pour 1 an. Montant : 29,00 €`)!;
+    expect([r.merchant, r.amount]).toEqual(["Cdiscount à volonté", 29]);
+  });
+});
