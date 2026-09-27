@@ -58,7 +58,7 @@ export function Attention({ items, icons, t }: { items: AttentionItem[]; icons: 
               </div>
               <p className="text-sm text-ink-2">{i.text}</p>
               <div className="mt-auto flex flex-wrap gap-2">
-                <Link href={i.href} className="rounded-full bg-brand px-3.5 py-1.5 text-sm font-semibold text-white transition hover:opacity-90">{t.see}</Link>
+                <Link href={i.href} aria-label={`${t.see}, ${i.text}`} className="rounded-full bg-brand px-3.5 py-1.5 text-sm font-semibold text-white transition hover:opacity-90">{t.see}</Link>
                 <button type="button" onClick={() => snooze(i.id)} className="rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm font-medium text-ink-2 hover:border-ink">
                   {t.snooze}
                 </button>

@@ -70,6 +70,12 @@ export interface AttentionItem {
  * yearly renewal, a price rise, then the steps that complete the case. The page shows three and
  * lets the user put one off for 7 days.
  */
+/**
+ * A reference that survives a recompute (row ids do not): the detail stays open after a decision,
+ * and links from the overview keep working after the nightly refresh.
+ */
+export const refOf = (s: Pick<StoredSubscription, "key" | "frequency" | "firstSeen">) => `${s.key}|${s.frequency}|${s.firstSeen}`;
+
 export function attention(input: {
   subs: StoredSubscription[];
   trials: UpcomingTrial[];
@@ -100,12 +106,12 @@ export function attention(input: {
   }
   for (const s of live) {
     if (s.frequency === "yearly" && s.nextCharge >= today && daysBetween(today, s.nextCharge) <= 30) {
-      items.push({ id: `renewal:${s.key}:${s.nextCharge}`, tag: "renewal", name: s.serviceName, text: t.renewal(s.serviceName, input.money(s.currentAmount), input.date(s.nextCharge)), href: `/subscriptions?open=${s.id}` });
+      items.push({ id: `renewal:${s.key}:${s.nextCharge}`, tag: "renewal", name: s.serviceName, text: t.renewal(s.serviceName, input.money(s.currentAmount), input.date(s.nextCharge)), href: `/subscriptions?open=${encodeURIComponent(refOf(s))}` });
     }
   }
   for (const s of live) {
     const rise = s.priceChanges.filter((p) => p.to > p.from * 1.02 && daysBetween(p.date, today) <= 60).at(-1);
-    if (rise) items.push({ id: `price:${s.key}:${rise.date}`, tag: "price", name: s.serviceName, text: t.price(s.serviceName, input.money(rise.from), input.money(rise.to)), href: `/subscriptions?open=${s.id}` });
+    if (rise) items.push({ id: `price:${s.key}:${rise.date}`, tag: "price", name: s.serviceName, text: t.price(s.serviceName, input.money(rise.from), input.money(rise.to)), href: `/subscriptions?open=${encodeURIComponent(refOf(s))}` });
   }
   const unnamed = live.filter((s) => s.needsLabel).length;
   if (unnamed) items.push({ id: `unknown:${unnamed}`, tag: "todo", text: t.unknown(unnamed), href: "/subscriptions?f=todo" });

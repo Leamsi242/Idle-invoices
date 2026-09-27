@@ -78,6 +78,15 @@ async function loadDescriptors(sessionId: string): Promise<DescriptorEntry[]> {
   return rows.map((r) => ({ pattern: r.pattern, serviceName: r.serviceName, category: r.category ?? undefined, cancellationUrl: r.cancellationUrl ?? undefined }));
 }
 
+/** The next charge date a receipt announced after the last payment, if any. */
+function announcedCharge(s: { lastSeen: string; transactions: { nextChargeDate?: string; isCancellation?: boolean }[] }): string | undefined {
+  return s.transactions
+    .filter((t) => !t.isCancellation && !!t.nextChargeDate && t.nextChargeDate > s.lastSeen)
+    .map((t) => t.nextChargeDate!)
+    .sort()
+    .at(-1);
+}
+
 /** Re-runs the engine over everything the session uploaded and replaces the stored results. */
 export async function recompute(sessionId: string) {
   const [txs, userDescriptors, previous] = await Promise.all([
@@ -126,15 +135,15 @@ export async function recompute(sessionId: string) {
           channel: s.channel,
           trialCharge: s.trialCharge,
           totalPaid: s.totalPaid,
-          nextCharge: s.nextCharge,
+          // A receipt or a store announced the next charge: that date wins over the estimate, and is confirmed.
+          nextCharge: announcedCharge(s) ?? s.nextCharge,
           isNew: s.isNew,
           cancelledOn: s.cancelledOn,
           endsOn: s.endsOn,
           paidWith: paidWith(s),
           // The payments behind the subscription, newest first: the proof shown in its detail.
           charges: [...s.transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 24).map((t) => ({ date: t.date, amount: t.amount, source: t.source })),
-          // A receipt or a store announced the next charge: the date is confirmed, not estimated.
-          nextConfirmed: s.transactions.some((t) => !!t.nextChargeDate && t.nextChargeDate >= s.lastSeen),
+          nextConfirmed: !!announcedCharge(s),
         })),
       })),
     }),

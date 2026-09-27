@@ -96,9 +96,9 @@ export function missions(input: { banks: number; mailboxes: number; unnamed: num
   const steps: Mission[] = [
     { id: "bank", done: input.banks > 0, href: "/#bank" },
     { id: "mail", done: input.mailboxes > 0, href: "/" },
-    { id: "name", done: input.unnamed === 0, count: input.unnamed, href: "/review" },
-    { id: "answer", done: input.unanswered === 0, count: input.unanswered, href: "/review" },
-    { id: "idle", done: input.idle.length === 0, count: input.idle.length, amount: idleAmount, href: "/report#idle" },
+    { id: "name", done: input.unnamed === 0, count: input.unnamed, href: "/subscriptions?f=todo" },
+    { id: "answer", done: input.unanswered === 0, count: input.unanswered, href: "/subscriptions?f=todo" },
+    { id: "idle", done: input.idle.length === 0, count: input.idle.length, amount: idleAmount, href: "/subscriptions?f=todo" },
     { id: "watch", done: input.watching, href: "/#bank" },
   ];
   const score = Math.round((steps.filter((s) => s.done).length / steps.length) * 100);

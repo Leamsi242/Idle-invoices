@@ -21,6 +21,9 @@ export async function GET(_: Request, { params }: { params: Promise<{ domain: st
   for (const url of sources) {
     try {
       const res = await fetch(url, { signal: AbortSignal.timeout(3000), redirect: "follow" });
+      // Redirects are followed (the favicon services use them), but never to a bare address or plain HTTP.
+      const final = new URL(res.url || url);
+      if (final.protocol !== "https:" || /^(localhost|\[|\d+\.\d+\.\d+\.\d+$)/.test(final.hostname)) continue;
       const type = res.headers.get("content-type") ?? "";
       // SVG could carry scripts when served from our own origin: bitmaps only.
       if (!res.ok || !type.startsWith("image/") || type.includes("svg")) continue;

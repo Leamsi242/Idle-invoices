@@ -60,7 +60,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </span>
                 <span className="ml-auto h-2 w-2 rounded-full bg-save" />
               </div>
-              <SideNav items={nav} />
+              <SideNav items={nav} label={w.mainNav} badgeHint={w.toDecide} />
               <div className="mt-auto space-y-4">
                 <div className="rounded-2xl bg-surface-2 p-4 text-xs">
                   <Icon name="shield" className="h-5 w-5 text-brand" />
@@ -87,7 +87,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </header>
               {demo && (
                 <div className="flex flex-wrap items-center justify-between gap-2 bg-brand px-4 py-2 text-xs text-white sm:px-8">
-                  <span><span className="font-semibold uppercase tracking-widest">Demo</span> · {w.demoBanner}</span>
+                  <span><span className="font-semibold uppercase tracking-widest">{w.demoTag}</span> · {w.demoBanner}</span>
                   <QuitDemo label={w.quitDemo} />
                 </div>
               )}
@@ -101,7 +101,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </footer>
             </div>
           </div>
-          <TabBar items={nav} />
+          <TabBar items={nav} label={w.mainNav} badgeHint={w.toDecide} />
         </I18nProvider>
       </body>
     </html>

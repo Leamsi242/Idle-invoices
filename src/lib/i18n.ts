@@ -20,6 +20,10 @@ export function pickLocale(cookie?: string | null, acceptLanguage?: string | nul
 export const money = (amount: number, currency = "EUR", locale: Locale = "en") =>
   new Intl.NumberFormat(locale === "fr" ? "fr-FR" : "en-IE", { style: "currency", currency }).format(amount);
 
+/** A rounded amount for tight spots (a calendar cell, a chart label): "40 €". */
+export const moneyRound = (amount: number, currency = "EUR", locale: Locale = "en") =>
+  new Intl.NumberFormat(locale === "fr" ? "fr-FR" : "en-IE", { style: "currency", currency, maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(amount);
+
 /** "13 Apr 2026" or "13 avr. 2026"; `short` adds the weekday and drops the year. */
 export function formatDate(iso: string, locale: Locale, short = false): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
@@ -150,7 +154,7 @@ const en = {
     limitPaypal: "PayPal shares about 90 days: older PayPal payments stay unnamed unless a receipt names them.",
     limitMail: "At most the 500 newest receipt-like emails per scan. Promotions and personal emails are never opened.",
     limitFile: "Everything in the file was read.",
-    openCase: "Open the case",
+    openCase: "See my overview",
     sourcesTitle: "Your sources",
     sourcesProgress: (n: number) => `${n} of 3 kinds of source connected`,
     banksTitle: "Banks and cards",
@@ -310,9 +314,9 @@ const en = {
     find: "Find my subscriptions",
     failed: "Upload failed",
     filesRead: "Files read",
-    records: (n: number, source: string) => `${n} ${source} records`,
+    records: (n: number, source: string) => `${n} ${source} record${n === 1 ? "" : "s"}`,
     missing: "See what is still missing from your checklist",
-    continue: (n: number) => `Continue: ${n} subscriptions found`,
+    continue: (n: number) => `Continue: ${n} subscription${n === 1 ? "" : "s"} found`,
   },
   cancel: {
     apple: (s: string) => [
@@ -349,7 +353,7 @@ const en = {
     dismiss: "Got it",
     emailSubject: (n: number) => (n === 1 ? "Subscription Detective: one change in your subscriptions" : `Subscription Detective: ${n} changes in your subscriptions`),
     emailIntro: "Here is what changed on your account since the last check:",
-    emailOutro: (url: string) => `See the details and how to cancel: ${url}\n\nYou get this email because you asked Subscription Detective to watch your bank account. You can stop at any time on the home page.`,
+    emailOutro: (url: string) => `See the details and how to cancel: ${url}\n\nYou get this email because you asked Subscription Detective to watch your bank account. You can stop at any time on the Sources page.`,
   },
   watch: {
     option: "Keep watching for 90 days",
@@ -362,7 +366,7 @@ const en = {
     emailPlaceholder: "you@example.com",
     emailSave: "Save",
     emailSaved: "Saved",
-    emailOff: "Email alerts are not set up on this server: new changes appear on your report.",
+    emailOff: "Email alerts are not set up on this server: new changes appear on your overview.",
   },
   ics: {
     trialTitle: (s: string, date: string) => `Cancel the ${s} trial? It ends on ${date}`,
@@ -495,7 +499,7 @@ const fr: Messages = {
     limitPaypal: "PayPal partage environ 90 jours : les paiements PayPal plus anciens restent sans nom, sauf si un reçu les nomme.",
     limitMail: "Au plus les 500 e-mails les plus récents qui ressemblent à des reçus, par lecture. Promotions et e-mails personnels ne sont jamais ouverts.",
     limitFile: "Tout le fichier a été lu.",
-    openCase: "Ouvrir l'enquête",
+    openCase: "Voir ma vue d'ensemble",
     sourcesTitle: "Vos sources",
     sourcesProgress: (n) => `${n} type${n > 1 ? "s" : ""} de source sur 3 connecté${n > 1 ? "s" : ""}`,
     banksTitle: "Banques et cartes",
@@ -655,9 +659,9 @@ const fr: Messages = {
     find: "Trouver mes abonnements",
     failed: "L'envoi a échoué",
     filesRead: "Fichiers lus",
-    records: (n, source) => `${n} éléments (${source})`,
+    records: (n, source) => `${n} élément${n > 1 ? "s" : ""} (${source})`,
     missing: "Voir ce qui manque encore dans votre liste",
-    continue: (n) => `Continuer : ${n} abonnements trouvés`,
+    continue: (n) => `Continuer : ${n} abonnement${n > 1 ? "s" : ""} trouvé${n > 1 ? "s" : ""}`,
   },
   cancel: {
     apple: (s) => [
@@ -694,7 +698,7 @@ const fr: Messages = {
     dismiss: "Vu",
     emailSubject: (n) => (n === 1 ? "Subscription Detective : un changement dans vos abonnements" : `Subscription Detective : ${n} changements dans vos abonnements`),
     emailIntro: "Voici ce qui a changé sur votre compte depuis la dernière vérification :",
-    emailOutro: (url) => `Le détail et comment résilier : ${url}\n\nVous recevez cet e-mail parce que vous avez demandé à Subscription Detective de surveiller votre compte. Vous pouvez arrêter à tout moment depuis la page d'accueil.`,
+    emailOutro: (url) => `Le détail et comment résilier : ${url}\n\nVous recevez cet e-mail parce que vous avez demandé à Subscription Detective de surveiller votre compte. Vous pouvez arrêter à tout moment depuis la page Sources.`,
   },
   watch: {
     option: "Continuer à surveiller pendant 90 jours",
@@ -707,7 +711,7 @@ const fr: Messages = {
     emailPlaceholder: "vous@exemple.fr",
     emailSave: "Enregistrer",
     emailSaved: "Enregistré",
-    emailOff: "Les alertes par e-mail ne sont pas configurées sur ce serveur : les changements apparaissent dans votre rapport.",
+    emailOff: "Les alertes par e-mail ne sont pas configurées sur ce serveur : les changements apparaissent dans votre vue d'ensemble.",
   },
   ics: {
     trialTitle: (s, date) => `Résilier l'essai ${s} ? Il se termine le ${date}`,

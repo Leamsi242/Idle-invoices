@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getSessionId } from "@/lib/session";
 import { getConnections, getDoubts, getReport, listAlerts, listWatches, PAID_WITH_FILE, PAID_WITH_RECEIPTS, type StoredSubscription } from "@/lib/store";
 import { byCategory, insights, missions, type Insight } from "@/lib/insights";
-import { attention, counted, monthly, rhythm, statusOf } from "@/lib/engagements";
+import { attention, counted, refOf, monthly, rhythm, statusOf } from "@/lib/engagements";
 import { v3, type V3 } from "@/lib/i18n-v3";
 import { CountUp, ScoreRing } from "@/components/Motion";
 import { Attention } from "@/components/Attention";
@@ -11,7 +11,7 @@ import { alertLine } from "@/lib/notify";
 import { ServiceIcon } from "@/components/ServiceIcon";
 import { TryDemo } from "@/components/Nav";
 import { Card, Icon, Logo, SectionTitle } from "@/components/ui";
-import { upcomingCharges, type UpcomingCharge } from "@/lib/upcoming";
+import { projectedNext, upcomingCharges, type UpcomingCharge } from "@/lib/upcoming";
 import { getMessages } from "@/lib/locale";
 import { formatDate, money, type Locale, type Messages } from "@/lib/i18n";
 
@@ -24,7 +24,7 @@ const whole = (n: number, currency: string, locale: Locale) => money(Math.round(
  * The yearly spend split by way of paying: one bar, one colored segment per bank, card or PayPal.
  * Each color keeps its way of paying across pages; the subscriptions page filters by it.
  */
-function PaySplit({ subs, m, locale }: { subs: StoredSubscription[]; m: Messages; locale: Locale }) {
+function PaySplit({ subs, m, locale, perYear }: { subs: StoredSubscription[]; m: Messages; locale: Locale; perYear: string }) {
   const totals = new Map<string, number>();
   for (const s of subs) {
     if (s.status === "cancelled" || !counted(s)) continue;
@@ -39,10 +39,10 @@ function PaySplit({ subs, m, locale }: { subs: StoredSubscription[]; m: Messages
   const color = (name: string) => `var(--series-${(order.indexOf(name) % 8) + 1})`;
   const sum = rows.reduce((t, [, v]) => t + v, 0);
   if (rows.length === 0) return null;
-  const currency = subs[0]?.currency ?? "EUR";
+  const currency = subs.find(counted)?.currency ?? "EUR";
   return (
     <Card className="space-y-4">
-      <SectionTitle title={m.ui.split} />
+      <SectionTitle title={m.ui.split} aside={<span className="text-sm text-muted">{perYear}</span>} />
       <div className="flex h-3 overflow-hidden rounded-full bg-surface-2">
         {rows.map(([name, v], i) => (
           <div key={name} className="grow-x border-r-2 border-surface last:border-r-0" style={{ width: `${(v / sum) * 100}%`, background: color(name), animationDelay: `${i * 90}ms` }} />
@@ -77,7 +77,7 @@ function Reveals({ items, m, locale, currency }: { items: Insight[]; m: Messages
       case "lifetime": return { big: $(x.amount), text: u.insightLifetime($(x.amount), formatDate(x.since, locale)), tone: "text-ink" };
       case "rises": return { big: `+${$(x.amount)}`, text: u.insightRises($(x.amount), x.count), tone: "text-leak" };
       case "overlap": return { big: `${x.count} × ${u.categories[x.category] ?? x.category}`, text: u.insightOverlap(x.count, u.categories[x.category] ?? x.category, $(x.amount)), tone: "text-brand" };
-      case "oldest": return { big: `${x.months} ${locale === "fr" ? "mois" : "months"}`, text: u.insightOldest(x.name, x.months), tone: "text-brand" };
+      case "oldest": return { big: `${x.months} ${locale === "fr" ? "mois" : x.months === 1 ? "month" : "months"}`, text: u.insightOldest(x.name, x.months), tone: "text-brand" };
       case "renewal": return { big: $(x.amount), text: u.insightRenewal(x.name, $(x.amount, 2), formatDate(x.date, locale)), tone: "text-leak" };
       case "fiveYears": return { big: $(x.amount), text: u.insightFiveYears($(x.amount)), tone: "text-save" };
     }
@@ -102,7 +102,7 @@ function Reveals({ items, m, locale, currency }: { items: Insight[]; m: Messages
 }
 
 /** Yearly spend per category: one hue, longest bar first, amounts written on each line. */
-function CategoryBars({ rows, m, locale, currency }: { rows: { category: string; amount: number; count: number }[]; m: Messages; locale: Locale; currency: string }) {
+function CategoryBars({ rows, m, locale, currency, perYear }: { rows: { category: string; amount: number; count: number }[]; m: Messages; locale: Locale; currency: string; perYear: string }) {
   if (rows.length === 0) return null;
   const top = rows.slice(0, 6);
   const rest = rows.slice(6).reduce((t, r) => ({ amount: t.amount + r.amount, count: t.count + r.count }), { amount: 0, count: 0 });
@@ -115,12 +115,12 @@ function CategoryBars({ rows, m, locale, currency }: { rows: { category: string;
   const max = Math.max(...shown.map((r) => r.amount));
   return (
     <Card className="space-y-4">
-      <SectionTitle title={m.ui.byCategory} />
+      <SectionTitle title={m.ui.byCategory} aside={<span className="text-sm text-muted">{perYear}</span>} />
       <ul className="space-y-3">
         {shown.map((r, i) => (
           <li key={r.category} className="space-y-1">
             <div className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="font-medium first-letter:uppercase">{m.ui.categories[r.category] ?? r.category} <span className="font-normal text-muted">· {r.count}</span></span>
+              <span className="font-medium first-letter:uppercase">{m.ui.categories[r.category] ?? r.category} <span className="font-normal text-muted">({r.count})</span></span>
               <span className="tabular font-semibold">{money(Math.round(r.amount), currency, locale).replace(/[.,]00(?=\D*$)/, "")}</span>
             </div>
             <div className="h-2 rounded-full bg-surface-2">
@@ -220,7 +220,7 @@ function Glance({ subs, m, w, locale }: { subs: StoredSubscription[]; m: Message
       <ul className="divide-y divide-line">
         {top.map((s) => (
           <li key={s.id}>
-            <Link href={`/subscriptions?open=${s.id}`} className="flex items-center gap-3 py-3 transition hover:opacity-80">
+            <Link href={`/subscriptions?open=${encodeURIComponent(refOf(s))}`} className="flex items-center gap-3 py-3 transition hover:opacity-80">
               <ServiceIcon name={s.serviceName} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-semibold tracking-tight">{s.serviceName}</span>
@@ -228,7 +228,7 @@ function Glance({ subs, m, w, locale }: { subs: StoredSubscription[]; m: Message
               </span>
               <span className="text-right">
                 <span className="tabular block font-semibold">{money(monthly(s), s.currency, locale)}<span className="text-xs font-normal text-muted"> {w.perMonth}</span></span>
-                <span className="text-xs text-muted">{formatDate(s.nextCharge, locale)}</span>
+                <span className="text-xs text-muted">{s.status === "cancelled" ? "" : formatDate(projectedNext(s, new Date().toISOString().slice(0, 10)), locale)}</span>
               </span>
               <Icon name="chevron" className="h-5 w-5 text-muted" />
             </Link>
@@ -336,8 +336,8 @@ export default async function Overview() {
       <Reveals items={insights(subs, today)} m={m} locale={locale} currency={currency} />
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2 [&>*]:min-w-0">
-        <PaySplit subs={subs} m={m} locale={locale} />
-        <CategoryBars rows={byCategory(subs)} m={m} locale={locale} currency={currency} />
+        <PaySplit subs={subs} m={m} locale={locale} perYear={w.perYear} />
+        <CategoryBars rows={byCategory(subs)} m={m} locale={locale} currency={currency} perYear={w.perYear} />
       </div>
 
       <Glance subs={liveSubs} m={m} w={w} locale={locale} />

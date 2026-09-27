@@ -61,8 +61,8 @@ export function LabelQuestion({ labelKey, amount }: { labelKey: string; amount: 
       <p className="text-sm">
         {q.whatIs} <code className="rounded-lg bg-surface-2 px-1.5 py-0.5 text-xs">{labelKey}</code> ({amount}){m.lang === "fr" ? " ?" : "?"} {q.remember}
       </p>
-      <input required value={name} onChange={(e) => setName(e.target.value)} placeholder={q.namePh} className="w-full rounded-xl border border-line px-3 py-2.5 text-sm" />
-      <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder={q.urlPh} className="w-full rounded-xl border border-line px-3 py-2.5 text-sm" />
+      <input required value={name} onChange={(e) => setName(e.target.value)} placeholder={q.namePh} aria-label={q.namePh} className="w-full rounded-xl border border-line px-3 py-2.5 text-sm" />
+      <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder={q.urlPh} aria-label={q.urlPh} className="w-full rounded-xl border border-line px-3 py-2.5 text-sm" />
       <button disabled={pending || !name.trim()} className="rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{q.save}</button>
     </form>
   );

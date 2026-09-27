@@ -60,7 +60,7 @@ export function TrialForm() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ serviceName, endsOn, priceAfter: price ? Number(price.replace(",", ".")) : undefined, frequency }),
           });
-          if (!res.ok) return setError((await res.json()).error ?? t.couldNotSave);
+          if (!res.ok) return setError(t.couldNotSave);
           setServiceName("");
           setEndsOn("");
           setPrice("");
@@ -70,7 +70,7 @@ export function TrialForm() {
     >
       <h2 className="font-semibold">{t.formTitle}</h2>
       <p className="text-sm text-muted">{t.formIntro}</p>
-      <input required value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder={t.servicePh} className="w-full rounded border border-line px-3 py-2 text-sm" />
+      <input required value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder={t.servicePh} aria-label={t.servicePh} className="w-full rounded border border-line px-3 py-2 text-sm" />
       <div className="grid grid-cols-2 gap-2">
         <label className="text-sm">
           <span className="text-muted">{t.endsOn}</span>
@@ -78,7 +78,7 @@ export function TrialForm() {
         </label>
         <label className="text-sm">
           <span className="text-muted">{t.thenCosts}</span>
-          <input inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="9.99" className="mt-1 w-full rounded border border-line px-3 py-2" />
+          <input inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder={m.lang === "fr" ? "9,99" : "9.99"} className="mt-1 w-full rounded border border-line px-3 py-2" />
         </label>
       </div>
       <select value={frequency} onChange={(e) => setFrequency(e.target.value)} className="w-full rounded border border-line px-2 py-2 text-sm" aria-label={t.periodAria}>

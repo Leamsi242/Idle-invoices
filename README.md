@@ -128,6 +128,7 @@ What the code does for each point of the spec's "Privacy and security" section:
 | Encrypt the database at rest | Labels, merchants, plans and subscription details are encrypted with AES-256-GCM before storage (`lib/crypto.ts`, key in `DATA_ENCRYPTION_KEY`). Dates and amounts are not. For production, also use a database with disk encryption (Turso and managed Postgres provide it). |
 | HTTPS everywhere | HSTS, Content-Security-Policy and other security headers in `next.config.ts`; the session cookie is `Secure` in production; Vercel serves HTTPS only. |
 | Minimum data to the Claude API | Only a screenshot, in `lib/parsers/screenshot.ts` (the only file importing the SDK; checked by a test). Statements are never sent. |
+| Cross-site requests | `src/proxy.ts` refuses any API write whose `Origin` or `Sec-Fetch-Site` shows another site. The demo is also rate limited (5 per 10 minutes per IP address). |
 | Data portability | `GET /api/export` downloads everything kept for the session (sources, subscriptions with their decisions, masked transactions), decrypted, as JSON (Sources page, "Your control" card). |
 | Plain-language privacy page | `/privacy` (also covers the Gmail scan) |
 | GDPR review and security audit | Still to do before any public launch. |

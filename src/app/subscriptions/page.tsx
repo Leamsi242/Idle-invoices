@@ -4,13 +4,15 @@ import { getReport, PAID_WITH_FILE, PAID_WITH_RECEIPTS, type StoredSubscription 
 import { getMessages } from "@/lib/locale";
 import { v3, type V3 } from "@/lib/i18n-v3";
 import { formatDate, money, translateReason, type Locale, type Messages } from "@/lib/i18n";
-import { monthly, statusOf, typeOf } from "@/lib/engagements";
+import { monthly, refOf, statusOf, typeOf } from "@/lib/engagements";
 import { cancellationSteps } from "@/lib/cancel-guide";
 import { renewalReminder } from "@/lib/ics";
+import { projectedNext } from "@/lib/upcoming";
 import { ServiceIcon } from "@/components/ServiceIcon";
 import { SubsTable, type SubRow } from "@/components/SubsTable";
 import { Decisions, LabelQuestion } from "@/components/Questions";
 import { ReminderButton } from "@/components/Reminders";
+import { Drawer } from "@/components/Drawer";
 import { Icon, Pill } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -18,19 +20,19 @@ export const dynamic = "force-dynamic";
 const payName = (p: string, m: Messages) => (p === PAID_WITH_FILE ? m.report.viaFile : p === PAID_WITH_RECEIPTS ? m.report.viaReceipts : p);
 
 /** The detail of one subscription, as a panel over the table: the proof, then the decision. */
-function Detail({ s, m, w, locale }: { s: StoredSubscription; m: Messages; w: V3; locale: Locale }) {
+function Detail({ s, m, w, locale, today }: { s: StoredSubscription; m: Messages; w: V3; locale: Locale; today: string }) {
   const t = m.report;
   const $ = (n: number) => money(n, s.currency, locale);
   const status = statusOf(s);
   const ended = s.status === "cancelled";
   const source = (x: string) => m.report.sources[x] ?? x;
+  const next = projectedNext(s, today);
+  const confirmed = s.nextConfirmed && next === s.nextCharge;
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={s.serviceName}>
-      <Link href="/subscriptions" scroll={false} aria-label={w.close} className="absolute inset-0 bg-night/40 backdrop-blur-sm" />
-      <aside className="drawer relative flex h-full w-full max-w-md flex-col gap-5 overflow-y-auto bg-surface p-6 shadow-2xl">
+    <Drawer closeHref="/subscriptions" label={s.serviceName} closeLabel={w.close}>
         <div className="flex items-start justify-between gap-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Subscription Detective</p>
-          <Link href="/subscriptions" scroll={false} className="flex h-9 w-9 items-center justify-center rounded-full border border-line text-ink-2 hover:border-ink" aria-label={w.close}>✕</Link>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">{w.nav.subs}</p>
+          <Link href="/subscriptions" scroll={false} className="flex h-9 w-9 items-center justify-center rounded-full border border-line text-ink-2 hover:border-ink" aria-label={w.close}><span aria-hidden>✕</span></Link>
         </div>
         <div className="flex items-center gap-4">
           <ServiceIcon name={s.serviceName} size="lg" />
@@ -46,8 +48,8 @@ function Detail({ s, m, w, locale }: { s: StoredSubscription; m: Messages; w: V3
         <dl className="grid grid-cols-2 gap-2 text-sm">
           {[
             [w.status, w.statuses[status]],
-            [w.nextDue, ended ? w.statuses[status] : formatDate(s.nextCharge, locale)],
-            [w.dateKind, ended ? w.statuses[status] : s.nextConfirmed ? w.confirmed : w.estimated],
+            [w.nextDue, ended ? w.statuses[status] : formatDate(next, locale)],
+            [w.dateKind, ended ? w.statuses[status] : confirmed ? w.confirmed : w.estimated],
             [w.detection, `${Math.round(s.confidence * 100)}${locale === "fr" ? " %" : "%"}`],
           ].map(([k, v]) => (
             <div key={k} className="rounded-2xl border border-line p-3">
@@ -107,11 +109,10 @@ function Detail({ s, m, w, locale }: { s: StoredSubscription; m: Messages; w: V3
           </details>
         )}
         {!ended && s.usage !== "stopped" && s.usage !== "notsub" && (
-          <ReminderButton reminder={renewalReminder(s.serviceName, s.nextCharge, $(s.currentAmount), s.cancellationUrl, locale)} label={t.remindBefore} />
+          <ReminderButton reminder={renewalReminder(s.serviceName, next, $(s.currentAmount), s.cancellationUrl, locale)} label={t.remindBefore} />
         )}
         <p className="mt-auto text-xs text-muted">{w.legal}</p>
-      </aside>
-    </div>
+    </Drawer>
   );
 }
 
@@ -122,11 +123,13 @@ export default async function Subscriptions({ searchParams }: { searchParams: Pr
   const sessionId = await getSessionId();
   const report = sessionId ? await getReport(sessionId) : null;
   const subs = report?.subscriptions ?? [];
+  const today = new Date().toISOString().slice(0, 10);
   const rows: SubRow[] = subs.map((s) => {
     const status = statusOf(s);
+    const next = projectedNext(s, today);
     const ended = status === "ended" || status === "stopped" || status === "hidden";
     return {
-      id: s.id,
+      id: refOf(s),
       name: s.serviceName,
       sub: `${money(s.currentAmount, s.currency, locale)} ${m.per[s.frequency]}${s.paidWith?.length ? ` · ${s.paidWith.map((p) => payName(p, m)).join(" + ")}` : ""}`,
       icon: <ServiceIcon name={s.serviceName} />,
@@ -136,13 +139,13 @@ export default async function Subscriptions({ searchParams }: { searchParams: Pr
       monthly: monthly(s),
       monthlyText: money(monthly(s), s.currency, locale),
       yearlyText: money(s.yearlyCost, s.currency, locale),
-      next: ended ? undefined : s.nextCharge,
-      nextText: ended ? undefined : formatDate(s.nextCharge, locale),
-      nextKind: ended ? undefined : s.nextConfirmed ? w.confirmed : w.estimated,
+      next: ended ? undefined : next,
+      nextText: ended ? undefined : formatDate(next, locale),
+      nextKind: ended ? undefined : s.nextConfirmed && next === s.nextCharge ? w.confirmed : w.estimated,
       paidWith: (s.paidWith ?? []).map((p) => payName(p, m)),
     };
   });
-  const open = q.open ? subs.find((s) => s.id === q.open) : undefined;
+  const open = q.open ? subs.find((s) => refOf(s) === q.open) : undefined;
   return (
     <div className="space-y-6">
       <section className="space-y-2">
@@ -155,9 +158,9 @@ export default async function Subscriptions({ searchParams }: { searchParams: Pr
           {m.review.empty} <Link href="/" className="font-medium text-brand">{m.review.emptyLink}</Link>.
         </p>
       ) : (
-        <SubsTable rows={rows} t={{ search: w.search, filters: w.filters, sorts: w.sorts, sortBy: w.sortBy, cols: w.cols, noMatch: w.noMatch, perMonth: w.perMonth }} />
+        <SubsTable rows={rows} t={{ search: w.search, paidWith: m.report.paidWith, allWays: w.allWays, filters: w.filters, sorts: w.sorts, sortBy: w.sortBy, cols: w.cols, noMatch: w.noMatch, perMonth: w.perMonth }} />
       )}
-      {open && <Detail s={open} m={m} w={w} locale={locale} />}
+      {open && <Detail s={open} m={m} w={w} locale={locale} today={today} />}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "./ui";
 
@@ -30,9 +30,9 @@ const STATUS_TONE: Record<string, string> = {
   hidden: "bg-surface-2 text-muted",
 };
 
-// Which statuses each filter shows.
+// Which statuses each filter shows. "All" is every row except those the user hid.
 const FILTERS: Record<string, string[]> = {
-  all: ["active", "todo", "idle"],
+  all: ["active", "todo", "idle", "ended", "stopped"],
   todo: ["todo", "idle"],
   active: ["active"],
   ended: ["ended"],
@@ -44,12 +44,17 @@ const FILTERS: Record<string, string[]> = {
  * Every subscription in one table: search as you type, filter by state or way of paying, sort.
  * A row opens its detail (the proof and the decisions) without leaving the page.
  */
-export function SubsTable({ rows, t }: { rows: SubRow[]; t: { search: string; filters: Record<string, string>; sorts: Record<string, string>; sortBy: string; cols: { service: string; type: string; status: string; amount: string; next: string }; noMatch: string; perMonth: string } }) {
+export function SubsTable({ rows, t }: { rows: SubRow[]; t: { search: string; filters: Record<string, string>; sorts: Record<string, string>; sortBy: string; paidWith: string; allWays: string; cols: { service: string; type: string; status: string; amount: string; next: string }; noMatch: string; perMonth: string } }) {
   const router = useRouter();
   const path = usePathname();
   const params = useSearchParams();
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState(params.get("f") && FILTERS[params.get("f")!] ? params.get("f")! : "all");
+  const f = params.get("f");
+  const [filter, setFilter] = useState(f && FILTERS[f] ? f : "all");
+  // A link to ?f=todo while already on the page (from the badge, say) still switches the filter.
+  useEffect(() => {
+    if (f && FILTERS[f]) setFilter(f);
+  }, [f]);
   const [sort, setSort] = useState("amount");
   const [pay, setPay] = useState("");
   const ways = useMemo(() => [...new Set(rows.flatMap((r) => r.paidWith))].sort(), [rows]);
@@ -72,18 +77,19 @@ export function SubsTable({ rows, t }: { rows: SubRow[]; t: { search: string; fi
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <label className="relative flex-1">
+      <div className="flex flex-col gap-3">
+        <label className="relative">
           <Icon name="lens" className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t.search} aria-label={t.search} className="w-full rounded-2xl border border-line py-2.5 pl-10 pr-3 text-sm" />
         </label>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex w-full overflow-x-auto rounded-2xl bg-surface-2 p-1 lg:w-auto">
+        <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
+          <div className="flex w-full overflow-x-auto rounded-2xl bg-surface-2 p-1 lg:mr-auto lg:w-auto" role="group" aria-label={t.cols.status}>
             {Object.keys(FILTERS).map((k) => (
               <button
                 key={k}
                 type="button"
                 onClick={() => setFilter(k)}
+                aria-pressed={filter === k}
                 className={`whitespace-nowrap rounded-xl px-3 py-1.5 text-sm font-medium transition ${filter === k ? "bg-surface text-ink shadow-card" : "text-muted hover:text-ink"}`}
               >
                 {t.filters[k]} <span className="tabular text-xs opacity-60">{counts[k]}</span>
@@ -91,8 +97,8 @@ export function SubsTable({ rows, t }: { rows: SubRow[]; t: { search: string; fi
             ))}
           </div>
           {ways.length > 1 && (
-            <select value={pay} onChange={(e) => setPay(e.target.value)} aria-label="Paid with" className="min-w-0 flex-1 rounded-2xl border border-line px-3 py-2 text-sm lg:flex-none">
-              <option value="">{t.filters.all}</option>
+            <select value={pay} onChange={(e) => setPay(e.target.value)} aria-label={t.paidWith} className="min-w-0 flex-1 rounded-2xl border border-line px-3 py-2 text-sm lg:flex-none">
+              <option value="">{t.allWays}</option>
               {ways.map((w) => <option key={w} value={w}>{w}</option>)}
             </select>
           )}

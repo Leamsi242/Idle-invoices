@@ -19,15 +19,25 @@ export interface UpcomingCharge {
 
 interface Sub { id?: string; key: string; serviceName: string; status: Status; nextCharge: string; currentAmount: number; currency: string; frequency: Frequency; cancellationUrl?: string }
 
+/**
+ * The next charge on or after today. The stored date is the one after the last payment read, which
+ * is in the past when the statement ends before today.
+ */
+export function projectedNext(s: Pick<Sub, "nextCharge" | "frequency">, today: string): string {
+  let date = s.nextCharge;
+  for (let i = 0; date < today && i < 600; i++) date = nextChargeDate(date, s.frequency);
+  return date;
+}
+
 export function upcomingCharges(subs: Sub[], trials: UpcomingTrial[], today: string, days = 30): UpcomingCharge[] {
   const until = new Date(Date.parse(`${today}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
   const out: UpcomingCharge[] = [];
   for (const s of subs) {
     if (s.status === "cancelled" || !s.nextCharge) continue;
-    let date = s.nextCharge;
-    for (let i = 0; date < today && i < 60; i++) date = nextChargeDate(date, s.frequency);
-    // Every charge in the window: a weekly plan charges four or five times in 30 days.
-    for (let i = 0; date <= until && i < 6; i++, date = nextChargeDate(date, s.frequency)) {
+    let date = projectedNext(s, today);
+    // Every charge in the window: a weekly plan charges four or five times in 30 days, and the
+    // calendar may look a year ahead.
+    for (let i = 0; date <= until && i < 600; i++, date = nextChargeDate(date, s.frequency)) {
       // The subscription's own id: two plans of one service share a label key.
       out.push({ key: s.id ?? s.key, serviceName: s.serviceName, date, amount: s.currentAmount, currency: s.currency, kind: "renewal", cancellationUrl: s.cancellationUrl });
     }

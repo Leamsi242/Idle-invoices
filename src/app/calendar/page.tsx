@@ -3,7 +3,7 @@ import { getSessionId } from "@/lib/session";
 import { getReport, listTrackedTrials } from "@/lib/store";
 import { getMessages } from "@/lib/locale";
 import { v3 } from "@/lib/i18n-v3";
-import { formatDate, money } from "@/lib/i18n";
+import { formatDate, money, moneyRound } from "@/lib/i18n";
 import { addMonths, daysBetween } from "@/lib/dates";
 import { counted, monthGrid } from "@/lib/engagements";
 import { upcomingCharges } from "@/lib/upcoming";
@@ -38,7 +38,8 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
   if (ahead > 0 && report) {
     const live = [...report.forgotten, ...report.active, ...report.idle];
     for (const c of upcomingCharges(live, report.trials, today, ahead)) {
-      if (c.date.startsWith(month) && c.date > today) {
+      // Due today and not yet on the statement: still expected. Already paid today: shown as paid.
+      if (c.date.startsWith(month) && c.date >= today && !events.some((e) => e.kind === "paid" && e.date === c.date && e.name === c.serviceName)) {
         const sub = live.find((s) => s.id === c.key);
         events.push({ date: c.date, name: c.serviceName, amount: c.amount, currency: c.currency, kind: c.kind, confirmed: sub?.nextConfirmed && sub.nextCharge === c.date });
       }
@@ -65,9 +66,9 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
         <Card className="space-y-4 p-4 sm:p-5">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-1">
-              <Link href={link({ m: addMonths(`${month}-01`, -1).slice(0, 7) })} className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-surface-2" aria-label="Previous month"><Icon name="chevron" className="h-5 w-5 rotate-180" /></Link>
+              <Link href={link({ m: addMonths(`${month}-01`, -1).slice(0, 7) })} className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-surface-2" aria-label={w.prevMonth}><Icon name="chevron" className="h-5 w-5 rotate-180" /></Link>
               <h2 className="min-w-[9rem] text-center font-display text-lg font-semibold capitalize tracking-tight">{title}</h2>
-              <Link href={link({ m: addMonths(`${month}-01`, 1).slice(0, 7) })} className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-surface-2" aria-label="Next month"><Icon name="chevron" className="h-5 w-5" /></Link>
+              <Link href={link({ m: addMonths(`${month}-01`, 1).slice(0, 7) })} className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-surface-2" aria-label={w.nextMonth}><Icon name="chevron" className="h-5 w-5" /></Link>
             </div>
             <div className="flex items-center gap-3">
               <span className="tabular hidden text-sm font-semibold sm:inline">{money(monthTotal, currency, locale)}</span>
@@ -89,6 +90,8 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
                   key={d}
                   href={inMonth ? link({ m: month, d }) : link({ m: d.slice(0, 7) })}
                   scroll={false}
+                  aria-label={`${formatDate(d, locale)}${ev.length ? `, ${ev.map((e) => e.name).join(", ")}, ${money(total, currency, locale)}` : ""}`}
+                  aria-current={isToday ? "date" : selected ? "true" : undefined}
                   className={`rise flex aspect-square flex-col rounded-xl border p-1.5 text-left transition sm:aspect-[1.1] sm:p-2 ${
                     selected ? "border-brand bg-brand text-white" : isToday ? "border-ink/60" : "border-line hover:border-ink/40"
                   } ${inMonth ? "" : "opacity-30"} ${ev.length && !selected ? "bg-brand-soft/50" : ""}`}
@@ -100,7 +103,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
                       <span className="hidden -space-x-2 sm:flex">
                         {ev.slice(0, 1).map((e) => <ServiceIcon key={e.name} name={e.name} size="sm" />)}{ev.length > 1 && <span className="ml-2.5 self-center text-[10px] font-semibold text-muted">+{ev.length - 1}</span>}
                       </span>
-                      <span className={`tabular whitespace-nowrap text-[10px] font-semibold sm:text-xs ${selected ? "" : ev.some((e) => e.kind !== "paid") ? "text-brand" : "text-ink-2"}`}>{Math.round(total)}{locale === "fr" ? " €" : "€"}</span>
+                      <span className={`tabular whitespace-nowrap text-[10px] font-semibold sm:text-xs ${selected ? "" : ev.some((e) => e.kind !== "paid") ? "text-brand" : "text-ink-2"}`}>{moneyRound(total, currency, locale)}</span>
                     </span>
                   )}
                 </Link>

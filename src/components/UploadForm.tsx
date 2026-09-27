@@ -164,7 +164,7 @@ export default function UploadForm() {
             <a href="/start" className="block text-sm text-brand underline">{u.missing}</a>
           )}
           {response.results.length > 0 && response.needsMapping.length === 0 && (
-            <button onClick={() => router.push("/review")} className="w-full rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+            <button onClick={() => router.push("/subscriptions?f=todo")} className="w-full rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
               {u.continue(response.subscriptions ?? 0)}
             </button>
           )}
