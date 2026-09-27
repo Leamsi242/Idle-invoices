@@ -64,6 +64,8 @@ const en = {
   subsIntro: "Find your services, compare their amounts, understand how they were found.",
   search: "Search for a service…",
   filters: { all: "All", todo: "To decide", active: "Active", ended: "Ended", stopped: "Canceled", hidden: "Not subscriptions" } as Record<string, string>,
+  takeout: "No connection needed: export Gmail with Google Takeout (Mail, .mbox format), then import the file. Only the receipts leave your computer.",
+  takeoutCta: "Import a Gmail export",
   beta: {
     demo: "You are in the demo: leave it to connect your own accounts (the made-up data will be deleted).",
     code: "This beta is by invitation. Enter your invitation code to connect your own accounts.",
@@ -195,6 +197,8 @@ const fr: Dict = {
   subsIntro: "Retrouvez vos services, comparez leurs montants, comprenez leur détection.",
   search: "Rechercher un service…",
   filters: { all: "Tous", todo: "À décider", active: "Actifs", ended: "Terminés", stopped: "Résiliés", hidden: "Pas des abonnements" },
+  takeout: "Sans connexion : exportez Gmail avec Google Takeout (Mail, format .mbox), puis importez le fichier. Seuls les reçus quittent votre ordinateur.",
+  takeoutCta: "Importer un export Gmail",
   beta: {
     demo: "Vous êtes dans la démo : quittez-la pour connecter vos propres comptes (les données fictives seront effacées).",
     code: "Cette bêta se fait sur invitation. Saisissez votre code pour connecter vos propres comptes.",

@@ -9,10 +9,13 @@ export const BUILT_IN_DESCRIPTORS: DescriptorEntry[] = builtIn;
  * service. User-provided descriptors are checked first, then the built-in map; within each,
  * the longest pattern wins so "APPLE ONE" beats "APPLE".
  */
+// Longest pattern first, so "APPLE ONE" wins over "APPLE". The built-in list never changes: sorted once.
+const byLength = (list: DescriptorEntry[]) => [...list].sort((a, b) => nameKey(b.pattern).length - nameKey(a.pattern).length);
+const BUILT_IN_BY_LENGTH = byLength(BUILT_IN_DESCRIPTORS);
+
 export function findDescriptor(texts: (string | undefined)[], userDescriptors: DescriptorEntry[] = []): DescriptorEntry | undefined {
   const keys = texts.filter((t): t is string => !!t).map((t) => ` ${nameKey(t)} `);
-  const byLength = (list: DescriptorEntry[]) => [...list].sort((a, b) => nameKey(b.pattern).length - nameKey(a.pattern).length);
-  for (const list of [byLength(userDescriptors), byLength(BUILT_IN_DESCRIPTORS)]) {
+  for (const list of [byLength(userDescriptors), BUILT_IN_BY_LENGTH]) {
     for (const d of list) {
       const p = ` ${nameKey(d.pattern)} `;
       if (p.trim() && keys.some((k) => k.includes(p))) return d;

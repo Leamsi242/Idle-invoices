@@ -1,6 +1,6 @@
 # Bêta fermée : règles, limites, coûts et durée
 
-Ce document dit comment faire tester Subscription Detective par 100 personnes au plus, gratuitement pour vous, et ce qui coûte de l'argent si vous allez plus loin. Chaque chiffre porte un verdict et sa source :
+Ce document dit comment faire tester Subscription Detective gratuitement pour vous (environ 450 testeurs actifs par mois, dont 100 avec la connexion Gmail), et ce qui coûte de l'argent si vous allez plus loin. Chaque chiffre porte un verdict et sa source :
 
 - **confirmé** : lu sur la page officielle ;
 - **partiellement vérifié** : lu dans un extrait de la page officielle ou une source secondaire, à relire avant de s'engager ;
@@ -18,11 +18,12 @@ Ce document dit comment faire tester Subscription Detective par 100 personnes au
 | PayPal par connexion directe | **Non** | Même règle qu'une banque (PayPal passe par Enable Banking). | Idem Enable Banking |
 | PayPal par export CSV | **Oui** | Rien. | Code de l'application |
 | Gmail | **Oui, 100 au plus** | L'application Google reste en statut « Test » : 100 utilisateurs test au plus, à ajouter un par un dans Google Cloud, et un écran « application non validée ». L'analyse se fait en une fois (pas de jeton gardé), donc l'expiration des autorisations au bout de 7 jours ne gêne pas. | Partiellement vérifié : [Google, statut de publication](https://support.google.com/cloud/answer/15549945), [production readiness](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview) |
+| Gmail par export Google Takeout (`.mbox`) | **Oui, sans plafond** | Rien : le navigateur lit l'export et ne garde que les e-mails dont le sujet ressemble à un reçu (mêmes mots que la connexion Gmail) ; seul cet extrait est envoyé. Pas d'autorisation Google, donc ni limite de 100, ni validation, ni audit. L'export Takeout se prépare chez Google en quelques heures à quelques jours. | Code de l'application (`src/lib/mbox.ts`) ; délai Takeout : non vérifiable |
 | Outlook / Hotmail | **Oui, probablement** | Microsoft Graph est gratuit pour la lecture du courrier. Un compte Microsoft personnel peut demander la « vérification de l'éditeur » (identifiant partenaire Microsoft, 1 à 5 jours ouvrés). À tester avec une adresse outlook.com avant d'inviter. | Partiellement vérifié : [API facturées](https://learn.microsoft.com/en-us/graph/metered-api-list), [vérification de l'éditeur](https://learn.microsoft.com/en-us/entra/identity-platform/publisher-verification-overview) |
 | Captures d'écran App Store / Google Play | **Payant à l'usage** | Lues par l'API Claude, facturée au jeton. Sans clé `ANTHROPIC_API_KEY`, les testeurs collent le texte de la liste à la place (gratuit). | Voir § 3 |
 | Mode démo | **Oui** | Rien : aucun fournisseur n'est appelé. | Code de l'application |
 
-**Conséquence : la bêta gratuite se fait avec des relevés importés, Gmail, Outlook et le mode démo.** La connexion bancaire directe reste réservée à vous (le propriétaire) tant qu'il n'y a pas de contrat Enable Banking. L'application l'applique d'elle-même avec `BETA_BANK_MODE=owner` (voir § 4).
+**Conséquence : la bêta gratuite se fait avec des relevés importés, l'export Gmail (Takeout), Outlook et le mode démo.** La connexion bancaire directe reste réservée à vous (le propriétaire) tant qu'il n'y a pas de contrat Enable Banking. L'application l'applique d'elle-même avec `BETA_BANK_MODE=owner` (voir § 4).
 
 ### Les banques françaises dans Enable Banking
 
@@ -67,21 +68,55 @@ Deux précisions :
 1. **« Non commercial » chez Vercel** : une bêta gratuite, sans publicité, sans affiliation et sans société qui paie quelqu'un pour le code reste non commerciale d'après le texte des conditions. Dès qu'il y a un revenu (abonnement, commission) ou un salarié payé pour le projet, il faut Vercel Pro. C'est une lecture du texte, pas un avis de Vercel.
 2. **Alertes par e-mail** : pour écrire à d'autres adresses que la vôtre, Resend demande un domaine vérifié. Un nom de domaine coûte environ 10 € par an (estimation, selon le registraire). Sans domaine, laissez `RESEND_API_KEY` vide : les alertes restent visibles dans l'application.
 
-## 3. Ce que consomme un testeur (estimation)
+## 3. Combien de testeurs tiennent dans les offres gratuites (mesuré)
 
-Hypothèses : un testeur importe 12 à 24 mois de relevés (environ 3 000 opérations), fait une analyse Gmail, ouvre l'application 60 fois par mois et prend 20 décisions.
+Mesures faites le 27 septembre 2026 sur l'application elle-même, avec un relevé réaliste de 24 mois (2 463 opérations, 12 abonnements, fichier CSV de 78 Ko), en local. Le temps serveur local sert d'approximation du « CPU actif » de Vercel ; les serveurs de Vercel peuvent être plus lents, d'où la marge de sécurité divisée par deux dans la dernière colonne.
 
-| Poste | Par testeur et par mois | 100 testeurs | Plafond gratuit | Marge |
+**Optimisation faite en mesurant** : l'analyse normalisait le même libellé des millions de fois. Elle garde maintenant ses résultats en mémoire. Temps d'une analyse complète : **1 150 ms avant, 96 ms après**. Une décision (« Je conserve », etc.) passe de 1,2 s à 0,19 s ; un import de 24 mois de 4,1 s à 1,95 s. Sans cette optimisation, la capacité aurait été divisée par plus de deux.
+
+| Action mesurée | Temps serveur | Lignes écrites | Lignes lues | Transfert |
 | --- | --- | --- | --- | --- |
-| Lignes écrites (Turso) | environ 3 500 (import, puis recalcul à chaque décision) | environ 350 000 | 10 000 000 | ×28 |
-| Lignes lues (Turso) | environ 180 000 (chaque page relit les opérations) | environ 18 millions | 500 millions | ×27 |
-| CPU actif (Vercel) | environ 10 s | environ 17 minutes | 4 heures | ×14 |
-| Invocations (Vercel) | environ 150 | 15 000 | 1 million | ×66 |
-| E-mails d'alerte | 0 à 4 | 400 au plus | 3 000 | ×7 |
+| Import de 24 mois (2 463 opérations) | 1,95 s | 2 477 | environ 2 500 | 78 Ko envoyés |
+| Une décision | 0,19 s | environ 26 (abonnements recalculés) | environ 2 500 | moins de 1 Ko |
+| Une page (vue d'ensemble, abonnements, calendrier) | 0,12 à 0,2 s | 0 | environ 2 500 | 195 Ko à la première visite, puis 10 Ko par page |
+| Stockage | | | | environ 0,7 Mo par testeur (280 octets par opération), effacé 30 jours après le dernier import |
 
-Ce sont des estimations tirées du fonctionnement de l'application (un recalcul réécrit les abonnements et leurs correspondances, une page lit les opérations de la session) : mesurez les vraies valeurs dans les tableaux de bord Vercel et Turso après la première semaine.
+**Un testeur actif par mois** (hypothèse d'usage : 1 import de 24 mois, 1 export Gmail, 20 décisions, 60 pages) : environ 16 s de serveur, 3 100 lignes écrites, 200 000 lignes lues, 0,8 Mo de transfert, 250 appels de fonction.
 
-**Captures d'écran (API Claude)** : l'application utilise `claude-opus-5`, à 5 $ par million de jetons en entrée et 25 $ en sortie (partiellement vérifié, table des modèles de la documentation Anthropic au 24 juin 2026, [tarifs](https://platform.claude.com/docs/en/about-claude/pricing)). Une capture d'écran de téléphone compte jusqu'à environ 4 800 jetons d'image, plus 150 jetons de consigne et 300 à 800 jetons de réponse, soit **2 à 5 centimes de dollar par capture** (estimation). Avec le plafond par défaut de 200 captures par mois pour toute la bêta : **10 $ par mois au plus**. L'API Claude n'a pas d'offre gratuite ; les crédits s'achètent à l'avance.
+| Plafond gratuit | Valeur | Testeurs actifs par mois | Avec marge ×2 |
+| --- | --- | --- | --- |
+| Vercel Hobby, CPU actif | 4 h | 900 | **450** |
+| Vercel Hobby, appels de fonction | 1 million | 4 000 | 2 000 |
+| Vercel Hobby, transfert | 100 Go | 125 000 | 62 000 |
+| Turso Free, lignes lues | 500 millions | 2 500 | 1 250 |
+| Turso Free, lignes écrites | 10 millions | 3 200 | 1 600 |
+| Turso Free, stockage | 5 Go | 7 000 | 3 500 |
+| Google, connexion Gmail en « Test » | 100 utilisateurs | **100** (connexion Gmail seulement) | 100 |
+| Gmail par export Takeout | aucun | sans limite propre | |
+
+**Réponse : environ 450 testeurs actifs par mois sans rien payer**, dont 100 au plus avec la connexion Gmail ; les autres passent par l'export Takeout, Outlook ou l'import de fichiers. Le premier plafond atteint est le temps de calcul de Vercel. Les testeurs inactifs ne consomment presque rien : on peut en inviter davantage, `BETA_MAX_TESTERS` arrête les nouvelles entrées quand vous voulez. Réglage conseillé : `BETA_MAX_TESTERS=400`, puis ajustez avec les chiffres réels du tableau de bord Vercel (« Usage ») après deux semaines.
+
+Verdicts : consommation mesurée (en local) ; plafonds partiellement vérifiés (§ 2).
+
+**Captures d'écran (API Claude)** : `claude-opus-5` coûte 5 $ par million de jetons en entrée et 25 $ en sortie ; `claude-haiku-4-5`, 1 $ et 5 $ (partiellement vérifié, table des modèles de la documentation Anthropic au 24 juin 2026, [tarifs](https://platform.claude.com/docs/en/about-claude/pricing)). Une capture de téléphone compte jusqu'à environ 4 800 jetons d'image avec Opus 5 (1 600 avec Haiku 4.5), plus la consigne et 300 à 800 jetons de réponse : **2 à 5 centimes de dollar par capture avec Opus 5, moins d'un demi-centime avec Haiku 4.5** (estimation). Le modèle se choisit avec `SCREENSHOT_MODEL` ; testez la qualité de lecture de Haiku sur quelques vraies captures avant de changer. L'API Claude n'a pas d'offre gratuite.
+
+## 3 bis. Les fichiers que les testeurs fournissent
+
+Sans connexion bancaire directe, un testeur importe ses relevés et ses reçus dans « Import avancé » (`/advanced`). La page « Liste d'import » (`/start`) donne, banque par banque, où cliquer pour télécharger chaque fichier.
+
+| Source | Format accepté | Période conseillée | Taille typique | Remarques |
+| --- | --- | --- | --- | --- |
+| Compte bancaire | **CSV** (le meilleur) : export de n'importe quelle banque française (colonnes Date, Libellé, Débit, Crédit ou Montant), N26, Revolut, banques britanniques | 12 à 24 mois | 30 à 40 octets par opération : environ 80 Ko pour 24 mois (mesuré) | Un CSV aux colonnes inconnues ouvre l'écran « quelle colonne est quoi » |
+| Compte bancaire | **PDF** de relevé (texte sélectionnable, une ligne par opération), dont Crédit Mutuel et CIC | 12 à 24 relevés mensuels | 50 à 300 Ko par relevé (estimation) | Les PDF scannés (images) ne sont pas lus |
+| Carte American Express France | PDF du relevé mensuel | 12 mois | 100 à 300 Ko (estimation) | Montre les abonnements payés par carte Amex |
+| PayPal | CSV « Télécharger l'activité » (anglais ou français) | 12 mois par téléchargement | 10 à 100 Ko (l'exemple fourni fait 9 Ko) | Nomme le vrai service derrière chaque paiement PayPal |
+| Gmail | **Export Google Takeout** (`.mbox`, produit « Mail ») | toute la boîte | de quelques Mo à plusieurs Go : **aucune limite**, le navigateur n'envoie que les reçus (500 au plus, 3,5 Mo au plus) | Ou la connexion Gmail pour les 100 premiers |
+| Autres boîtes mail | Connexion Outlook / Hotmail, ou fichiers `.eml` un par un | | 5 à 100 Ko par e-mail | |
+| App Store, Google Play | Texte copié de la liste des abonnements, ou capture d'écran (PNG, JPEG, WebP) | l'écran actuel | 200 Ko à 2 Mo par capture | La capture est lue par Claude si la clé est configurée, sinon collez le texte |
+
+Limites de l'application : **4 Mo par fichier** (la limite de corps de requête de Vercel est de 4,5 Mo, partiellement vérifié), **20 fichiers par envoi**, 20 envois par 10 minutes et par adresse IP, et en bêta 30 fichiers par testeur et par 24 h (`BETA_UPLOADS_PER_DAY`). Un relevé plus gros que 4 Mo se découpe par année ; en CSV, 4 Mo représentent plus de 100 000 opérations.
+
+Kit minimal à demander à chaque testeur : **le CSV de 12 à 24 mois de son compte principal, et l'export Takeout de sa boîte Gmail (ou la connexion Outlook)**. Le PayPal et l'Amex seulement s'il en a.
 
 ## 4. Les règles appliquées par l'application
 
@@ -114,62 +149,102 @@ curl -H "Authorization: Bearer <CRON_SECRET>" "https://<domaine>/api/beta/usage"
 
 La réponse donne le nombre de testeurs, les surveillances actives, et pour le mois en cours les connexions bancaires, analyses de boîte mail, captures et fichiers.
 
-## 5. Les deux scénarios chiffrés
+## 5. Les deux scénarios, optimisés
 
-### Scénario A : bêta gratuite (recommandé pour commencer)
+### Scénario A : bêta gratuite, 0 € par mois
 
-Réglages : `BETA_ACCESS_CODE=<un code>`, `BETA_OWNER_CODE=<un autre code>`, `BETA_BANK_MODE=owner`, `ANTHROPIC_API_KEY` vide, `RESEND_API_KEY` vide.
+Réglages sur Vercel : `BETA_ACCESS_CODE=<code>`, `BETA_OWNER_CODE=<votre code>`, `BETA_BANK_MODE=owner`, `BETA_MAX_TESTERS=400`, `ANTHROPIC_API_KEY` vide, `RESEND_API_KEY` vide.
 
-| Poste | Coût |
-| --- | --- |
-| Vercel Hobby, Turso Free, Gmail en test, Microsoft Graph, Enable Banking restreint | 0 € |
-| Captures d'écran | 0 € (les testeurs collent le texte) |
-| Alertes e-mail | 0 € (visibles dans l'application seulement) |
-| **Total** | **0 € par mois** |
-
-Options : un domaine (environ 10 € par an, estimation) pour les alertes e-mail ; une clé Claude avec le plafond de 200 captures (10 $ par mois au plus).
-
-### Scénario B : 100 testeurs avec connexion bancaire directe
-
-| Poste | Coût | Verdict |
+| Levier | Choix optimisé | Pourquoi |
 | --- | --- | --- |
-| Enable Banking production | Sur devis : facturation par compte consulté et par mois, avec un minimum mensuel. Demande à info@enablebanking.com ou via le formulaire « Get a Quote ». | Tarif non vérifiable ([FAQ](https://enablebanking.com/docs/faq/)) |
-| Vérification de votre société (KYB) chez Enable Banking | 0 € mais une société est nécessaire | Partiellement vérifié |
-| Vercel Pro (un contrat avec une société rend l'usage commercial) | 20 $ par mois et par membre, 20 $ d'usage inclus | Partiellement vérifié : [Pro](https://vercel.com/docs/plans/pro-plan) |
-| Turso | 0 € (Free suffit), 4,99 $ par mois si besoin (Developer) | Partiellement vérifié |
-| Domaine + Resend Free | environ 10 € par an | Estimation |
-| **Total** | **20 $ par mois + devis Enable Banking** | |
+| Banque | Import de relevés CSV ou PDF ; connexion directe pour vous seul | Enable Banking restreint ne lit que vos comptes reliés |
+| Gmail | Export Takeout pour tous ; connexion Gmail réservée aux 100 premiers qui la demandent | La connexion est limitée à 100 personnes en « Test » ; l'export ne l'est pas |
+| Outlook | Connexion ouverte à tous | Gratuite, sans plafond trouvé (vérifiez le consentement avec un compte outlook.com) |
+| Captures d'écran | Désactivées (le testeur colle le texte) | Seul coût à l'usage |
+| Alertes e-mail | Désactivées | Sans connexion bancaire, pas de surveillance de nuit, donc rien à envoyer : aucun domaine à acheter |
+| Hébergement | Vercel Hobby, Turso Free | Assez pour environ 450 testeurs actifs par mois (§ 3) |
+| **Total** | **0 € par mois** | |
 
-À demander à Enable Banking en même temps que le devis : faut-il votre propre agrément ou un statut d'agent auprès de l'ACPR, ou leur licence suffit-elle ? ([procédure d'agent de l'ACPR](https://acpr.banque-france.fr/fr/professionnels/lacpr-vous-accompagne/banque/creer-ma-societe/mes-procedures/agent-prestataire-de-services-de-paiement)). Point non vérifiable sans leur réponse.
+Tenir la gratuité suppose de ne rien vendre pendant la bêta (condition « non commerciale » de Vercel Hobby).
 
-**Lancement public après la bêta** (hors du périmètre gratuit) : validation Google de l'accès « restreint » à Gmail avec un audit de sécurité CASA annuel par un laboratoire agréé, environ 540 à 1 800 $ par an et 6 semaines ou plus (non vérifiable pour le prix, partiellement vérifié pour la procédure : [vérification des accès restreints](https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification), [CASA niveau 2](https://appdefensealliance.dev/casa/tier-2/tier2-overview)). Une analyse d'impact RGPD (AIPD) est conseillée dès la bêta : données bancaires et courriels ([CNIL](https://www.cnil.fr/fr/ce-quil-faut-savoir-sur-lanalyse-dimpact-relative-la-protection-des-donnees-aipd)).
+### Scénario B : connexion bancaire directe, optimisé
 
-## 6. Le déroulé : 8 semaines
+| Levier | Choix optimisé | Pourquoi |
+| --- | --- | --- |
+| Qui connecte sa banque | **Les abonnés Premium seulement** (les gratuits importent un relevé) | Enable Banking facture chaque compte consulté dans le mois : le coût ne suit alors que les payants |
+| Lecture | Une lecture à la connexion, surveillance de nuit en Premium | Moins de comptes actifs à facturer |
+| Contrat | Demander un devis avec un minimum mensuel bas ou nul pour un démarrage, et la question de l'agrément ACPR | Le minimum mensuel est le principal risque (voir les seuils) |
+| Société | Micro-entreprise suffisante pour Stripe et la vérification Enable Banking (à confirmer avec eux) | Frais de création réduits (non vérifiable ici) |
+| Hébergement | Vercel Pro, 20 $ par mois | Obligatoire dès qu'il y a un revenu ou une société |
+| Gmail | Toujours Takeout pour le public | Évite l'audit CASA annuel |
+
+Coût : 20 $ par mois + le devis Enable Banking (tarif non public, non vérifiable) + environ 10 € par an de domaine pour les alertes.
+
+À demander à Enable Banking avec le devis : faut-il votre propre agrément ou un statut d'agent auprès de l'ACPR, ou leur licence suffit-elle ? ([procédure d'agent de l'ACPR](https://acpr.banque-france.fr/fr/professionnels/lacpr-vous-accompagne/banque/creer-ma-societe/mes-procedures/agent-prestataire-de-services-de-paiement)). Non vérifiable sans leur réponse.
+
+### Les seuils où il devient avantageux de payer, avant le lancement public
+
+| Seuil | Ce qui se passe | Ce qu'il faut faire | Coût |
+| --- | --- | --- | --- |
+| **Plus de 100 personnes veulent Gmail** | La connexion Gmail refuse le 101e | Proposer l'export Takeout (déjà dans l'application) plutôt que valider l'application chez Google | 0 € (au lieu de 540 à 1 800 $ par an d'audit CASA, non vérifiable) |
+| **Plus de 450 testeurs actifs par mois** | Le temps de calcul de Vercel Hobby s'épuise | Soit fermer les entrées (`BETA_MAX_TESTERS`), soit passer à Vercel Pro | 20 $ par mois, 20 $ d'usage inclus (partiellement vérifié) |
+| **Premier euro encaissé, ou création d'une société** | Vercel Hobby n'est plus autorisé | Vercel Pro | 20 $ par mois |
+| **Plus d'environ 1 250 testeurs actifs** | Lignes lues de Turso Free | Turso Developer | 4,99 $ par mois (partiellement vérifié) |
+| **Alertes envoyées à d'autres que vous** | Resend exige un domaine vérifié | Acheter un domaine | environ 10 € par an (estimation) |
+| **Plus de 100 alertes par jour ou 3 000 par mois** | Plafond de Resend Free | Resend Pro | 20 $ par mois (partiellement vérifié) |
+| **Passer au scénario B** | Le contrat Enable Banking coûte un minimum mensuel M | Le signer quand le nombre d'abonnés Premium dépasse **M ÷ 3,5** (marge d'un abonné à 4,99 € après TVA, Stripe et un compte Enable Banking à 0,50 €, hypothèse) : 29 abonnés pour M = 100 €, 86 pour M = 300 € | M + 0,50 € par abonné connecté (hypothèse) |
+| **L'import de relevé fait fuir** | Plus de 40 % des testeurs s'arrêtent à l'étape « importer un relevé » (à mesurer) | Argument pour le scénario B, à condition que le seuil précédent soit proche | |
+
+Deux choses rendent le modèle perdant, d'après le calculateur : ouvrir la connexion bancaire directe à tous les utilisateurs gratuits (8 800 € de coûts sur 24 mois au lieu de 880 € dans le scénario Bootstrap), et un minimum mensuel Enable Banking signé trop tôt (100 € par mois font passer les coûts de 880 € à 2 900 €).
+
+## 6. Un modèle rentable, ou sous 1 000 € sur 24 mois
+
+Calculé avec le calculateur ([modele-economique.html](modele-economique.html), scénario « Bootstrap, moins de 1 000 € »).
+
+**Les choix** :
+
+- **Gratuit** : analyse par import de relevés, export Gmail, Outlook ; liste des abonnements, décisions, calendrier.
+- **Premium, 4,99 € par mois TTC** (Bankin' Plus 4,99 €, Linxo 4,49 €, partiellement vérifié) : connexion bancaire directe (dès le seuil du scénario B), surveillance de nuit et alertes, assistant de résiliation, rappels.
+- **Rapport unique à 9 € TTC**, sans abonnement, pour ceux qui veulent un bilan une fois (hypothèse : 2 % des inscrits).
+- **Aucune publicité payée** : croissance par la bêta, le bouche-à-oreille, le parrainage et les sites de mise en avant (§ 8).
+- **Paiement sur le web** avec Stripe (1,5 % + 0,25 € par paiement, partiellement vérifié) plutôt que dans les magasins d'applications (15 %).
+- **Gmail par Takeout**, captures d'écran en texte collé : ni audit CASA ni coût d'API.
+
+**Hypothèses** : 100 inscriptions le premier mois, +10 % par mois, conversion de 2,1 % (médiane freemium, partiellement vérifié), 5 % de résiliations Premium par mois, 25 % des gratuits qui partent chaque mois.
+
+| Résultat du calculateur | Bootstrap | Conversion 1 % | Sans rapport unique | Croissance moitié moindre |
+| --- | --- | --- | --- | --- |
+| Coûts cumulés sur 24 mois | **880 €** | 696 € | 880 € | 633 € |
+| Abonnés Premium au 24e mois | 134 | 64 | 134 | 31 |
+| Résultat cumulé sur 24 mois | **+4 881 €** | +2 708 € | +3 622 € | +1 023 € |
+| Premier mois rentable | 2 | 2 | 3 | 4 |
+
+Les coûts restent sous 1 000 € dans les quatre cas ; le modèle reste positif même si la conversion tombe à 1 %. Il faut environ **6 abonnés Premium** pour payer l'hébergement (20 $ par mois divisés par 3,83 € de revenu net par abonné). Ces chiffres sont des projections sur hypothèses : remplacez-les par les mesures de la bêta (§ 7).
+
+**Fonctionnalités à construire pour ce modèle**, dans l'ordre :
+
+1. comptes utilisateurs (connexion par lien envoyé par e-mail), indispensables pour payer ;
+2. paiement Stripe (abonnement, rapport unique, portail client, factures avec TVA) ;
+3. limite gratuit / Premium, avec la connexion bancaire directe réservée au Premium ;
+4. parrainage (un mois offert par ami inscrit), pour remplacer la publicité ;
+5. assistant de résiliation (lettre ou e-mail prêt, rappel), qui fait la valeur du Premium.
+
+## 7. Le déroulé : 8 semaines
 
 | Semaine | Étape | Testeurs | À mesurer |
 | --- | --- | --- | --- |
-| 0 | Réglages ci-dessus, 30 adresses Gmail ajoutées dans Google Cloud, test complet avec vos propres comptes (connexion directe en mode propriétaire) | 1 | Tout fonctionne de bout en bout |
-| 1 | Vague 1 : proches, par lien d'invitation | 10 | Taux d'import réussi, fichiers refusés (colonnes inconnues), temps pour arriver au premier résultat |
-| 2 à 3 | Vague 2 | 40 | Abonnements trouvés par testeur, part de « Pas un abonnement » (faux positifs), montant « à examiner » |
-| 4 | Vague 3, ajout des 60 dernières adresses Gmail | 100 | Consommation (`/api/beta/usage`, tableaux de bord Vercel et Turso) |
-| 5 à 8 | Usage libre, questionnaire à la fin | 100 | Décisions prises, « J'ai résilié », économies confirmées, retours au bout de 30 jours, intention de payer et prix accepté |
+| 0 | Réglages du scénario A, test complet avec vos propres comptes (connexion directe en mode propriétaire), vidéos et captures du § 8 | 1 | Tout fonctionne de bout en bout |
+| 1 | Vague 1 : proches, par lien d'invitation | 10 | Taux d'import réussi, fichiers refusés, temps jusqu'au premier résultat |
+| 2 à 3 | Vague 2 : réseaux personnels, communautés | 50 | Abonnements trouvés, faux positifs (« Pas un abonnement »), abandon à l'étape « importer » |
+| 4 | Vague 3 : sites de mise en avant d'applications, avec les vidéos | 200 à 400 | Consommation (`/api/beta/usage`, tableaux de bord Vercel et Turso) |
+| 5 à 8 | Usage libre, questionnaire | 400 | Décisions, « J'ai résilié », économies confirmées, prix accepté, abonnement ou rapport unique |
 
-La durée est tenue par trois règles de l'application :
+La durée est tenue par trois règles : les données sont effacées 30 jours après le dernier import ; les 100 places de la connexion Gmail sont définitives tant que l'application reste en « Test » ; un consentement bancaire dure 180 jours (sans objet en scénario A).
 
-- les données sont effacées 30 jours après le dernier import : un testeur actif réimporte ou garde la surveillance ;
-- un consentement bancaire dure 180 jours (90 chez certaines banques) : sans objet en scénario A ;
-- les 100 places Google sont définitives tant que l'application reste en « Test » : réservez-les aux testeurs actifs.
+**Coût total de la bêta sur 8 semaines : 0 €.**
 
-**Coût total du scénario A sur 8 semaines : 0 €** (ou environ 10 € de domaine, et 20 $ au plus de captures si vous les activez).
+## 8. Ce qu'il faut recueillir, et les vidéos de présentation
 
-## 7. Ce qu'il faut recueillir pour le modèle économique
+Pendant la bêta, pour chaque testeur (compteur `/api/beta/usage` et questionnaire, rien n'est envoyé ailleurs) : le montant récurrent trouvé, le montant « à examiner », les économies confirmées, la source qui a tout débloqué (relevé, Gmail, PayPal), et le prix qu'il paierait sous quelle forme. Ce sont les entrées du calculateur.
 
-Pendant la bêta, notez pour chaque testeur (le compteur `/api/beta/usage` et le questionnaire suffisent, rien n'est envoyé ailleurs) :
-
-1. le montant récurrent mensuel trouvé ;
-2. le montant « à examiner » ;
-3. les économies confirmées (« J'ai résilié ») ;
-4. la source qui a tout débloqué (relevé, Gmail, PayPal) ;
-5. le prix qu'il paierait, et sous quelle forme (abonnement, paiement unique, part des économies).
-
-Ce sont les entrées du calculateur de revenus : [modele-economique.html](modele-economique.html) (à ouvrir dans un navigateur). Il projette 24 mois de revenus et de coûts, donne la valeur d'un inscrit face au coût d'acquisition, et liste les fonctionnalités à construire pour chaque levier.
+Les vidéos courtes, GIF et textes de présentation sont dans [`marketing/`](../marketing) (voir son README).

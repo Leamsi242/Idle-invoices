@@ -160,6 +160,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
               {outlook && <a href="/api/outlook/start" className={c.mailboxes.length ? buttonClass.ghost : buttonClass.small}><Icon name="mail" className="h-4 w-4" />Outlook / Hotmail</a>}
               {!gmail && !outlook && <span className="text-sm text-muted">{h.mailNotSetUp}</span>}
             </div>
+            <p className="text-sm text-muted">{w.takeout} <Link href="/advanced#upload" className="text-brand underline">{w.takeoutCta}</Link></p>
             <p className="text-xs text-muted">{h.mailNote}</p>
           </Tile>
         </div>

@@ -3,6 +3,7 @@ import { looksLikeBankCsv, parseBankCsv, type ColumnMapping, NeedsMappingError }
 import { parseBankPdf } from "./bank-pdf";
 import { looksLikePaypalCsv, parsePaypalCsv } from "./paypal-csv";
 import { parseEml, parseReceiptText } from "./email";
+import { MBOX_MAX_MESSAGES, splitMbox } from "../mbox";
 import { appStoreEntriesToTransactions, parseAppStoreList } from "./app-store";
 import { isSupportedImage, screenshotToText } from "./screenshot";
 
@@ -21,6 +22,16 @@ export interface ParseOptions {
 export async function parseFile(name: string, type: string, data: Buffer, opts: ParseOptions = {}): Promise<ParsedFile> {
   const ext = name.toLowerCase().split(".").pop() ?? "";
   if (ext === "pdf" || type === "application/pdf") return { source: "bank", transactions: await parseBankPdf(new Uint8Array(data)) };
+  if (ext === "mbox" || type === "application/mbox") {
+    // An extract of a Google Takeout export, filtered in the browser (lib/mbox.ts): one receipt per email.
+    const messages = splitMbox(data.toString("utf8")).slice(0, MBOX_MAX_MESSAGES);
+    const txs = [];
+    for (const raw of messages) {
+      const tx = await parseEml(raw).catch(() => null);
+      if (tx) txs.push(tx);
+    }
+    return { source: "email", transactions: txs };
+  }
   if (ext === "eml" || type === "message/rfc822") {
     const tx = await parseEml(data);
     return { source: "email", transactions: tx ? [tx] : [] };

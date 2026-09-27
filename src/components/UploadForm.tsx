@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ColumnMapping } from "@/lib/parsers/bank-csv";
 import { useI18n } from "./I18n";
+import { filterMboxStream } from "@/lib/mbox";
 
 interface NeedsMapping { fileName: string; headers: string[]; preview: string[][] }
 interface UploadResponse {
@@ -33,10 +34,29 @@ export default function UploadForm() {
     setFiles((prev) => [...prev, ...Array.from(list).filter((f) => !prev.some((p) => p.name === f.name && p.size === f.size))]);
   };
 
+  const [mboxNote, setMboxNote] = useState<string | null>(null);
+
+  /** A Google Takeout mailbox (.mbox) is filtered here: only the receipts leave the browser. */
+  async function receiptsOnly(file: File): Promise<File> {
+    setMboxNote(u.mboxReading(file.name));
+    const reader = file.stream().pipeThrough(new TextDecoderStream()).getReader();
+    const chunks = (async function* () {
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) return;
+        yield value;
+      }
+    })();
+    const r = await filterMboxStream(chunks);
+    setMboxNote(`${u.mboxDone(r.kept, r.scanned)}${r.truncated ? ` ${u.mboxCut}` : ""}`);
+    return new File([r.mbox], file.name.replace(/\.mbox$/i, "") + "-recus.mbox", { type: "application/mbox" });
+  }
+
   async function send(selected: File[], mappings: Record<string, ColumnMapping> = {}, text?: string) {
     setBusy(true);
     setError(null);
     try {
+      selected = await Promise.all(selected.map((f) => (/\.mbox$/i.test(f.name) ? receiptsOnly(f) : f)));
       const body = new FormData();
       selected.forEach((f) => body.append("files", f));
       body.append("hints", JSON.stringify(hints));
@@ -86,7 +106,7 @@ export default function UploadForm() {
           <input
             type="file"
             multiple
-            accept=".csv,.pdf,.eml,.txt,image/png,image/jpeg,image/webp"
+            accept=".csv,.pdf,.eml,.mbox,.txt,image/png,image/jpeg,image/webp"
             className="sr-only"
             onChange={(e) => addFiles(e.target.files)}
           />
@@ -144,6 +164,7 @@ export default function UploadForm() {
         </button>
       </form>
 
+      {mboxNote && <p className="rounded-2xl bg-surface-2 p-4 text-sm text-ink-2" role="status">{mboxNote}</p>}
       {error && <p className="rounded-2xl bg-leak-soft p-4 text-sm text-leak">{error}</p>}
 
       {response && (

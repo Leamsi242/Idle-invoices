@@ -66,7 +66,19 @@ export const INTERMEDIARIES: Intermediary[] = [
 export const findIntermediary = (cleaned: string) => INTERMEDIARIES.find((i) => i.pattern.test(cleaned));
 
 /** Word-level key used to compare merchant names: "Disney Plus" and "DISNEY PLUS*" give "DISNEY PLUS". */
-export const nameKey = (s: string) => s.toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Z0-9]+/g, " ").trim();
+const nameKeys = new Map<string, string>();
+/**
+ * A name reduced to comparable letters and digits. Pure and called for every label against every
+ * known service, so results are remembered (the same few thousand labels come back each time).
+ */
+export const nameKey = (s: string): string => {
+  const hit = nameKeys.get(s);
+  if (hit !== undefined) return hit;
+  const key = s.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]+/g, " ").trim();
+  if (nameKeys.size > 50_000) nameKeys.clear();
+  nameKeys.set(s, key);
+  return key;
+};
 
 /** True when one name contains the other as whole words. */
 export function sameName(a: string, b: string): boolean {

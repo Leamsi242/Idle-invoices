@@ -12,10 +12,13 @@ export const isSupportedImage = (type: string): type is MediaType => (MEDIA_TYPE
 export async function screenshotToText(image: Buffer, mediaType: MediaType): Promise<string> {
   if (!process.env.ANTHROPIC_API_KEY) throw new Error("Screenshot reading needs ANTHROPIC_API_KEY. You can paste the text instead.");
   const client = new Anthropic();
+  // SCREENSHOT_MODEL lets the owner pick a lighter model for this transcription (see docs/BETA.md).
+  const model = process.env.SCREENSHOT_MODEL?.trim() || "claude-opus-5";
   const response = await client.messages.create({
-    model: "claude-opus-5",
+    model,
     max_tokens: 2000,
-    output_config: { effort: "low" },
+    // Haiku 4.5 does not take an effort level (the API answers 400).
+    ...(/haiku/.test(model) ? {} : { output_config: { effort: "low" as const } }),
     messages: [
       {
         role: "user",

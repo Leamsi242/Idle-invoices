@@ -254,6 +254,9 @@ const en = {
     checklist: "Checklist of what can be imported, and how",
   },
   upload: {
+    mboxReading: (name: string) => `Reading ${name}: only emails that look like receipts are kept…`,
+    mboxDone: (kept: number, scanned: number) => `${kept} receipt${kept === 1 ? "" : "s"} kept out of ${scanned} email${scanned === 1 ? "" : "s"}. Only these are sent.`,
+    mboxCut: "The extract reached its limit (500 receipts): the rest of the mailbox was left out.",
     drop: "Drop files here or tap to choose",
     kinds: "Bank statements (CSV, PDF), PayPal activity (CSV), receipts (.eml), app store screenshots",
     sourceOf: (f: string) => `Source of ${f}`,
@@ -548,6 +551,9 @@ const fr: Messages = {
     checklist: "Ce qu'on peut importer, et comment",
   },
   upload: {
+    mboxReading: (name: string) => `Lecture de ${name} : seuls les e-mails qui ressemblent à des reçus sont gardés…`,
+    mboxDone: (kept: number, scanned: number) => `${kept} reçu${kept > 1 ? "s" : ""} gardé${kept > 1 ? "s" : ""} sur ${scanned} e-mail${scanned > 1 ? "s" : ""}. Seuls ceux-là sont envoyés.`,
+    mboxCut: "L'extrait a atteint sa limite (500 reçus) : le reste de la boîte a été laissé de côté.",
     drop: "Déposez des fichiers ici ou touchez pour choisir",
     kinds: "Relevés bancaires (CSV, PDF), activité PayPal (CSV), reçus (.eml), captures des magasins d'applications",
     sourceOf: (f) => `Source de ${f}`,
