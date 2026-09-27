@@ -124,6 +124,10 @@ Every amount is shown in the currency it was paid in, never converted: only the 
 
 "Today" is the visitor's today: the browser sends its time zone once in a cookie (`components/TimeZone.tsx`, `lib/today.ts`), Paris until it has.
 
+## Animated tour and launch kit
+
+`public/tour/` is a 24-second animated tour of the app (French and American English; vertical, square or wide), opened from the Sources page and the empty overview as the testers' onboarding. Every frame is computed from the time, so `scripts/marketing/all.sh` records it frame by frame into MP4 videos (H.264, through ffmpeg.wasm) and GIFs, and captures real-app screenshots in demo mode. Which file goes where, and the launch texts in both languages, are in [marketing/README.md](marketing/README.md).
+
 ## Closed beta
 
 The rules for a closed beta of up to 100 testers are in `src/lib/beta.ts`, set with environment variables, and explained in French with their costs and sources in [docs/BETA.md](docs/BETA.md). The revenue model calculator (24-month projection, value per sign-up against acquisition cost, features to build per lever) is [docs/modele-economique.html](docs/modele-economique.html). They are checked before anything a provider limits or bills: a bank connection, a mailbox scan, a file or screenshot upload, a nightly watch. Counts come from the database, so they hold across server instances; the demo is never limited.
