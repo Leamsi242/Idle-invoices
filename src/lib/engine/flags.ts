@@ -90,32 +90,40 @@ export function flagSubscriptions(subs: DetectedSubscription[], ctx: FlagContext
   });
 }
 
-type ReportItem = Pick<DetectedSubscription, "status" | "yearlyCost" | "needsLabel" | "currency">;
+type ReportItem = Pick<DetectedSubscription, "status" | "yearlyCost" | "needsLabel" | "currency" | "usage">;
 
 export interface Report<T extends ReportItem = DetectedSubscription> {
   totalYearly: number;
   potentialSavings: number;
+  /** What the user already saves: subscriptions they told us they cancelled. */
+  savedYearly: number;
   forgotten: T[];
   idle: T[];
   active: T[];
   cancelled: T[];
+  /** Cancelled by the user ("I cancelled it"), whatever the statements show yet. */
+  stopped: T[];
   needsLabel: T[];
   currency: string;
 }
 
 /** Bundles are one subscription, so their parts are never counted twice. */
 export function buildReport<T extends ReportItem>(subs: T[]): Report<T> {
-  const live = subs.filter((s) => s.status !== "cancelled");
+  const stopped = subs.filter((s) => s.usage === "stopped");
+  const rest = subs.filter((s) => s.usage !== "stopped");
+  const live = rest.filter((s) => s.status !== "cancelled");
   const sum = (xs: T[]) => Math.round(xs.reduce((t, s) => t + s.yearlyCost, 0) * 100) / 100;
-  const idle = subs.filter((s) => s.status === "idle");
+  const idle = rest.filter((s) => s.status === "idle");
   return {
     totalYearly: sum(live),
     potentialSavings: sum(idle),
-    forgotten: subs.filter((s) => s.status === "forgotten"),
+    savedYearly: sum(stopped),
+    forgotten: rest.filter((s) => s.status === "forgotten"),
     idle,
-    active: subs.filter((s) => s.status === "active"),
-    cancelled: subs.filter((s) => s.status === "cancelled"),
-    needsLabel: subs.filter((s) => s.needsLabel && s.status !== "cancelled"),
-    currency: live[0]?.currency ?? "EUR",
+    active: rest.filter((s) => s.status === "active"),
+    cancelled: rest.filter((s) => s.status === "cancelled"),
+    stopped,
+    needsLabel: rest.filter((s) => s.needsLabel && s.status !== "cancelled"),
+    currency: live[0]?.currency ?? subs[0]?.currency ?? "EUR",
   };
 }

@@ -1,6 +1,7 @@
 export type Source = "bank" | "paypal" | "apple" | "google" | "email";
 export type Frequency = "weekly" | "monthly" | "quarterly" | "yearly";
-export type Usage = "yes" | "rarely" | "no";
+/** Answer to "Still using this?", or "stopped" once the user says they cancelled it. */
+export type Usage = "yes" | "rarely" | "no" | "stopped";
 export type Status = "active" | "idle" | "forgotten" | "cancelled";
 
 /**

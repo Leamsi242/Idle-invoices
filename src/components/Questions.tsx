@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Usage } from "@/lib/types";
 import { useI18n } from "./I18n";
 
-const OPTIONS: Usage[] = ["yes", "rarely", "no"];
+const OPTIONS = ["yes", "rarely", "no"] as const;
 
 export function UsageQuestion({ labelKey, current }: { labelKey: string; current?: Usage }) {
   const { m } = useI18n();
@@ -13,7 +13,7 @@ export function UsageQuestion({ labelKey, current }: { labelKey: string; current
   const router = useRouter();
   const [pending, start] = useTransition();
   const [value, setValue] = useState(current);
-  const tone: Record<Usage, string> = { yes: "bg-save text-white", rarely: "bg-warn text-night", no: "bg-leak text-white" };
+  const tone: Record<(typeof OPTIONS)[number], string> = { yes: "bg-save text-white", rarely: "bg-warn text-night", no: "bg-leak text-white" };
   return (
     <div className="space-y-2" role="group" aria-label={q.stillUsing}>
       <p className="text-xs font-medium text-muted">{q.stillUsing}</p>
@@ -87,6 +87,35 @@ export function DeleteEverythingButton() {
       }}
     >
       {pending ? q.deleting : q.deleteAll}
+    </button>
+  );
+}
+
+/** "I cancelled it": the subscription moves to the savings, and back if tapped again. */
+export function StoppedButton({ labelKey, stopped }: { labelKey: string; stopped: boolean }) {
+  const { m } = useI18n();
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      onClick={() =>
+        start(async () => {
+          await fetch("/api/usage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ labelKey, usage: stopped ? "yes" : "stopped" }) });
+          router.refresh();
+        })
+      }
+      className={
+        stopped
+          ? "inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm font-medium text-ink-2 transition hover:border-ink disabled:opacity-40"
+          : "inline-flex items-center gap-1.5 rounded-full bg-save px-3.5 py-1.5 text-sm font-semibold text-white shadow-card transition hover:opacity-90 active:scale-95 disabled:opacity-40"
+      }
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden className="h-4 w-4">
+        <path d={stopped ? "M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-1" : "m5 12.5 4.5 4.5L19 7.5"} />
+      </svg>
+      {stopped ? m.questions.undoStopped : m.questions.stopped}
     </button>
   );
 }

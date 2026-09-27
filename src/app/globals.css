@@ -24,6 +24,9 @@
   --warn-soft: #fff6e5;
   --night: #0b0c14;
   --shadow: 0 1px 2px rgb(13 15 22 / 0.04), 0 8px 24px -12px rgb(13 15 22 / 0.12);
+  /* Categorical series, fixed order, validated for color vision deficiency (dataviz reference palette). */
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
+  --series-5: #e87ba4; --series-6: #008300; --series-7: #4a3aa7; --series-8: #e34948;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -46,6 +49,8 @@
     --warn-soft: #2a2110;
     --night: #06070b;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -16px rgb(0 0 0 / 0.6);
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+    --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
   }
 }
 
@@ -122,6 +127,32 @@ details[open] .chev { transform: rotate(90deg); }
   animation: shimmer 1.2s linear infinite;
 }
 
+/* Bars fill from their baseline, cards lift under the finger. */
+@keyframes grow-x { from { transform: scaleX(0); } }
+@keyframes grow-y { from { transform: scaleY(0); } }
+.grow-x { transform-origin: left center; animation: grow-x 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.grow-y { transform-origin: center bottom; animation: grow-y 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.lift { transition: transform 0.25s ease, box-shadow 0.25s ease; }
+.lift:hover { transform: translateY(-2px); box-shadow: 0 18px 40px -20px rgb(13 15 22 / 0.35); }
+
+/* A slow shine across the hero, like a lamp passing over the case file. */
+@keyframes sweep { 0% { transform: translateX(-60%) rotate(12deg); } 100% { transform: translateX(160%) rotate(12deg); } }
+.sweep::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  bottom: -50%;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.08), transparent);
+  animation: sweep 7s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* A soft pulse on what needs the user now. */
+@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgb(255 90 54 / 0.45); } 70% { box-shadow: 0 0 0 10px rgb(255 90 54 / 0); } 100% { box-shadow: 0 0 0 0 rgb(255 90 54 / 0); } }
+.pulse { animation: pulse-ring 2.4s ease-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
-  .rise, .skeleton { animation: none; }
+  .rise, .skeleton, .grow-x, .grow-y, .sweep::before, .pulse { animation: none; }
+  .lift:hover { transform: none; }
 }
