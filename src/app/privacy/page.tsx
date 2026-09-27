@@ -78,6 +78,15 @@ export default async function Privacy() {
       </section>
 
       <section className="space-y-2">
+        <h2 className="font-semibold">Take it with you, or try without it</h2>
+        <p>
+          <a href="/api/export" className="font-medium text-brand">Export my data</a> downloads everything we keep for this browser, readable, as
+          one JSON file. The demo mode uses a separate session with made-up data: your own data is not read or changed, and quitting the demo
+          deletes the made-up data.
+        </p>
+      </section>
+
+      <section className="space-y-2">
         <h2 className="font-semibold">Why</h2>
         <p>Only to show you your subscriptions report. We don&apos;t sell, share or use your data for anything else.</p>
       </section>
@@ -159,6 +168,15 @@ function PrivacyFr() {
         <p>
           Jusqu&apos;à ce que vous appuyiez sur « Tout supprimer », et jamais plus de {RETENTION_DAYS} jours après votre dernier envoi. Ensuite,
           tout est effacé automatiquement.
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="font-semibold">Emportez-les, ou essayez sans elles</h2>
+        <p>
+          <a href="/api/export" className="font-medium text-brand">Exporter mes données</a> télécharge tout ce que nous gardons pour ce
+          navigateur, en clair, dans un fichier JSON. Le mode démo utilise une session à part avec des données fictives : vos données ne sont
+          ni lues ni modifiées, et quitter la démo efface les données fictives.
         </p>
       </section>
 

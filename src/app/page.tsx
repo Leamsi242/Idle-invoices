@@ -3,13 +3,17 @@ import { gmailConfigured } from "@/lib/gmail";
 import { outlookConfigured } from "@/lib/outlook";
 import { bankingConfigured } from "@/lib/banking";
 import { getSessionId } from "@/lib/session";
-import { getConnections, getSources, listWatches } from "@/lib/store";
+import { getConnections, getDoubts, getSources, listWatches } from "@/lib/store";
 import { WatchControls } from "@/components/Watch";
 import { emailConfigured } from "@/lib/notify";
 import { BankPicker } from "@/components/Connect";
 import { GmailContinue } from "@/components/GmailContinue";
-import { CoverageLine } from "@/components/Coverage";
-import { buttonClass, Card, Eyebrow, Icon, Pill } from "@/components/ui";
+import { CoverageLine, CoverageTimeline } from "@/components/Coverage";
+import { Doubts } from "@/components/Doubts";
+import { DeleteEverythingButton } from "@/components/Questions";
+import { TryDemo } from "@/components/Nav";
+import { v3 } from "@/lib/i18n-v3";
+import { buttonClass, Card, Icon, Pill, SectionTitle } from "@/components/ui";
 import { getMessages } from "@/lib/locale";
 import type { Messages } from "@/lib/i18n";
 
@@ -54,7 +58,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const u = m.ui;
   const note = message(q, m);
   const sessionId = await getSessionId();
-  const [c, watches, sources] = await Promise.all([getConnections(sessionId), listWatches(sessionId), getSources(sessionId)]);
+  const w = v3(locale);
+  const [c, watches, sources, doubts] = await Promise.all([getConnections(sessionId), listWatches(sessionId), getSources(sessionId), sessionId ? getDoubts(sessionId, locale) : Promise.resolve([])]);
   const banking = bankingConfigured();
   const gmail = gmailConfigured();
   const outlook = outlookConfigured();
@@ -67,22 +72,36 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
 
   return (
     <div className="space-y-6">
-      <section className="spotlight grain relative overflow-hidden rounded-[28px] px-6 py-8 text-white sm:px-10 sm:py-12">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/60">{u.sourcesTitle}</p>
-        <h1 className="mt-2 max-w-2xl font-display text-3xl font-semibold leading-[1.1] tracking-tight sm:text-5xl">{m.tagline}</h1>
-        <p className="mt-3 max-w-xl text-white/75">{h.intro}</p>
-        <div className="mt-6 flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            {[0, 1, 2].map((i) => <span key={i} className={`h-2 w-8 rounded-full ${i < kinds ? "bg-white" : "bg-white/20"}`} />)}
-            <span className="ml-1 text-sm text-white/75">{u.sourcesProgress(kinds)}</span>
-          </div>
-          {anything && (
-            <Link href="/report" className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-2.5 font-semibold text-night transition hover:opacity-90">
-              {u.openCase} <Icon name="arrow" className="h-4 w-4" />
-            </Link>
+      <section className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">{w.nav.sources}</p>
+          <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">{w.srcTitle}</h1>
+          <p className="text-muted">{w.srcIntro}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="flex items-center gap-2 text-sm text-muted">
+            {[0, 1, 2].map((i) => <span key={i} className={`h-1.5 w-6 rounded-full ${i < kinds ? "bg-brand" : "bg-line"}`} />)}
+            {u.sourcesProgress(kinds)}
+          </span>
+          {anything ? (
+            <Link href="/report" className={buttonClass.small}>{u.openCase} <Icon name="arrow" className="h-4 w-4" /></Link>
+          ) : (
+            <TryDemo label={w.tryDemo} className={buttonClass.small} />
           )}
         </div>
       </section>
+
+      <ol className="grid gap-3 sm:grid-cols-3">
+        {w.steps.map(([title, text], i) => (
+          <li key={title} className="rise flex gap-3 rounded-2xl border border-line bg-surface p-4" style={{ animationDelay: `${i * 80}ms` }}>
+            <span className="tabular flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-line text-xs font-semibold text-brand">0{i + 1}</span>
+            <span>
+              <span className="block font-semibold">{title}</span>
+              <span className="text-sm text-muted">{text}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
 
       {note && <p className="rise rounded-2xl border border-line bg-surface p-4 text-sm shadow-card">{note}</p>}
       {q.gmail === "partial" && <GmailContinue scanned={Number(q.scanned) || 0} total={Number(q.total) || 0} />}
@@ -131,21 +150,38 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
         </div>
       </div>
 
-      {of("file").length > 0 && (
-        <Card className="space-y-3">
-          <Eyebrow>{m.footer.advanced}</Eyebrow>
-          {of("file").map((x) => <CoverageLine key={x.name} s={x} m={m} locale={locale} />)}
+      {doubts.length > 0 && (
+        <section id="clarify" className="scroll-mt-24 space-y-2">
+          <Doubts doubts={doubts} gmail={gmail} outlook={outlook} banking={banking} />
+        </section>
+      )}
+
+      {sources.length > 0 && (
+        <Card className="space-y-5">
+          <SectionTitle title={u.coverage} />
+          <p className="-mt-3 text-sm text-muted">{u.coverageIntro}</p>
+          <CoverageTimeline sources={sources} m={m} locale={locale} />
+          {of("file").length > 0 && <div className="space-y-4">{of("file").map((x) => <CoverageLine key={x.name} s={x} m={m} locale={locale} />)}</div>}
         </Card>
       )}
 
-      {anything ? (
-        <Link href="/report" className={`${buttonClass.primary} w-full py-4 text-base`}>{u.openCase} <Icon name="arrow" className="h-5 w-5" /></Link>
-      ) : (
-        <p className="rounded-2xl bg-surface-2 px-4 py-3 text-center text-sm text-muted">{h.reportSoon}</p>
-      )}
-      <p className="text-center text-sm">
-        <Link href="/advanced" className="text-muted underline decoration-line underline-offset-4 hover:text-ink">{h.advancedLink}</Link>
-      </p>
+      <Link href="/advanced" className="flex items-center justify-between gap-3 rounded-3xl border border-line bg-surface px-5 py-4 shadow-card transition hover:border-ink/40">
+        <span className="flex items-center gap-3 font-semibold"><Icon name="file" className="h-5 w-5 text-muted" />{w.complete}</span>
+        <span className="text-sm text-muted">{w.optional}</span>
+      </Link>
+
+      <Card className="space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="font-display text-lg font-semibold tracking-tight">{w.control}</h2>
+          <Icon name="shield" className="h-5 w-5 text-brand" />
+        </div>
+        <p className="text-sm text-muted">{w.controlText}</p>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/privacy" className={buttonClass.ghost}>{m.footer.how}</Link>
+          <a href="/api/export" className={buttonClass.ghost}><Icon name="arrow" className="h-4 w-4 rotate-90" />{w.exportData}</a>
+          {anything && <DeleteEverythingButton compact label={w.eraseData} />}
+        </div>
+      </Card>
     </div>
   );
 }

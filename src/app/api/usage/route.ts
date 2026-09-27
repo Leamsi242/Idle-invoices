@@ -7,11 +7,11 @@ export async function POST(req: Request) {
   const sessionId = await getSessionId();
   if (!sessionId) return NextResponse.json({ error: "No data yet." }, { status: 401 });
   const { labelKey, usage } = await req.json().catch(() => ({}));
-  if (typeof labelKey !== "string" || !["yes", "rarely", "no", "stopped"].includes(usage)) {
-    return NextResponse.json({ error: "labelKey and usage (yes, rarely, no or stopped) are required" }, { status: 400 });
+  if (typeof labelKey !== "string" || !["yes", "rarely", "no", "stopped", "notsub", "clear"].includes(usage)) {
+    return NextResponse.json({ error: "labelKey and usage (yes, rarely, no, stopped, notsub or clear) are required" }, { status: 400 });
   }
   try {
-    await setUsage(sessionId, labelKey, usage);
+    await setUsage(sessionId, labelKey, usage === "clear" ? null : usage);
   } catch {
     return NextResponse.json({ error: "Subscription not found" }, { status: 404 });
   }

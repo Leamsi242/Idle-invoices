@@ -1,7 +1,10 @@
 export type Source = "bank" | "paypal" | "apple" | "google" | "email";
 export type Frequency = "weekly" | "monthly" | "quarterly" | "yearly";
-/** Answer to "Still using this?", or "stopped" once the user says they cancelled it. */
-export type Usage = "yes" | "rarely" | "no" | "stopped";
+/**
+ * Answer to "Still using this?", "stopped" once the user says they cancelled it, or "notsub" when
+ * it is not a subscription at all (rent, a one-off): then it is left out of everything.
+ */
+export type Usage = "yes" | "rarely" | "no" | "stopped" | "notsub";
 export type Status = "active" | "idle" | "forgotten" | "cancelled";
 
 /**

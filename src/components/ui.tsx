@@ -37,16 +37,17 @@ export function Icon({ name, className = "h-5 w-5", ...rest }: { name: IconName 
 }
 
 /** The app's mark: a lens with a spark of light, the moment a forgotten charge is found. */
-export function Logo({ className = "h-7 w-7" }: { className?: string }) {
+// Each instance needs its own gradient id: a hidden copy (the sidebar on mobile) would otherwise swallow it.
+export function Logo({ className = "h-7 w-7", id = "lg" }: { className?: string; id?: string }) {
   return (
     <svg viewBox="0 0 32 32" className={className} aria-hidden>
       <defs>
-        <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#7c5cff" />
-          <stop offset="1" stopColor="#4338ff" />
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#4f7bff" />
+          <stop offset="1" stopColor="#1b3fb8" />
         </linearGradient>
       </defs>
-      <rect width="32" height="32" rx="9" fill="url(#lg)" />
+      <rect width="32" height="32" rx="9" fill={`url(#${id})`} />
       <circle cx="14" cy="14" r="6.5" fill="none" stroke="#fff" strokeWidth="2.4" />
       <path d="m19 19 5.5 5.5" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" />
       <circle cx="14" cy="14" r="2.2" fill="#ff5a36" />

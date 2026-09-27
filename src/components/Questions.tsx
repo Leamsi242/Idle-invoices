@@ -68,7 +68,7 @@ export function LabelQuestion({ labelKey, amount }: { labelKey: string; amount: 
   );
 }
 
-export function DeleteEverythingButton() {
+export function DeleteEverythingButton({ compact = false, label }: { compact?: boolean; label?: string }) {
   const { m } = useI18n();
   const q = m.questions;
   const router = useRouter();
@@ -76,7 +76,11 @@ export function DeleteEverythingButton() {
   return (
     <button
       disabled={pending}
-      className="w-full rounded-2xl border border-leak/30 bg-surface px-4 py-3 font-semibold text-leak hover:bg-leak-soft"
+      className={
+        compact
+          ? "inline-flex items-center gap-2 rounded-full border border-leak/30 bg-surface px-3.5 py-1.5 text-sm font-medium text-leak transition hover:bg-leak-soft disabled:opacity-40"
+          : "w-full rounded-2xl border border-leak/30 bg-surface px-4 py-3 font-semibold text-leak hover:bg-leak-soft"
+      }
       onClick={() => {
         if (!confirm(q.deleteConfirm)) return;
         start(async () => {
@@ -86,7 +90,7 @@ export function DeleteEverythingButton() {
         });
       }}
     >
-      {pending ? q.deleting : q.deleteAll}
+      {pending ? q.deleting : label ?? q.deleteAll}
     </button>
   );
 }
@@ -117,5 +121,48 @@ export function StoppedButton({ labelKey, stopped }: { labelKey: string; stopped
       </svg>
       {stopped ? m.questions.undoStopped : m.questions.stopped}
     </button>
+  );
+}
+
+/**
+ * The decisions on one subscription: keep it, no longer used, cancelled, or not a subscription.
+ * The chosen one is highlighted; "undo" puts it back among those to decide.
+ */
+export function Decisions({ labelKey, usage, t }: { labelKey: string; usage?: Usage; t: { keep: string; notUsed: string; cancelled: string; notSub: string; undo: string } }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const send = (value: Usage | "clear") =>
+    start(async () => {
+      await fetch("/api/usage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ labelKey, usage: value }) });
+      router.refresh();
+    });
+  const options: [Usage, string, string][] = [
+    ["yes", t.keep, "bg-brand text-white"],
+    ["no", t.notUsed, "bg-leak text-white"],
+    ["stopped", t.cancelled, "bg-save text-white"],
+    ["notsub", t.notSub, "bg-ink text-bg"],
+  ];
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        {options.map(([value, label, on]) => (
+          <button
+            key={value}
+            type="button"
+            disabled={pending}
+            aria-pressed={usage === value}
+            onClick={() => send(value)}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition active:scale-95 disabled:opacity-40 ${usage === value || (value === "no" && usage === "rarely") ? on : "border border-line bg-surface text-ink-2 hover:border-ink"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {usage && (
+        <button type="button" disabled={pending} onClick={() => send("clear")} className="text-xs text-muted underline underline-offset-4">
+          {t.undo}
+        </button>
+      )}
+    </div>
   );
 }

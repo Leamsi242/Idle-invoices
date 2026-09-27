@@ -73,9 +73,13 @@ Uploaded files
 
 1. **Connect your bank** (`/`): search the bank, sign in on the bank's own page (PSD2 strong authentication), come back. The app reads the transactions of every account the user shared, up to 24 months (90 days at Crédit Mutuel, the bank's limit), once, then deletes the consent (`lib/banking`, `api/bank/*`). Cards with their own statement (American Express) are connected the same way.
 2. **Connect your mailbox**: Gmail or Outlook / Hotmail, one-time read-only scan of receipts (`lib/gmail.ts`, `lib/outlook.ts`).
-3. **Report**, with "We need your help" on top (`lib/doubts.ts`): only the points the data could not settle, each with one small action. Unnamed PayPal subscriptions ask to connect PayPal (one action names them all, and no name question is asked meanwhile); unnamed Google Play or Apple payments without a mailbox connected ask for the mailbox; a bank paying an American Express card asks to connect the card; a recurring charge still unnamed asks for its name, or a screenshot of the store's subscription list.
-4. **Watching (optional)**: ticking "Keep watching for 90 days" at the bank step keeps the read-only access (encrypted, `BankLink`). Every night `/api/cron/refresh` reads the account again from a few days before the last read, re-analyses, and compares with the previous analysis (`engine/changes.ts`): a new subscription, a price increase or a stopped subscription charging again becomes an alert on top of the report, and an email when the user gave an address and Resend is set up (`lib/notify.ts`). Stopping the watch, "Delete everything" or the 90-day end close the access at the bank. No account is needed: the watch belongs to the browser session.
-5. **Advanced** (`/advanced`, `/start`): manual import of files and the import checklist, for testing, for banks the provider does not cover, or for a PayPal export.
+3. **Overview** (`/report`): a summary hero with a mastery score, four figures (recurring per month, money to review, potential and confirmed savings), "What deserves your attention" (three priorities at most, each can be snoozed for 7 days), the six-month spending rhythm, the next charges, what the investigation reveals, the split by way of paying and by category.
+4. **Commitments** (`/subscriptions`): every subscription in one table (search, filter by state or way of paying, sort). A row opens a side panel with the proof (last payments, sources) and four decisions: I keep it, I no longer use it, I cancelled it, not a subscription (hidden and left out of the totals, can be undone). `/review` now points here.
+5. **Calendar** (`/calendar`): the month, with what was paid on past days and what is expected ahead (confirmed or estimated), plus the free trials the user tracks. `/trials` now points here.
+6. **Sources** (`/`), with "We need your help" on top (`lib/doubts.ts`): only the points the data could not settle, each with one small action. Unnamed PayPal subscriptions ask to connect PayPal (one action names them all, and no name question is asked meanwhile); unnamed Google Play or Apple payments without a mailbox connected ask for the mailbox; a bank paying an American Express card asks to connect the card; a recurring charge still unnamed asks for its name, or a screenshot of the store's subscription list.
+7. **Watching (optional)**: ticking "Keep watching for 90 days" at the bank step keeps the read-only access (encrypted, `BankLink`). Every night `/api/cron/refresh` reads the account again from a few days before the last read, re-analyses, and compares with the previous analysis (`engine/changes.ts`): a new subscription, a price increase or a stopped subscription charging again becomes an alert on top of the report, and an email when the user gave an address and Resend is set up (`lib/notify.ts`). Stopping the watch, "Delete everything" or the 90-day end close the access at the bank. No account is needed: the watch belongs to the browser session.
+8. **Demo mode**: "Try the demo" (on an empty overview or on Sources) swaps the browser to a separate session filled with made-up bank and PayPal data (`POST /api/demo`); "Quit the demo" deletes it and restores the real session (`DELETE /api/demo`). Nothing of the real session is read or changed.
+9. **Advanced** (`/advanced`, `/start`): manual import of files and the import checklist, for testing, for banks the provider does not cover, or for a PayPal export.
 
 ### Bank connection provider
 
@@ -124,6 +128,7 @@ What the code does for each point of the spec's "Privacy and security" section:
 | Encrypt the database at rest | Labels, merchants, plans and subscription details are encrypted with AES-256-GCM before storage (`lib/crypto.ts`, key in `DATA_ENCRYPTION_KEY`). Dates and amounts are not. For production, also use a database with disk encryption (Turso and managed Postgres provide it). |
 | HTTPS everywhere | HSTS, Content-Security-Policy and other security headers in `next.config.ts`; the session cookie is `Secure` in production; Vercel serves HTTPS only. |
 | Minimum data to the Claude API | Only a screenshot, in `lib/parsers/screenshot.ts` (the only file importing the SDK; checked by a test). Statements are never sent. |
+| Data portability | `GET /api/export` downloads everything kept for the session (sources, subscriptions with their decisions, masked transactions), decrypted, as JSON (Sources page, "Your control" card). |
 | Plain-language privacy page | `/privacy` (also covers the Gmail scan) |
 | GDPR review and security audit | Still to do before any public launch. |
 
@@ -180,6 +185,7 @@ src/lib/parsers/         one parser per source, plus file-type detection
 src/lib/engine/          reconcile, detect, label, flag, pipeline
 src/data/descriptors.json
 src/lib/store.ts         database access, recompute, delete everything, retention
-src/app/                 pages (upload, review, report, privacy) and API routes
+src/app/                 pages (sources, overview, commitments, calendar, privacy) and API routes
+src/lib/engagements.ts   status, type, rhythm and attention helpers shared by the pages
 tests/                   Vitest suites
 ```

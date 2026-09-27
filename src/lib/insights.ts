@@ -21,7 +21,7 @@ export type Insight =
 const OVERLAP = new Set(["streaming", "music", "cloud storage", "dating", "news", "gaming"]);
 
 export function insights(subs: Sub[], today: string): Insight[] {
-  const live = subs.filter((s) => s.status !== "cancelled" && s.usage !== "stopped");
+  const live = subs.filter((s) => s.status !== "cancelled" && s.usage !== "stopped" && s.usage !== "notsub");
   if (live.length === 0) return [];
   const out: Insight[] = [];
   const yearly = live.reduce((t, s) => t + s.yearlyCost, 0);
@@ -58,8 +58,9 @@ export function insights(subs: Sub[], today: string): Insight[] {
   if (idle > 0) out.push({ kind: "fiveYears", amount: idle * 5 });
 
   // Everything paid since the first charge found, stopped subscriptions included.
-  const since = subs.map((s) => s.firstSeen).sort()[0];
-  const paid = subs.reduce((t, s) => t + (s.totalPaid ?? 0), 0);
+  const real = subs.filter((s) => s.usage !== "notsub");
+  const since = real.map((s) => s.firstSeen).sort()[0];
+  const paid = real.reduce((t, s) => t + (s.totalPaid ?? 0), 0);
   if (paid > 0 && since) out.push({ kind: "lifetime", amount: paid, since });
 
   out.push({ kind: "daily", amount: yearly / 365 });
@@ -70,7 +71,7 @@ export function insights(subs: Sub[], today: string): Insight[] {
 export function byCategory(subs: Sub[]): { category: string; amount: number; count: number }[] {
   const totals = new Map<string, { amount: number; count: number }>();
   for (const s of subs) {
-    if (s.status === "cancelled" || s.usage === "stopped") continue;
+    if (s.status === "cancelled" || s.usage === "stopped" || s.usage === "notsub") continue;
     const key = s.category ?? "other";
     const t = totals.get(key) ?? { amount: 0, count: 0 };
     totals.set(key, { amount: t.amount + s.yearlyCost, count: t.count + 1 });

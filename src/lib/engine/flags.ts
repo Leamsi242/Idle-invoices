@@ -103,6 +103,8 @@ export interface Report<T extends ReportItem = DetectedSubscription> {
   cancelled: T[];
   /** Cancelled by the user ("I cancelled it"), whatever the statements show yet. */
   stopped: T[];
+  /** Marked "not a subscription": out of every total, kept only to undo. */
+  hidden: T[];
   needsLabel: T[];
   currency: string;
 }
@@ -110,7 +112,8 @@ export interface Report<T extends ReportItem = DetectedSubscription> {
 /** Bundles are one subscription, so their parts are never counted twice. */
 export function buildReport<T extends ReportItem>(subs: T[]): Report<T> {
   const stopped = subs.filter((s) => s.usage === "stopped");
-  const rest = subs.filter((s) => s.usage !== "stopped");
+  const hidden = subs.filter((s) => s.usage === "notsub");
+  const rest = subs.filter((s) => s.usage !== "stopped" && s.usage !== "notsub");
   const live = rest.filter((s) => s.status !== "cancelled");
   const sum = (xs: T[]) => Math.round(xs.reduce((t, s) => t + s.yearlyCost, 0) * 100) / 100;
   const idle = rest.filter((s) => s.status === "idle");
@@ -123,6 +126,7 @@ export function buildReport<T extends ReportItem>(subs: T[]): Report<T> {
     active: rest.filter((s) => s.status === "active"),
     cancelled: rest.filter((s) => s.status === "cancelled"),
     stopped,
+    hidden,
     needsLabel: rest.filter((s) => s.needsLabel && s.status !== "cancelled"),
     currency: live[0]?.currency ?? subs[0]?.currency ?? "EUR",
   };

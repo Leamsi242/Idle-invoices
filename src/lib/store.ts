@@ -131,6 +131,10 @@ export async function recompute(sessionId: string) {
           cancelledOn: s.cancelledOn,
           endsOn: s.endsOn,
           paidWith: paidWith(s),
+          // The payments behind the subscription, newest first: the proof shown in its detail.
+          charges: [...s.transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 24).map((t) => ({ date: t.date, amount: t.amount, source: t.source })),
+          // A receipt or a store announced the next charge: the date is confirmed, not estimated.
+          nextConfirmed: s.transactions.some((t) => !!t.nextChargeDate && t.nextChargeDate >= s.lastSeen),
         })),
       })),
     }),
@@ -138,7 +142,14 @@ export async function recompute(sessionId: string) {
   return { subscriptions: subscriptions.length, matches: matches.length };
 }
 
-export type StoredSubscription = Omit<DetectedSubscription, "transactions" | "key"> & { id: string; key: string; chargeCount: number; paidWith?: string[] };
+export type StoredSubscription = Omit<DetectedSubscription, "transactions" | "key"> & {
+  id: string;
+  key: string;
+  chargeCount: number;
+  paidWith?: string[];
+  charges?: { date: string; amount: number; source: string }[];
+  nextConfirmed?: boolean;
+};
 
 /** A statement file, and receipts only: shown as such, the other names are banks, cards and PayPal. */
 export const PAID_WITH_FILE = "@file";
@@ -200,7 +211,7 @@ export async function getReport(sessionId: string, today = new Date().toISOStrin
     listTrackedTrials(sessionId),
   ]);
   // Subscriptions computed before "paid with" existed get it now (once).
-  if (subs.some((s) => !s.paidWith)) {
+  if (subs.some((s) => !s.paidWith || !s.charges)) {
     await recompute(sessionId);
     subs = await listSubscriptions(sessionId);
   }
@@ -251,7 +262,8 @@ export async function removeTrackedTrial(sessionId: string, id: string) {
 }
 
 /** Row ids change on every recompute, so answers are keyed by the subscription's label key. */
-export async function setUsage(sessionId: string, labelKey: string, usage: Usage) {
+/** `null` undoes the decision: the subscription waits for one again. */
+export async function setUsage(sessionId: string, labelKey: string, usage: Usage | null) {
   const { count } = await prisma.subscription.updateMany({ where: { labelKey, sessionId }, data: { usage } });
   if (count === 0) throw new Error("Subscription not found");
   await recompute(sessionId);
@@ -335,6 +347,9 @@ export async function setItemDone(sessionId: string, itemId: string, done: boole
 }
 
 export interface Onboarding { answers: Answers | null; facts: Facts; plan: PlanItem[] }
+
+/** The layout and the page both need the subscriptions: read them once per request. */
+export const subscriptionsForRequest = cache(listSubscriptions);
 
 /** Pages ask for the transactions several times per request (report, doubts, trials): read them once. */
 const transactionsForRequest = cache(loadTransactions);

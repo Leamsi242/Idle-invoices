@@ -6,16 +6,16 @@
  * saved. Every color is a variable so the dark theme is one block below.
  */
 :root {
-  --bg: #f5f3ef;
+  --bg: #f6f7f9;
   --surface: #ffffff;
-  --surface-2: #faf9f6;
+  --surface-2: #f4f6fa;
   --ink: #0d0f16;
   --ink-2: #3b3f4d;
   --muted: #72778a;
-  --line: #e8e4dc;
-  --brand: #4338ff;
-  --brand-2: #7c5cff;
-  --brand-soft: #eceaff;
+  --line: #e6e9ef;
+  --brand: #2455e6;
+  --brand-2: #4f7bff;
+  --brand-soft: #e9efff;
   --leak: #ff5a36;
   --leak-soft: #fff0eb;
   --save: #0fb67f;
@@ -38,9 +38,9 @@
     --ink-2: #c9cbd6;
     --muted: #8a8fa3;
     --line: #252834;
-    --brand: #8b83ff;
-    --brand-2: #b39dff;
-    --brand-soft: #1e1c3d;
+    --brand: #7b98ff;
+    --brand-2: #a3b8ff;
+    --brand-soft: #16203f;
     --leak: #ff7a5c;
     --leak-soft: #2a1812;
     --save: #34d399;
@@ -97,9 +97,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand); out
 /* The spotlight of the hero: a lens of light sweeping the night, where the money shows up. */
 .spotlight {
   background:
-    radial-gradient(60% 80% at 85% 0%, rgb(124 92 255 / 0.55), transparent 60%),
-    radial-gradient(50% 70% at 0% 100%, rgb(255 90 54 / 0.35), transparent 60%),
-    radial-gradient(120% 120% at 50% 50%, #151731, var(--night));
+    radial-gradient(60% 90% at 88% 10%, rgb(120 160 255 / 0.55), transparent 60%),
+    radial-gradient(55% 80% at 0% 100%, rgb(94 242 184 / 0.18), transparent 60%),
+    linear-gradient(135deg, #1b3fb8, #0f2a86 55%, #0a1c5c);
 }
 .grain::after {
   content: "";
@@ -152,7 +152,12 @@ details[open] .chev { transform: rotate(90deg); }
 @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgb(255 90 54 / 0.45); } 70% { box-shadow: 0 0 0 10px rgb(255 90 54 / 0); } 100% { box-shadow: 0 0 0 0 rgb(255 90 54 / 0); } }
 .pulse { animation: pulse-ring 2.4s ease-out infinite; }
 
+/* The detail panel slides in from the side. */
+@keyframes slide-in { from { transform: translateX(40px); opacity: 0; } }
+.drawer { animation: slide-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
 @media (prefers-reduced-motion: reduce) {
+  .drawer { animation: none; }
   .rise, .skeleton, .grow-x, .grow-y, .sweep::before, .pulse { animation: none; }
   .lift:hover { transform: none; }
 }
