@@ -5,6 +5,7 @@ import { getConnections, getDoubts, getReport, listAlerts, listWatches, PAID_WIT
 import { byCategory, insights, missions, type Insight } from "@/lib/insights";
 import { attention, counted, refOf, monthly, rhythm, statusOf } from "@/lib/engagements";
 import { v3, type V3 } from "@/lib/i18n-v3";
+import { bilanText } from "@/lib/i18n-bilan";
 import { CountUp, ScoreRing } from "@/components/Motion";
 import { Attention } from "@/components/Attention";
 import { AlertsPanel } from "@/components/Watch";
@@ -317,6 +318,7 @@ export default async function Overview() {
             <p className="max-w-md text-white/80">{w.heroSummary(liveSubs.length, toReview.length)}</p>
             <div className="mt-auto flex flex-wrap items-center gap-3">
               <Link href="/subscriptions" className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-2.5 font-semibold text-night hover:opacity-90">{w.seeSubs} <Icon name="arrow" className="h-4 w-4" /></Link>
+              <Link href="/bilan" className="inline-flex items-center gap-2 rounded-2xl border border-white/30 px-4 py-2.5 font-semibold text-white hover:bg-white/10"><Icon name="spark" className="h-4 w-4" />{bilanText(locale).open}</Link>
               <span className="text-sm text-white/70">{u.masteryTitle(mission.score)}</span>
             </div>
           </div>
