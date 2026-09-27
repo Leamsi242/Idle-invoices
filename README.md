@@ -43,7 +43,7 @@ Uploaded files
 | --- | --- |
 | Bank statements | CSV from N26, Revolut, French banks (Débit / Crédit), UK banks (Debit / Credit Amount), and any CSV with usual column names ("Date", "Libellé" or "Description", "Débit" and "Crédit" or "Amount"); any other CSV through the column-mapping screen; PDF statements with one line per operation, including those with a single unsigned amount column and the card merchant on the next line (Crédit Mutuel, CIC); American Express France card statements (both layouts, since 2019, checked against the statement's debit total) |
 | PayPal | Connected like a bank through Enable Banking (ASPSP "PayPal", usually the last 90 days), or the Activity download CSV (English or French headers, 12 months per download). Both give the same rows (`paypalPayment` in `lib/parsers/paypal-csv.ts`): completed payments only; money received, refunds, payouts to the bank, conversions, authorizations, holds and 4X instalments ("PayPal Inc.") are left out; payments to a personal mailbox are transfers; the service behind Google Play or Paddle is read from the item title |
-| Receipts | `.eml` files, pasted text, or a one-time Gmail scan |
+| Receipts | `.eml` files, pasted text, a one-time Gmail scan, or a Google Takeout mailbox (`.mbox`, any size: the browser keeps only the emails whose subject looks like a receipt and sends that extract, `lib/mbox.ts`) |
 | Apple / Google Play | Pasted text of the subscriptions screen, or a screenshot (read by Claude) |
 
 ### Decisions worth knowing
