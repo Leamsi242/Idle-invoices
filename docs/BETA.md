@@ -172,4 +172,4 @@ Pendant la bêta, notez pour chaque testeur (le compteur `/api/beta/usage` et le
 4. la source qui a tout débloqué (relevé, Gmail, PayPal) ;
 5. le prix qu'il paierait, et sous quelle forme (abonnement, paiement unique, part des économies).
 
-Ce sont les entrées du calculateur de revenus.
+Ce sont les entrées du calculateur de revenus : [modele-economique.html](modele-economique.html) (à ouvrir dans un navigateur). Il projette 24 mois de revenus et de coûts, donne la valeur d'un inscrit face au coût d'acquisition, et liste les fonctionnalités à construire pour chaque levier.
