@@ -180,7 +180,7 @@ Ce que Google exige pour l'ouvrir à plus de 100 personnes (détail et sources d
 | Audit de sécurité CASA niveau 2, chaque année, par un laboratoire agréé (plus d'auto-analyse gratuite) | 540 à 1 800 $ par an (TAC Security), 800 à 1 200 $ (Leviathan) | obligation confirmée, prix partiellement vérifié (sources tierces) |
 | Délai | plusieurs semaines, souvent 2 à 8 | partiellement vérifié |
 
-Réglages : les mêmes que le scénario A, avec l'application Google validée et le domaine. Dépense sur 24 mois (plafond de 450 testeurs, audit compté à 700 € par an) : **1 424 €** sans aucun revenu, 1 664 € sans plafond. C'est donc un scénario à n'ouvrir qu'avec le Premium, ou après avoir mesuré qu'il change vraiment l'activation : les 100 places de test Gmail de la bêta servent à cette mesure.
+Réglages : les mêmes que le scénario A, avec l'application Google validée et le domaine. Dépense sur 24 mois (plafond de 450 testeurs, audit compté à 700 € par an) : **1 424 €** sans aucun revenu ; 2 562 € sans plafond (Vercel Pro et des heures d'aide payées au-delà des vôtres). C'est donc un scénario à n'ouvrir qu'avec le Premium, ou après avoir mesuré qu'il change vraiment l'activation : les 100 places de test Gmail de la bêta servent à cette mesure.
 
 **Solution gratuite intermédiaire (A-Outlook)** : ouvrir la connexion Outlook en lecture seule à tous dès maintenant (pas de plafond trouvé, vérification d'éditeur Microsoft gratuite, partiellement vérifié) et garder l'export Takeout pour Gmail. 0 €.
 
@@ -209,33 +209,43 @@ Coût : 20 $ par mois + le devis Enable Banking (tarif non public, non vérifiab
 | **Plus d'environ 1 250 testeurs actifs** | Lignes lues de Turso Free | Turso Developer | 4,99 $ par mois (partiellement vérifié) |
 | **Alertes envoyées à d'autres que vous** | Resend exige un domaine vérifié | Acheter un domaine | environ 10 € par an (estimation) |
 | **Plus de 100 alertes par jour ou 3 000 par mois** | Plafond de Resend Free | Resend Pro | 20 $ par mois (partiellement vérifié) |
-| **Passer au scénario B** | Le contrat Enable Banking coûte un minimum mensuel M | Le signer quand le nombre d'abonnés Premium dépasse **M ÷ 2,65** (marge d'un abonné à 4,99 € : 2,95 € après TVA, Stripe et cotisations, moins 0,50 € par compte Enable Banking pour les 60 % d'abonnés qui relient leur banque, hypothèses) : 38 abonnés pour M = 100 €, 114 pour M = 300 € | M + 0,50 € par abonné connecté (hypothèse) |
+| **Passer au scénario B** | Le contrat Enable Banking coûte un minimum mensuel M | Le signer quand le nombre d'abonnés Premium dépasse **M ÷ 3,31** (marge d'un abonné à 4,99 € : 3,61 € sans TVA due, après Stripe et cotisations, moins 0,50 € par compte Enable Banking pour les 60 % d'abonnés qui relient leur banque, hypothèses) : 31 abonnés pour M = 100 €, 91 pour M = 300 € | M + 0,50 € par abonné connecté (hypothèse) |
 | **L'import de relevé fait fuir** | Plus de 40 % des testeurs s'arrêtent à l'étape « importer un relevé » (à mesurer) | Argument pour le scénario B, à condition que le seuil précédent soit proche | |
 
-Deux choses rendent le modèle perdant, d'après le masterplan : la publicité payée (résultat négatif dans les 9 scénarios qui l'utilisent), et ouvrir la connexion bancaire directe à tous les utilisateurs gratuits (4 911 € de dépenses sur 24 mois pour un résultat de 60 €, contre 431 € et 2 628 € avec les relevés seuls).
+Deux choses rendent le modèle perdant, d'après le masterplan : la publicité payée (résultat négatif dans les 9 scénarios qui l'utilisent), et ouvrir la connexion bancaire directe à tous les utilisateurs gratuits (7 928 € de dépenses sur 24 mois pour un résultat de -1 860 €, contre 3 234 € et +500 € avec les relevés seuls).
 
-## 6. Un modèle rentable, ou sous 1 000 € sur 24 mois
+## 6. Un modèle rentable, et son seuil de rentabilité
 
-Tous les calculs sont dans le **masterplan dynamique** ([masterplan.html](masterplan.html), à ouvrir par un serveur local, par exemple `npx serve docs`) et dans [MODELE-ECONOMIQUE.md](MODELE-ECONOMIQUE.md), généré par `npm run modele`. Les deux lisent le même modèle ([model.mjs](model.mjs)) : 24 scénarios (4 phases gratuites, 18 combinaisons boîte mail × banque × acquisition, 2 plans par étapes), chaque hypothèse avec son verdict.
+Tous les calculs sont dans le **masterplan dynamique** ([masterplan.html](masterplan.html), à ouvrir par un serveur local, par exemple `npx serve docs`) et dans [MODELE-ECONOMIQUE.md](MODELE-ECONOMIQUE.md), généré par `npm run modele`. Les deux lisent le même modèle ([model.mjs](model.mjs)) : 33 scénarios (4 phases gratuites, 18 combinaisons boîte mail × banque × acquisition, 2 plans par étapes, 9 scénarios réalistes), 81 paramètres avec leur verdict.
+
+Le modèle compte aussi :
+
+- **les autres revenus** : Premium annuel, rapport unique, résiliation assistée, affiliation (énergie, box, assurance), licences professionnelles ;
+- **le statut** : micro-entreprise sans TVA sous 37 500 € de chiffre d'affaires par an (confirmé, 2026), puis TVA ; société au-delà de 83 600 € (confirmé), avec expert-comptable et impôt sur les sociétés à 15 % puis 25 % (confirmé) ;
+- **les outils selon l'échelle** : Vercel, Turso, Resend et le suivi d'erreurs changent de palier avec les actifs ;
+- **le personnel** : support, développement, contenus, administration, vente aux professionnels. L'IA en prend une part (assistant de support, de code, de rédaction), vous donnez 40 heures par mois (réglable), le reste va à des indépendants puis à des salariés quand c'est moins cher ;
+- **le seuil de rentabilité** en utilisateurs, et ce qu'il faut pour l'atteindre au mois ou au nombre d'utilisateurs que vous choisissez sur la page.
 
 **Les choix** :
 
 - **Gratuit** : analyse par import de relevés, export Gmail, Outlook ; liste des abonnements, décisions, calendrier.
-- **Premium, 4,99 € par mois TTC** (Bankin' Plus 4,99 €, Linxo 4,49 €, partiellement vérifié) : connexion bancaire directe (dès le seuil du scénario B), surveillance de nuit et alertes, assistant de résiliation, rappels.
-- **Rapport unique à 9 € TTC**, sans abonnement (hypothèse : 3 % des activés).
-- **Aucune publicité payée** : croissance par la bêta, le bouche-à-oreille, le parrainage et les sites de mise en avant (§ 8).
+- **Premium, 4,99 € par mois TTC** (Bankin' Plus 4,99 €, Linxo 4,49 €, partiellement vérifié) ou **39,99 € par an** : connexion bancaire directe (dès le seuil du scénario B), surveillance de nuit et alertes, assistant de résiliation, rappels.
+- **Rapport unique à 9 €** et **résiliation assistée à 4,99 €**, sans abonnement.
+- **Affiliation signalée** quand l'application montre une offre moins chère (modèle des comparateurs, confirmé ; commissions non publiques).
+- **Aucune publicité payée, ni dans l'application, ni revente de données.**
 - **Paiement sur le web** avec Stripe (1,5 % + 0,25 € par paiement, partiellement vérifié) plutôt que dans les magasins d'applications (15 %).
 
-**Hypothèses** : 100 inscriptions le premier mois après 2 mois de bêta, +10 % par mois, 5 % des activés passent Premium (environ 2 % des inscrits, médiane freemium 2,1 %, partiellement vérifié), 5 % de résiliations Premium par mois, 25 % des gratuits qui partent chaque mois, cotisations de 21,2 % (non vérifiable ici).
+**Hypothèses** : 100 inscriptions le premier mois après 2 mois de bêta, +10 % par mois, 5 % des activés passent Premium (environ 2 % des inscrits, médiane freemium 2,1 %, partiellement vérifié), 5 % de résiliations Premium par mois, 25 % des gratuits qui partent chaque mois, cotisations de 21,2 % (confirmé pour les prestations de services commerciales, 2026).
 
-| Sur 24 mois | T-R-org (export Takeout) | O-R-org (Outlook pour tous) | G-R-org (Gmail pour tous) | O>G-P-org (plan recommandé) |
-| --- | ---: | ---: | ---: | ---: |
-| Dépenses (hors cotisations) | **431 €** | **432 €** | 1 849 € | 2 200 € |
-| Résultat | +2 628 € | **+2 856 €** | +2 739 € | +1 950 € |
-| Trésorerie à avancer | 7 € | 6 € | 703 € | 477 € |
-| Abonnés Premium au 24e mois | 104 | 112 | 156 | 151 |
+| Sur 24 mois | T-R-org (export Takeout) | O-R-org (Outlook pour tous) | R2 central (IA, offre complète) | R3 (même chose sans IA) | **R9 sobre (recommandé)** |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Dépenses (outils, IA, personnel) | 3 234 € | 3 238 € | 3 543 € | 15 008 € | **1 467 €** |
+| Résultat | +500 € | +776 € | +1 068 € | -10 398 € | **+3 143 €** |
+| Trésorerie à avancer | 868 € | 813 € | 732 € | 10 398 € | **23 €** |
+| Remboursé au | mois 23 | mois 22 | mois 21 | non atteint | **mois 7** |
+| Seuil de rentabilité (régime stable) | 193 actifs | 193 actifs | 181 actifs | 1 113 actifs | **47 actifs, 21 inscrits par mois** |
 
-Sous 1 000 € : les scénarios par relevés et bouche-à-oreille (T-R-org, O-R-org, et avec la banque en Premium T-P-org 694 €, O-P-org 715 €). Le plan recommandé dépense plus pour finir avec plus d'abonnés, mais ne dépense qu'une fois les revenus là : Gmail pour tous n'arrive qu'au 10e mois. Il faut **7 abonnés Premium** pour payer Vercel Pro et **20** pour l'audit Gmail. Ce sont des projections sur hypothèses : remplacez-les par les mesures de la bêta (§ 7) dans le masterplan.
+Sous 1 000 € de dépenses : aucun scénario payant une fois le travail et les outils comptés honnêtement ; le plus sobre (R9) reste à 1 467 € sur 24 mois et se rembourse au 7e mois. Le travail pèse plus que les serveurs : sans IA, les heures au-delà des vôtres coûtent environ 11 500 € de plus sur la période (15 008 € de dépenses contre 3 543 €). Il faut **6 abonnés Premium** pour payer Vercel Pro, **17** pour l'audit Gmail et **31** pour l'assistant de code à 100 $. Ce sont des projections sur hypothèses : remplacez-les par les mesures de la bêta (§ 7) dans le masterplan.
 
 **Fonctionnalités à construire pour ce modèle**, dans l'ordre :
 

@@ -92,13 +92,23 @@ tr[data-id] { cursor: pointer; }
 .plan div { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 4px; }
 .plan b { color: var(--brand); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
 .notes { font-size: 12.5px; color: var(--muted); display: grid; gap: 6px; }
+.goal { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); align-items: end; }
+.goal label { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.goal input { font: 600 13.5px var(--font); background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); border-radius: 9px; padding: 5px 7px; width: 100%; }
+.answers { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.answer { background: var(--surface-2); border-radius: 14px; padding: 12px 14px; display: grid; gap: 4px; align-content: start; }
+.answer .v { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.answer p { font-size: 13px; color: var(--ink-2); }
+.apply { justify-self: start; background: var(--brand); color: var(--on-brand); border: 0; border-radius: 99px; padding: 5px 12px; margin-top: 4px; }
+.apply[disabled] { opacity: .4; cursor: default; }
+#scale td:first-child { white-space: nowrap; }
 </style>
 
 <div class="wrap">
   <header style="display:grid;gap:10px">
     <p class="eyebrow">Subscription Detective · modèle économique</p>
     <h1>Masterplan : tous les scénarios, recalculés en direct</h1>
-    <p class="lead">Réglez une hypothèse à gauche : tous les scénarios du tableau, votre scénario et les seuils se recalculent. Le même modèle (<code>docs/model.mjs</code>) génère <code>docs/MODELE-ECONOMIQUE.md</code>. Les chiffres sourcés portent leur verdict ; le reste est une hypothèse à remplacer par les mesures de la bêta.</p>
+    <p class="lead">Réglez une hypothèse à gauche : votre scénario, son seuil de rentabilité, ses coûts à chaque taille et tous les scénarios du tableau se recalculent. Choisissez un objectif (un mois ou un nombre d'utilisateurs) pour savoir ce qu'il faut pour l'atteindre. Le même modèle (<code>docs/model.mjs</code>) génère <code>docs/MODELE-ECONOMIQUE.md</code>. Les chiffres sourcés portent leur verdict ; le reste est une hypothèse à remplacer par les mesures de la bêta.</p>
   </header>
 
   <div class="layout">
@@ -116,12 +126,32 @@ tr[data-id] { cursor: pointer; }
           <label>Connexion Gmail pour tous à partir du mois<input id="c-gmailFrom" type="number" min="1" max="24" value="1" style="font:600 13.5px var(--font);background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:5px 7px"></label>
           <label>Banque<select id="c-bank"></select></label>
           <label>Acquisition<select id="c-acquisition"></select></label>
-          <label>Revenus<select id="c-monetize"><option value="1">Premium et rapport unique</option><option value="0">Aucun (phase gratuite)</option></select></label>
+          <label>Offre<select id="c-offer"></select></label>
+          <label>Personnel<select id="c-staff"></select></label>
+          <label>Revenus<select id="c-monetize"><option value="1">Payant</option><option value="0">Aucun (phase gratuite)</option></select></label>
         </div>
+        <p class="muted" style="font-size:13px" id="variant"></p>
         <div class="kpis" id="kpis"></div>
         <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:baseline"><h3>Revenus nets et dépenses, mois par mois</h3><div class="legend"><span class="r">Revenus nets</span><span class="c">Dépenses et cotisations</span></div></div>
         <div class="svgbox"><svg id="chart" viewBox="0 0 760 280" role="img" aria-label="Revenus et dépenses sur 24 mois"></svg><div class="tip" id="tip" hidden></div></div>
         <details><summary style="cursor:pointer;font-weight:700;color:var(--brand)">Voir le tableau mois par mois</summary><div class="tablebox"><table id="monthly"></table></div></details>
+      </section>
+
+      <section class="panel" aria-labelledby="goal-title">
+        <h2 id="goal-title">Seuil de rentabilité et objectif</h2>
+        <p class="muted" style="font-size:13px">Pour le scénario ci-dessus. Le seuil se calcule en régime stable : inscriptions constantes, une fois les paliers d'outils, la TVA et le personnel installés.</p>
+        <div class="goal">
+          <label>Objectif<select id="g-kind"><option value="month">Être rentable chaque mois à partir du mois</option><option value="payback">Avoir remboursé l'investissement au mois</option><option value="users">Atteindre un nombre d'utilisateurs actifs</option></select></label>
+          <label id="g-month-l">Mois visé<input id="g-month" type="number" min="1" max="120" value="12"></label>
+          <label id="g-users-l">Utilisateurs actifs visés<input id="g-users" type="number" min="10" step="100" value="10000"></label>
+        </div>
+        <div class="answers" id="answers"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Les coûts selon l'échelle</h2>
+        <p class="muted" style="font-size:13px">Un mois type pour votre scénario, une fois les utilisateurs stabilisés à chaque taille : paliers d'outils, IA, heures de travail (les vôtres d'abord, puis indépendants ou salariés, le moins cher des deux), statut et impôts.</p>
+        <div class="tablebox"><table id="scale"></table></div>
       </section>
 
       <section class="panel">
@@ -142,7 +172,7 @@ tr[data-id] { cursor: pointer; }
       </section>
 
       <section class="notes">
-        <p>Sources : Vercel, Turso, Resend (tarifs, partiellement vérifié) ; Google (plafond de 100 utilisateurs sans validation, vérification des accès restreints, confirmé) ; audit CASA (540 à 1 800 $ par an, sources tierces) ; Enable Banking (tarif sur devis, non public) ; conversion freemium (RevenueCat 2025) ; capacité mesurée sur l'application. Le détail est dans <code>docs/BETA.md</code> et <code>docs/MODELE-ECONOMIQUE.md</code>.</p>
+        <p>Sources : franchise de TVA 37 500 € et plafond micro 83 600 € pour les services, cotisations 21,2 % (BIC services), impôt sur les sociétés 15 % puis 25 % (confirmé, 2026) ; expert-comptable en ligne 80 à 150 € par mois, Sentry Team 26 $, Turso Scaler 24,92 $, Resend Scale 90 $, Claude Pro 20 $ et Max 100 $, API Claude Sonnet 5 à 2 $ et 10 $ le million de jetons, résolution par un assistant IA de 45 à 76 % selon les sources, coût employeur d'un SMIC environ 1 975 € (partiellement vérifié) ; commissions d'affiliation des comparateurs (modèle confirmé, montants non publics) ; Vercel, Turso, Resend (tarifs, partiellement vérifié) ; Google (plafond de 100 utilisateurs sans validation, vérification des accès restreints, confirmé) ; audit CASA (540 à 1 800 $ par an, sources tierces) ; Enable Banking (tarif sur devis, non public) ; conversion freemium (RevenueCat 2025) ; capacité mesurée sur l'application. Le détail est dans <code>docs/BETA.md</code> et <code>docs/MODELE-ECONOMIQUE.md</code>.</p>
         <p>Les réglages restent dans ce navigateur.</p>
       </section>
     </main>
@@ -150,37 +180,33 @@ tr[data-id] { cursor: pointer; }
 </div>
 
 <script type="module">
-import { PARAMS, CHOICES, defaults, allScenarios, project, breakEvenSubscribers, fmtEur, fmtInt } from "./model.mjs";
+import { PARAMS, GROUPS, CHOICES, defaults, allScenarios, project, breakEven, reachBy, atUsers, atScale, breakEvenSubscribers, fmtEur, fmtInt } from "./model.mjs";
 
 const KEY = "sd-masterplan-v1";
 const $ = (id) => document.getElementById(id);
 const eur = (n) => fmtEur(Math.round(n));
-const GROUPS = [
-  ["Croissance et fidélité", ["months", "betaMonths", "signups0", "growth", "freeChurn", "paidChurn"]],
-  ["Activation", ["actStatements", "actTakeout", "actGmail", "actBankAll", "outlookShare"]],
-  ["Prix et revenus", ["conv", "price", "oneOff", "oneOffShare", "vat", "stripePct", "stripeFix", "socialRate"]],
-  ["Hébergement et services", ["usdEur", "vercelPro", "hobbyCapacity", "proExtraPerActive", "tursoFreeActives", "tursoDev", "domain", "resendFree", "resendPro", "alertsPerPremium"]],
-  ["Gmail pour tous", ["casa", "gmailDelay"]],
-  ["Banque directe", ["ebAccount", "ebMin", "bankShare"]],
-  ["Publicité", ["cac", "paidBoost"]],
-];
-const chipOf = (v = "") => (/confirmé|mesuré/.test(v) && !/partiellement/.test(v) ? "ok" : /partiellement/.test(v) ? "ok" : /hypothèse|non vérifiable|estimation|devis/.test(v) ? "warn" : "hyp");
+const chipOf = (v = "") => (/non vérifiable|hypothèse|estimation|devis|à choisir/.test(v) ? "warn" : /confirmé|mesuré|partiellement|calculé/.test(v) ? "ok" : "hyp");
 
 let p = defaults();
 try { Object.assign(p, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch {}
-let scenario = { mail: "outlook", gmailFrom: 1, bank: "premium", acquisition: "organic", monetize: true };
+let scenario = { ...allScenarios().find((x) => x.id === "R9-sobre") };
 let sort = { key: "result24", dir: -1 };
 
-$("params").innerHTML = GROUPS.map(([title, keys], gi) => `<details class="group" ${gi < 3 ? "open" : ""}><summary>${title}</summary><div class="fields">${keys.map((k) => {
+$("params").innerHTML = GROUPS.map(([title, keys], gi) => `<details class="group" ${gi < 2 ? "open" : ""}><summary>${title}</summary><div class="fields">${keys.map((k) => {
   const q = PARAMS[k];
   return `<div class="field"><label for="p-${k}">${q.label} <span class="muted">(${q.unit})</span></label><input id="p-${k}" data-k="${k}" type="number" step="any" value="${p[k]}"><span class="src">${q.verdict ? `<span class="chip ${chipOf(q.verdict)}">${q.verdict}</span>` : ""}${q.note ?? ""}</span></div>`;
 }).join("")}</div></details>`).join("");
 $("c-mail").innerHTML = Object.entries(CHOICES.mail).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
 $("c-bank").innerHTML = Object.entries(CHOICES.bank).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
 $("c-acquisition").innerHTML = Object.entries(CHOICES.acquisition).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+$("c-offer").innerHTML = Object.entries(CHOICES.offer).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+$("c-staff").innerHTML = Object.entries(CHOICES.staff).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
 
 function syncChoices() {
   $("c-mail").value = scenario.mail; $("c-bank").value = scenario.bank; $("c-acquisition").value = scenario.acquisition;
+  $("c-offer").value = scenario.offer ?? "base"; $("c-staff").value = scenario.staff ?? "ia";
+  const over = Object.entries(scenario.over ?? {});
+  $("variant").textContent = scenario.id ? `Chargé : ${scenario.id}. ${over.length ? "Hypothèses propres à ce scénario : " + over.map(([k, v]) => `${PARAMS[k].label.toLowerCase()} ${String(v).replace(".", ",")} ${PARAMS[k].unit}`).join(" ; ") + "." : ""}` : "";
   $("c-monetize").value = scenario.monetize === false ? "0" : "1"; $("c-gmailFrom").value = scenario.gmailFrom ?? 1;
   $("c-gmailFrom").disabled = scenario.mail !== "gmail";
 }
@@ -197,10 +223,11 @@ function renderScenario() {
     kpi("Abonnés Premium à la fin", fmtInt(x.premium)) +
     kpi("Premier mois rentable", monthTxt(x.firstProfitMonth)) +
     kpi("Remboursé au", monthTxt(x.paybackMonth)) +
-    kpi("Cotisations sociales", eur(x.social24)) +
+    kpi("Cotisations et impôts", eur(x.social24)) +
     kpi("Activation une fois tout ouvert", `${Math.round(r.act * 100)} %`);
-  $("monthly").innerHTML = `<thead><tr><th>Mois</th><th class="r">Inscrits</th><th class="r">Actifs</th><th class="r">Premium</th><th class="r">Revenus nets</th><th class="r">Dépenses</th><th class="r">dont audit Gmail</th><th class="r">dont banque</th><th class="r">Cotisations</th><th class="r">Résultat</th><th class="r">Cumul</th></tr></thead><tbody>` +
-    r.rows.map((m) => `<tr><td>${m.m}${m.beta ? " (bêta)" : ""}</td><td class="r">${fmtInt(m.signups)}</td><td class="r">${fmtInt(m.active)}</td><td class="r">${fmtInt(m.paid)}</td><td class="r">${eur(m.revenue)}</td><td class="r">${eur(m.spend)}</td><td class="r">${eur(m.parts.casa)}</td><td class="r">${eur(m.parts.bank)}</td><td class="r">${eur(m.social)}</td><td class="r">${eur(m.result)}</td><td class="r">${eur(m.cumul)}</td></tr>`).join("") + "</tbody>";
+  renderGoal();
+  $("monthly").innerHTML = `<thead><tr><th>Mois</th><th class="r">Inscrits</th><th class="r">Actifs</th><th class="r">Premium</th><th class="r">Revenus nets</th><th class="r">Dépenses</th><th class="r">dont IA</th><th class="r">dont personnel</th><th class="r">dont audit Gmail</th><th class="r">dont banque</th><th class="r">Cotisations</th><th class="r">Résultat</th><th class="r">Cumul</th></tr></thead><tbody>` +
+    r.rows.map((m) => `<tr><td>${m.m}${m.beta ? " (bêta)" : ""}</td><td class="r">${fmtInt(m.signups)}</td><td class="r">${fmtInt(m.active)}</td><td class="r">${fmtInt(m.paid)}</td><td class="r">${eur(m.revenue)}</td><td class="r">${eur(m.spend)}</td><td class="r">${eur(m.parts.ai)}</td><td class="r">${eur(m.parts.staff)}</td><td class="r">${eur(m.parts.casa)}</td><td class="r">${eur(m.parts.bank)}</td><td class="r">${eur(m.social)}</td><td class="r">${eur(m.result)}</td><td class="r">${eur(m.cumul)}</td></tr>`).join("") + "</tbody>";
   drawChart(r.rows);
 }
 
@@ -230,27 +257,91 @@ function drawChart(rows) {
   svg.querySelector("#hit").addEventListener("pointerleave", () => { tip.hidden = true; cross.setAttribute("visibility", "hidden"); });
 }
 
+const beText = (b) => (!b ? "jamais dans la limite testée" : b.signups < 3 ? "atteint sans utilisateurs (licences seules)" : `${fmtInt(b.actives)} actifs`);
+const pctTxt = (g) => (g === null ? "hors d'atteinte" : g === 0 ? "aucune croissance" : `${String(Math.round(g * 10) / 10).replace(".", ",")} % par mois`);
+function answer(title, value, text, apply) {
+  return `<div class="answer"><span class="k muted" style="font-size:12px">${title}</span><span class="v">${value}</span><p>${text}</p>${apply ? `<button type="button" class="apply" data-apply='${JSON.stringify(apply)}'>Appliquer à mes hypothèses</button>` : ""}</div>`;
+}
+function renderGoal() {
+  const kind = $("g-kind").value;
+  $("g-month-l").hidden = kind === "users"; $("g-users-l").hidden = kind !== "users";
+  if (scenario.monetize === false) { $("answers").innerHTML = answer("Seuil de rentabilité", "sans objet", "Une phase gratuite n'a pas de revenu."); renderScale(); return; }
+  const be = breakEven(p, scenario);
+  let html = answer("Seuil de rentabilité (régime stable)", beText(be), be && be.signups >= 3 ? `soit ${fmtInt(be.signups)} inscrits par mois et ${fmtInt(be.premium)} abonnés Premium ; au-dessous, chaque mois coûte plus qu'il ne rapporte.` : be ? "Les licences professionnelles couvrent à elles seules les coûts fixes." : "Avec ces hypothèses, les coûts grandissent aussi vite que les revenus.");
+  if (kind === "users") {
+    const N = Math.max(10, Number($("g-users").value) || 10000);
+    const u = atUsers(p, scenario, N);
+    const st = u.steady;
+    html += answer(`${fmtInt(N)} actifs atteints`, u.reached ? `mois ${u.reached}` : "pas en 10 ans", u.reached ? `avec ${fmtInt(p.signups0)} inscrits le premier mois et ${String(p.growth).replace(".", ",")} % de croissance.` : "avec la croissance actuelle : augmentez-la, ou les inscriptions de départ.");
+    if (st) {
+      const l = st.last;
+      html += answer(`Un mois à ${fmtInt(N)} actifs`, eur(st.result), `${eur(st.revenue)} de revenus nets, ${fmtInt(st.premium)} Premium, ${fmtInt(st.signups)} inscrits par mois pour tenir ce niveau.`);
+      html += answer("L'équipe à cette taille", `${fmtInt(l.totalHours)} h par mois`, l.paidHours > 0 ? `${fmtInt(l.paidHours)} h payées : ${eur(l.team.cost)} par mois (${l.team.mode}, ${String(Math.round(l.team.fte * 10) / 10).replace(".", ",")} temps plein). IA : ${eur(l.parts.ai)} par mois.` : `Vos ${fmtInt(p.founderHours)} heures suffisent. IA : ${eur(l.parts.ai)} par mois.`);
+      html += answer("Statut à cette taille", l.company ? "société, TVA due" : l.vatDue ? "micro, TVA due" : "micro, sans TVA", `${eur(l.social)} ${l.company ? "d'impôt sur les sociétés" : "de cotisations"} par mois${l.company ? `, ${eur(p.accountant)} d'expert-comptable` : ""}.`);
+    }
+  } else {
+    const T = Math.max(p.betaMonths + 1, Math.min(120, Number($("g-month").value) || 12));
+    const r = reachBy(p, scenario, T, kind);
+    const goal = kind === "month" ? `rentable au mois ${T}` : `remboursé au mois ${T}`;
+    const base = { ...p, ...(scenario.over ?? {}) };
+    const enough = r.signups0 !== null && r.signups0 <= base.signups0;
+    html += answer(`Inscrits le 1er mois pour être ${goal}`, r.signups0 === null ? "hors d'atteinte" : fmtInt(Math.ceil(r.signups0)),
+      r.signups0 === null ? "même avec beaucoup d'inscrits : changez l'offre ou les coûts."
+        : enough ? `Vous en prévoyez ${fmtInt(base.signups0)} : l'objectif est atteint avec vos hypothèses, avec de la marge.`
+        : `au lieu de ${fmtInt(base.signups0)}, avec ${String(base.growth).replace(".", ",")} % de croissance par mois.`,
+      r.signups0 === null || enough ? null : { signups0: Math.ceil(r.signups0) });
+    html += answer("Ou la croissance nécessaire", r.growth === 0 ? "aucune" : pctTxt(r.growth),
+      r.growth === 0 ? `${fmtInt(base.signups0)} inscrits par mois, sans croissance, suffisent.` : `avec ${fmtInt(base.signups0)} inscrits le premier mois (vous prévoyez ${String(base.growth).replace(".", ",")} %).`,
+      r.growth === null || r.growth === 0 || r.growth <= base.growth ? null : { growth: Math.round(r.growth * 10) / 10 });
+  }
+  $("answers").innerHTML = html;
+  renderScale();
+}
+function renderScale() {
+  if (scenario.monetize === false) { $("scale").innerHTML = ""; return; }
+  const extra = Math.max(10, Number($("g-users").value) || 10000);
+  const sizes = [...new Set([500, 2000, 10000, 50000, 200000, extra])].sort((a, b) => a - b);
+  const xs = sizes.map((n) => atScale(p, scenario, n));
+  const line = (label, f, strong) => `<tr><td>${strong ? `<b>${label}</b>` : label}</td>${xs.map((x) => `<td class="r">${x ? (strong ? `<b>${f(x, x.last)}</b>` : f(x, x.last)) : ""}</td>`).join("")}</tr>`;
+  const fte = (l) => (l.team.fte < 0.1 ? "moins de 0,1" : String(Math.round(l.team.fte * 10) / 10).replace(".", ","));
+  $("scale").innerHTML = `<thead><tr><th>Actifs</th>${sizes.map((n) => `<th class="r">${fmtInt(n)}${n === extra ? " (visé)" : ""}</th>`).join("")}</tr></thead><tbody>` +
+    line("Inscrits par mois", (x) => fmtInt(x.signups)) +
+    line("Abonnés Premium", (x) => fmtInt(x.premium)) +
+    line("Revenus nets", (x) => eur(x.revenue)) +
+    line("Hébergement, base, e-mails, suivi", (_, l) => eur(l.parts.hosting + l.parts.db + l.parts.mailing + l.parts.monitoring + l.parts.domain)) +
+    line("IA", (_, l) => eur(l.parts.ai)) +
+    line("Heures (dont payées)", (_, l) => `${fmtInt(l.totalHours)} h (${fmtInt(l.paidHours)} h)`) +
+    line("Personnel payé", (_, l) => (l.team.cost ? `${eur(l.team.cost)}<br><span class="muted">${l.team.mode}, ${fte(l)} ETP</span>` : "0 €")) +
+    line("Banque, comptable, assurance", (_, l) => eur(l.parts.bank + l.parts.admin)) +
+    line("Statut", (_, l) => (l.company ? "société, TVA" : l.vatDue ? "micro, TVA" : "micro, sans TVA")) +
+    line("Cotisations ou impôt", (_, l) => eur(l.social)) +
+    line("Résultat par mois", (x) => `<span class="${x.result >= 0 ? "good" : "bad"}">${eur(x.result)}</span>`, true) +
+    line("Marge", (x) => (x.revenue > 0 ? `${Math.round((x.result / x.revenue) * 100)} %` : "")) + "</tbody>";
+}
+
 const COLS = [
   ["id", "Code", false], ["name", "Scénario", false], ["spend24", "Dépenses", true], ["result24", "Résultat", true], ["cashNeed", "Trésorerie à avancer", true],
-  ["premium", "Premium à la fin", true], ["firstProfitMonth", "Rentable dès", true], ["paybackMonth", "Remboursé au", true], ["under1000", "Dépenses < 1 000 €", false],
+  ["premium", "Premium à la fin", true], ["firstProfitMonth", "Rentable dès", true], ["paybackMonth", "Remboursé au", true], ["beActives", "Seuil (actifs)", true], ["under1000", "Dépenses < 1 000 €", false],
 ];
 function renderMatrix() {
-  const rows = allScenarios().map((s) => ({ s, ...project(p, s).summary, id: s.id, name: s.name }));
+  const rows = allScenarios().map((s) => { const be = breakEven(p, s); return { s, ...project(p, s).summary, id: s.id, name: s.name, be, beActives: be ? (be.signups < 3 ? 0 : be.actives) : null }; });
   const k = sort.key;
   rows.sort((a, b) => { const va = a[k] ?? Infinity, vb = b[k] ?? Infinity; return typeof va === "string" ? sort.dir * va.localeCompare(vb) : sort.dir * (va - vb); });
-  const same = (s) => s.mail === scenario.mail && s.bank === scenario.bank && s.acquisition === scenario.acquisition && (s.monetize !== false) === (scenario.monetize !== false) && (s.gmailFrom ?? 1) === (scenario.gmailFrom ?? 1) && (s.preMail ?? null) === (scenario.preMail ?? null);
+  const same = (s) => (scenario.id ? s.id === scenario.id : !s.realistic && !s.offer && (scenario.offer ?? "base") === "base" && (scenario.staff ?? "ia") === "ia" && s.mail === scenario.mail && s.bank === scenario.bank && s.acquisition === scenario.acquisition && (s.monetize !== false) === (scenario.monetize !== false) && (s.gmailFrom ?? 1) === (scenario.gmailFrom ?? 1) && (s.preMail ?? null) === (scenario.preMail ?? null));
   $("matrix").innerHTML = `<thead><tr>${COLS.map(([key, label, num]) => `<th class="${num ? "r" : ""}"><button type="button" data-sort="${key}" aria-sort="${sort.key === key ? (sort.dir < 0 ? "descending" : "ascending") : "none"}">${label}</button></th>`).join("")}</tr></thead><tbody>` +
-    rows.map((r) => `<tr data-id="${r.id}" class="${same(r.s) ? "pick" : ""}" tabindex="0"><td><b>${r.id}</b></td><td>${r.name}</td><td class="r">${eur(r.spend24)}</td><td class="r ${r.result24 >= 0 ? "good" : "bad"}">${eur(r.result24)}</td><td class="r">${eur(r.cashNeed)}</td><td class="r">${r.s.monetize === false ? "" : fmtInt(r.premium)}</td><td class="r">${r.s.monetize === false ? "" : monthTxt(r.firstProfitMonth)}</td><td class="r">${r.s.monetize === false ? "" : monthTxt(r.paybackMonth)}</td><td><span class="pill ${r.under1000 ? "yes" : "no"}">${r.under1000 ? "oui" : "non"}</span></td></tr>`).join("") + "</tbody>";
+    rows.map((r) => `<tr data-id="${r.id}" class="${same(r.s) ? "pick" : ""}" tabindex="0"><td><b>${r.id}</b></td><td>${r.name}</td><td class="r">${eur(r.spend24)}</td><td class="r ${r.result24 >= 0 ? "good" : "bad"}">${eur(r.result24)}</td><td class="r">${eur(r.cashNeed)}</td><td class="r">${r.s.monetize === false ? "" : fmtInt(r.premium)}</td><td class="r">${r.s.monetize === false ? "" : monthTxt(r.firstProfitMonth)}</td><td class="r">${r.s.monetize === false ? "" : monthTxt(r.paybackMonth)}</td><td class="r">${r.s.monetize === false ? "" : r.be ? (r.be.signups < 3 ? "licences seules" : fmtInt(r.be.actives)) : "jamais"}</td><td><span class="pill ${r.under1000 ? "yes" : "no"}">${r.under1000 ? "oui" : "non"}</span></td></tr>`).join("") + "</tbody>";
 }
 
 function renderThresholds() {
-  const net = p.price / (1 + p.vat / 100) - (p.price * p.stripePct / 100 + p.stripeFix);
-  const margin = net - p.price / (1 + p.vat / 100) * p.socialRate / 100;
-  $("margin").textContent = `Un abonné Premium à ${String(p.price).replace(".", ",")} € rapporte ${fmtEur(margin, 2)} par mois une fois retirés la TVA, Stripe et les cotisations.`;
+  const marginOf = (vat) => { const ht = vat ? p.price / (1 + p.vat / 100) : p.price; return ht - (p.price * p.stripePct / 100 + p.stripeFix) - ht * p.socialRate / 100; };
+  $("margin").textContent = `Un abonné Premium à ${String(p.price).replace(".", ",")} € rapporte ${fmtEur(marginOf(false), 2)} par mois sans TVA due (franchise, sous ${eur(p.vatThreshold)} de chiffre d'affaires par an), ${fmtEur(marginOf(true), 2)} une fois la TVA due, Stripe et cotisations retirés.`;
   const usd = (n) => n * p.usdEur;
   const list = [
     ["Vercel Pro", usd(p.vercelPro), 0, "Au premier euro encaissé, ou au-delà de " + fmtInt(p.hobbyCapacity) + " actifs"],
     ["Connexion Gmail pour tous (audit annuel)", p.casa / 12, 0, "Quand Gmail apporte ce nombre d'abonnés de plus que l'export"],
+    ["Assistant de code et de rédaction", usd(p.aiDevTool + p.aiContentTool), 0, "Quand il économise plus d'heures payées qu'il ne coûte"],
+    ["Expert-comptable (société)", p.accountant, 0, "Au passage en société (plus de " + eur(p.microCeiling) + " de chiffre d'affaires)", true],
+    ["Un salarié à temps plein", p.employeeCost, 0, "Au-delà de " + fmtInt(p.employeeCost / p.freelanceRate) + " heures payées par mois", true],
     ["Turso Developer", usd(p.tursoDev), 0, "Au-delà de " + fmtInt(p.tursoFreeActives) + " actifs"],
     ["Resend Pro", usd(p.resendPro), 0, "Au-delà de " + fmtInt(p.resendFree) + " alertes par mois"],
     ["Enable Banking, minimum saisi", p.ebMin, p.ebAccount * p.bankShare / 100, "Connexion réservée au Premium"],
@@ -258,23 +349,32 @@ function renderThresholds() {
     ["Enable Banking, minimum de 300 €", 300, p.ebAccount * p.bankShare / 100, "Connexion réservée au Premium"],
   ];
   $("thresholds").innerHTML = `<thead><tr><th>Dépense</th><th class="r">Par mois</th><th class="r">Abonnés pour la couvrir</th><th>Quand</th></tr></thead><tbody>` +
-    list.map(([n, c, extra, w]) => { const k = breakEvenSubscribers(p, c, extra); return `<tr><td>${n}</td><td class="r">${eur(c)}</td><td class="r">${k === Infinity ? "jamais" : fmtInt(k)}</td><td>${w}</td></tr>`; }).join("") + "</tbody>";
-  const rec = project(p, allScenarios().find((s) => s.id === "O>G-P-org")).summary;
+    list.map(([n, c, extra, w, vat]) => { const k = breakEvenSubscribers(p, c, extra, !!vat); return `<tr><td>${n}</td><td class="r">${eur(c)}</td><td class="r">${k === Infinity ? "jamais" : fmtInt(k)}</td><td>${w}</td></tr>`; }).join("") + "</tbody>";
+  const recS = allScenarios().find((s) => s.id === "R9-sobre");
+  const rec = project(p, recS).summary, recBe = breakEven(p, recS);
   $("plan").innerHTML = [
-    ["Phase 0", `Mois 1 à ${p.betaMonths}`, "Bêta gratuite A-Outlook", "Relevés, export Gmail, Outlook pour tous, 100 places Gmail de test pour mesurer l'effet de la connexion. 0 €."],
-    ["Phase 1", `Mois ${p.betaMonths + 1} à 9`, "Lancement payant", `Premium ${String(p.price).replace(".", ",")} €, rapport unique ${p.oneOff} €, Stripe, Vercel Pro, bouche-à-oreille et parrainage.`],
+    ["Phase 0", `Mois 1 à ${p.betaMonths}`, "Bêta gratuite A-Outlook", "Relevés, export Gmail, Outlook pour tous, 100 places Gmail de test pour mesurer l'effet de la connexion ; vous répondez vous-même. 0 €."],
+    ["Phase 1", `Mois ${p.betaMonths + 1} à 9`, "Lancement sobre (R9)", `Premium mensuel et annuel, rapport unique, résiliation assistée, affiliation signalée, un seul assistant IA. Seuil : ${beText(recBe)}.`],
     ["Phase 2", "Dès le 10e mois", "Gmail pour tous", `Validation Google (${p.gmailDelay} mois) et audit à ${eur(p.casa)} par an, si l'effet mesuré dépasse ${fmtInt(breakEvenSubscribers(p, p.casa / 12))} abonnés.`],
     ["Phase 3", "Au seuil du devis", "Banque directe en Premium", "Contrat Enable Banking quand les abonnés couvrent son minimum."],
+    ["Phase 4", `Au-delà de ${fmtInt(p.founderHours)} h par mois`, "Premières personnes", `Indépendant pour le support et les contenus (${eur(p.freelanceRate)} de l'heure), puis un salarié au-delà de ${fmtInt(p.employeeCost / p.freelanceRate)} h.`],
+    ["Phase 5", "Après 3 oui de professionnels", "Licences professionnelles", `Marque blanche à ${eur(p.b2bPrice)} par mois, ${fmtInt(p.b2bSetupHours)} h d'installation par licence.`],
   ].map(([b, when, t, d]) => `<div><b>${b} · ${when}</b><h3>${t}</h3><p class="muted" style="font-size:13px">${d}</p></div>`).join("") +
-  `<div><b>Résultat du plan</b><h3>${eur(rec.result24)} sur ${p.months} mois</h3><p class="muted" style="font-size:13px">Dépenses ${eur(rec.spend24)}, trésorerie à avancer ${eur(rec.cashNeed)}, ${fmtInt(rec.premium)} abonnés à la fin.</p></div>`;
+  `<div><b>Résultat du plan R9</b><h3>${eur(rec.result24)} sur ${p.months} mois</h3><p class="muted" style="font-size:13px">Dépenses ${eur(rec.spend24)}, trésorerie à avancer ${eur(rec.cashNeed)}, ${fmtInt(rec.premium)} abonnés à la fin, remboursé au ${monthTxt(rec.paybackMonth)}.</p></div>`;
 }
 
-function renderAll() { renderScenario(); renderMatrix(); renderThresholds(); try { localStorage.setItem(KEY, JSON.stringify(p)); } catch {} }
+let slow;
+function renderAll() {
+  renderScenario(); renderThresholds();
+  try { localStorage.setItem(KEY, JSON.stringify(p)); } catch {}
+  clearTimeout(slow); slow = setTimeout(renderMatrix, 120);
+}
 
 $("params").addEventListener("input", (e) => { const k = e.target.dataset.k; if (!k) return; const v = Number(e.target.value); if (Number.isFinite(v)) { p[k] = v; renderAll(); } });
 $("reset").addEventListener("click", () => { p = defaults(); for (const k of Object.keys(p)) { const el = $("p-" + k); if (el) el.value = p[k]; } renderAll(); });
-for (const id of ["c-mail", "c-bank", "c-acquisition", "c-monetize", "c-gmailFrom"]) $(id).addEventListener("input", () => {
-  scenario = { mail: $("c-mail").value, bank: $("c-bank").value, acquisition: $("c-acquisition").value, monetize: $("c-monetize").value === "1", gmailFrom: Math.max(1, Number($("c-gmailFrom").value) || 1), cap: $("c-monetize").value === "0" };
+for (const id of ["c-mail", "c-bank", "c-acquisition", "c-offer", "c-staff", "c-monetize", "c-gmailFrom"]) $(id).addEventListener("input", () => {
+  // Built by hand: keep the loaded scenario's own hypotheses only while its choices stay the same.
+  scenario = { mail: $("c-mail").value, bank: $("c-bank").value, acquisition: $("c-acquisition").value, offer: $("c-offer").value, staff: $("c-staff").value, monetize: $("c-monetize").value === "1", gmailFrom: Math.max(1, Number($("c-gmailFrom").value) || 1), cap: $("c-monetize").value === "0" };
   syncChoices(); renderScenario(); renderMatrix();
 });
 $("matrix").addEventListener("click", (e) => {
@@ -282,6 +382,14 @@ $("matrix").addEventListener("click", (e) => {
   if (sb) { const k = sb.dataset.sort; sort = { key: k, dir: sort.key === k ? -sort.dir : (["spend24", "cashNeed", "firstProfitMonth", "paybackMonth", "id", "name"].includes(k) ? 1 : -1) }; return renderMatrix(); }
   const tr = e.target.closest("tr[data-id]");
   if (tr) { const s = allScenarios().find((x) => x.id === tr.dataset.id); scenario = { ...s }; syncChoices(); renderScenario(); renderMatrix(); }
+});
+for (const id of ["g-kind", "g-month", "g-users"]) $(id).addEventListener("input", renderGoal);
+$("answers").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-apply]"); if (!b) return;
+  // The value applies to the global hypotheses: drop a scenario override of the same parameter.
+  const v = JSON.parse(b.dataset.apply);
+  for (const [k, x] of Object.entries(v)) { p[k] = x; const el = $("p-" + k); if (el) el.value = x; if (scenario.over && k in scenario.over) { const { [k]: _, ...rest } = scenario.over; scenario = { ...scenario, over: rest }; } }
+  syncChoices(); renderAll();
 });
 $("matrix").addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.matches("tr[data-id]")) e.target.click(); });
 syncChoices();
