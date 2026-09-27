@@ -94,6 +94,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
           ) : (
             <TryDemo label={w.tryDemo} className={buttonClass.small} />
           )}
+          <a href={`/tour/index.html?lang=${locale}`} className="text-sm font-medium text-brand underline-offset-4 hover:underline">{w.tour}</a>
         </div>
       </section>
 

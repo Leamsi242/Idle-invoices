@@ -260,6 +260,7 @@ export default async function Overview() {
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <Link href="/" className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-semibold text-night">{m.report.emptyLink} <Icon name="arrow" className="h-4 w-4" /></Link>
           <TryDemo label={w.tryDemo} className="rounded-2xl border border-white/30 px-5 py-3 font-semibold text-white hover:bg-white/10" />
+          <a href={`/tour/index.html?lang=${locale}`} className="rounded-2xl px-3 py-3 font-semibold text-white/85 underline-offset-4 hover:underline">{w.tour}</a>
         </div>
         <p className="mt-3 text-sm text-white/60">{w.tryDemoHint}</p>
       </section>

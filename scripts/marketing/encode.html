@@ -1,0 +1,20 @@
+<!doctype html><meta charset="utf-8"><title>encoder</title>
+<script type="module">
+import { FFmpeg } from "/node_modules/@ffmpeg/ffmpeg/dist/esm/index.js";
+window.encode = async (dir, count, fps, name) => {
+  const ff = new FFmpeg();
+  const logs = [];
+  ff.on("log", ({ message }) => logs.push(message));
+  await ff.load({ coreURL: "/node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.js", wasmURL: "/node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.wasm" });
+  for (let i = 0; i < count; i++) {
+    const buf = new Uint8Array(await (await fetch(`/frames/${dir}/${String(i).padStart(4, "0")}.jpg`)).arrayBuffer());
+    await ff.writeFile(`f${String(i).padStart(4, "0")}.jpg`, buf);
+  }
+  await ff.exec(["-framerate", String(fps), "-i", "f%04d.jpg", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "medium", "-crf", "20", "-movflags", "+faststart", name]);
+  const out = await ff.readFile(name);
+  let bin = "";
+  for (let i = 0; i < out.length; i += 0x8000) bin += String.fromCharCode(...out.subarray(i, i + 0x8000));
+  return { b64: btoa(bin), log: logs.slice(-5).join("\n") };
+};
+window.ready = true;
+</script>

@@ -64,6 +64,7 @@ const en = {
   subsIntro: "Find your services, compare their amounts, understand how they were found.",
   search: "Search for a service…",
   filters: { all: "All", todo: "To decide", active: "Active", ended: "Ended", stopped: "Canceled", hidden: "Not subscriptions" } as Record<string, string>,
+  tour: "See how it works (24 s)",
   takeout: "No connection needed: export Gmail with Google Takeout (Mail, .mbox format), then import the file. Only the receipts leave your computer.",
   takeoutCta: "Import a Gmail export",
   beta: {
@@ -197,6 +198,7 @@ const fr: Dict = {
   subsIntro: "Retrouvez vos services, comparez leurs montants, comprenez leur détection.",
   search: "Rechercher un service…",
   filters: { all: "Tous", todo: "À décider", active: "Actifs", ended: "Terminés", stopped: "Résiliés", hidden: "Pas des abonnements" },
+  tour: "Voir comment ça marche (24 s)",
   takeout: "Sans connexion : exportez Gmail avec Google Takeout (Mail, format .mbox), puis importez le fichier. Seuls les reçus quittent votre ordinateur.",
   takeoutCta: "Importer un export Gmail",
   beta: {
