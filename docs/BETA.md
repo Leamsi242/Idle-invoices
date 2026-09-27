@@ -167,6 +167,23 @@ Réglages sur Vercel : `BETA_ACCESS_CODE=<code>`, `BETA_OWNER_CODE=<votre code>`
 
 Tenir la gratuité suppose de ne rien vendre pendant la bêta (condition « non commerciale » de Vercel Hobby).
 
+### Scénario A-Gmail : connexion Gmail en lecture seule pour tous les gratuits
+
+Pour ceux que l'export Takeout inquiète (déposer toute sa boîte dans une application inconnue), la connexion en lecture seule est plus rassurante : l'utilisateur clique sur « Autoriser » chez Google, voit la liste exacte des accès demandés, l'application ne lit que les e-mails qui ressemblent à des reçus, ne garde aucun jeton, retire son accès juste après l'analyse, et l'utilisateur peut la révoquer lui-même depuis son compte Google.
+
+Ce que Google exige pour l'ouvrir à plus de 100 personnes (détail et sources dans [MODELE-ECONOMIQUE.md](MODELE-ECONOMIQUE.md), § 5) :
+
+| Exigence | Coût | Verdict |
+| --- | --- | --- |
+| Plafond de 100 utilisateurs pour la vie du projet sans validation, même en « production » | | confirmé ([aide Google](https://support.google.com/cloud/answer/7454865)) |
+| Vérification de la marque et des accès restreints : domaine vérifié, page d'accueil et politique de confidentialité publiques, mention « Limited Use », vidéo de démonstration en anglais | environ 12 € par an de domaine | confirmé |
+| Audit de sécurité CASA niveau 2, chaque année, par un laboratoire agréé (plus d'auto-analyse gratuite) | 540 à 1 800 $ par an (TAC Security), 800 à 1 200 $ (Leviathan) | obligation confirmée, prix partiellement vérifié (sources tierces) |
+| Délai | plusieurs semaines, souvent 2 à 8 | partiellement vérifié |
+
+Réglages : les mêmes que le scénario A, avec l'application Google validée et le domaine. Dépense sur 24 mois (plafond de 450 testeurs, audit compté à 700 € par an) : **1 424 €** sans aucun revenu, 1 664 € sans plafond. C'est donc un scénario à n'ouvrir qu'avec le Premium, ou après avoir mesuré qu'il change vraiment l'activation : les 100 places de test Gmail de la bêta servent à cette mesure.
+
+**Solution gratuite intermédiaire (A-Outlook)** : ouvrir la connexion Outlook en lecture seule à tous dès maintenant (pas de plafond trouvé, vérification d'éditeur Microsoft gratuite, partiellement vérifié) et garder l'export Takeout pour Gmail. 0 €.
+
 ### Scénario B : connexion bancaire directe, optimisé
 
 | Levier | Choix optimisé | Pourquoi |
@@ -192,34 +209,33 @@ Coût : 20 $ par mois + le devis Enable Banking (tarif non public, non vérifiab
 | **Plus d'environ 1 250 testeurs actifs** | Lignes lues de Turso Free | Turso Developer | 4,99 $ par mois (partiellement vérifié) |
 | **Alertes envoyées à d'autres que vous** | Resend exige un domaine vérifié | Acheter un domaine | environ 10 € par an (estimation) |
 | **Plus de 100 alertes par jour ou 3 000 par mois** | Plafond de Resend Free | Resend Pro | 20 $ par mois (partiellement vérifié) |
-| **Passer au scénario B** | Le contrat Enable Banking coûte un minimum mensuel M | Le signer quand le nombre d'abonnés Premium dépasse **M ÷ 3,5** (marge d'un abonné à 4,99 € après TVA, Stripe et un compte Enable Banking à 0,50 €, hypothèse) : 29 abonnés pour M = 100 €, 86 pour M = 300 € | M + 0,50 € par abonné connecté (hypothèse) |
+| **Passer au scénario B** | Le contrat Enable Banking coûte un minimum mensuel M | Le signer quand le nombre d'abonnés Premium dépasse **M ÷ 2,65** (marge d'un abonné à 4,99 € : 2,95 € après TVA, Stripe et cotisations, moins 0,50 € par compte Enable Banking pour les 60 % d'abonnés qui relient leur banque, hypothèses) : 38 abonnés pour M = 100 €, 114 pour M = 300 € | M + 0,50 € par abonné connecté (hypothèse) |
 | **L'import de relevé fait fuir** | Plus de 40 % des testeurs s'arrêtent à l'étape « importer un relevé » (à mesurer) | Argument pour le scénario B, à condition que le seuil précédent soit proche | |
 
-Deux choses rendent le modèle perdant, d'après le calculateur : ouvrir la connexion bancaire directe à tous les utilisateurs gratuits (8 800 € de coûts sur 24 mois au lieu de 880 € dans le scénario Bootstrap), et un minimum mensuel Enable Banking signé trop tôt (100 € par mois font passer les coûts de 880 € à 2 900 €).
+Deux choses rendent le modèle perdant, d'après le masterplan : la publicité payée (résultat négatif dans les 9 scénarios qui l'utilisent), et ouvrir la connexion bancaire directe à tous les utilisateurs gratuits (4 911 € de dépenses sur 24 mois pour un résultat de 60 €, contre 431 € et 2 628 € avec les relevés seuls).
 
 ## 6. Un modèle rentable, ou sous 1 000 € sur 24 mois
 
-Calculé avec le calculateur ([modele-economique.html](modele-economique.html), scénario « Bootstrap, moins de 1 000 € »).
+Tous les calculs sont dans le **masterplan dynamique** ([masterplan.html](masterplan.html), à ouvrir par un serveur local, par exemple `npx serve docs`) et dans [MODELE-ECONOMIQUE.md](MODELE-ECONOMIQUE.md), généré par `npm run modele`. Les deux lisent le même modèle ([model.mjs](model.mjs)) : 24 scénarios (4 phases gratuites, 18 combinaisons boîte mail × banque × acquisition, 2 plans par étapes), chaque hypothèse avec son verdict.
 
 **Les choix** :
 
 - **Gratuit** : analyse par import de relevés, export Gmail, Outlook ; liste des abonnements, décisions, calendrier.
 - **Premium, 4,99 € par mois TTC** (Bankin' Plus 4,99 €, Linxo 4,49 €, partiellement vérifié) : connexion bancaire directe (dès le seuil du scénario B), surveillance de nuit et alertes, assistant de résiliation, rappels.
-- **Rapport unique à 9 € TTC**, sans abonnement, pour ceux qui veulent un bilan une fois (hypothèse : 2 % des inscrits).
+- **Rapport unique à 9 € TTC**, sans abonnement (hypothèse : 3 % des activés).
 - **Aucune publicité payée** : croissance par la bêta, le bouche-à-oreille, le parrainage et les sites de mise en avant (§ 8).
 - **Paiement sur le web** avec Stripe (1,5 % + 0,25 € par paiement, partiellement vérifié) plutôt que dans les magasins d'applications (15 %).
-- **Gmail par Takeout**, captures d'écran en texte collé : ni audit CASA ni coût d'API.
 
-**Hypothèses** : 100 inscriptions le premier mois, +10 % par mois, conversion de 2,1 % (médiane freemium, partiellement vérifié), 5 % de résiliations Premium par mois, 25 % des gratuits qui partent chaque mois.
+**Hypothèses** : 100 inscriptions le premier mois après 2 mois de bêta, +10 % par mois, 5 % des activés passent Premium (environ 2 % des inscrits, médiane freemium 2,1 %, partiellement vérifié), 5 % de résiliations Premium par mois, 25 % des gratuits qui partent chaque mois, cotisations de 21,2 % (non vérifiable ici).
 
-| Résultat du calculateur | Bootstrap | Conversion 1 % | Sans rapport unique | Croissance moitié moindre |
-| --- | --- | --- | --- | --- |
-| Coûts cumulés sur 24 mois | **880 €** | 696 € | 880 € | 633 € |
-| Abonnés Premium au 24e mois | 134 | 64 | 134 | 31 |
-| Résultat cumulé sur 24 mois | **+4 881 €** | +2 708 € | +3 622 € | +1 023 € |
-| Premier mois rentable | 2 | 2 | 3 | 4 |
+| Sur 24 mois | T-R-org (export Takeout) | O-R-org (Outlook pour tous) | G-R-org (Gmail pour tous) | O>G-P-org (plan recommandé) |
+| --- | ---: | ---: | ---: | ---: |
+| Dépenses (hors cotisations) | **431 €** | **432 €** | 1 849 € | 2 200 € |
+| Résultat | +2 628 € | **+2 856 €** | +2 739 € | +1 950 € |
+| Trésorerie à avancer | 7 € | 6 € | 703 € | 477 € |
+| Abonnés Premium au 24e mois | 104 | 112 | 156 | 151 |
 
-Les coûts restent sous 1 000 € dans les quatre cas ; le modèle reste positif même si la conversion tombe à 1 %. Il faut environ **6 abonnés Premium** pour payer l'hébergement (20 $ par mois divisés par 3,83 € de revenu net par abonné). Ces chiffres sont des projections sur hypothèses : remplacez-les par les mesures de la bêta (§ 7).
+Sous 1 000 € : les scénarios par relevés et bouche-à-oreille (T-R-org, O-R-org, et avec la banque en Premium T-P-org 694 €, O-P-org 715 €). Le plan recommandé dépense plus pour finir avec plus d'abonnés, mais ne dépense qu'une fois les revenus là : Gmail pour tous n'arrive qu'au 10e mois. Il faut **7 abonnés Premium** pour payer Vercel Pro et **20** pour l'audit Gmail. Ce sont des projections sur hypothèses : remplacez-les par les mesures de la bêta (§ 7) dans le masterplan.
 
 **Fonctionnalités à construire pour ce modèle**, dans l'ordre :
 
