@@ -8,7 +8,7 @@ export function LangSwitch() {
   const { m } = useI18n();
   const path = usePathname() || "/";
   return (
-    <a href={`/api/lang?l=${m.switchTo.locale}&back=${encodeURIComponent(path)}`} className="underline" hrefLang={m.switchTo.locale} lang={m.switchTo.locale}>
+    <a href={`/api/lang?l=${m.switchTo.locale}&back=${encodeURIComponent(path)}`} className="underline" hrefLang={m.switchTo.locale === "en" ? "en-US" : "fr-FR"} lang={m.switchTo.locale === "en" ? "en-US" : "fr-FR"}>
       {m.switchTo.label}
     </a>
   );

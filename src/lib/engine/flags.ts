@@ -29,7 +29,7 @@ const recordsFor = (s: DetectedSubscription, records: NormalizedTransaction[]) =
 
 /**
  * Step 4 of the core logic. A subscription is "possibly forgotten" when it is yearly, costs
- * under €10 a month, started as a trial, has no receipt email, or is already part of a bundle.
+ * under 10 (euros, dollars…) a month, started as a trial, has no receipt email, or is already part of a bundle.
  * "No" or "Rarely" to "Still using this?" makes it idle.
  */
 export function flagSubscriptions(subs: DetectedSubscription[], ctx: FlagContext): DetectedSubscription[] {
@@ -40,7 +40,7 @@ export function flagSubscriptions(subs: DetectedSubscription[], ctx: FlagContext
     const related = recordsFor(s, ctx.records);
     const reasons: string[] = [...s.forgottenReasons];
     if (s.frequency === "yearly") reasons.push("Billed once a year, easy to forget between renewals");
-    if (monthlyEquivalent(s) < SMALL_MONTHLY_AMOUNT) reasons.push("Small charge, under €10 a month");
+    if (monthlyEquivalent(s) < SMALL_MONTHLY_AMOUNT) reasons.push(`Small charge, under ${price(SMALL_MONTHLY_AMOUNT, s.currency).replace(".00", "")} a month`);
     if (related.some((r) => r.isTrial)) reasons.push("Started as a free trial");
     // Only meaningful if the user gave us some receipts to look through.
     // Phone, energy, insurance, transport passes and bank fees are contracts that rarely send
@@ -64,7 +64,8 @@ export function flagSubscriptions(subs: DetectedSubscription[], ctx: FlagContext
     const twin = !s.needsLabel && subs.find((o) => o !== s && !o.needsLabel && o.serviceName === s.serviceName && o.frequency === s.frequency && similar(o) && (covers(o, s.firstSeen) || covers(s, o.firstSeen)));
     if (twin) reasons.push("Charged twice: two accounts or a duplicate subscription?");
 
-    const usage = ctx.usage[s.key] ?? s.usage;
+    // A decision belongs to one plan: two plans of one service (monthly and yearly) share a label key.
+    const usage = ctx.usage[`${s.key}|${s.frequency}`] ?? ctx.usage[s.key] ?? s.usage;
     const overdue = daysBetween(s.lastSeen, ctx.endFor?.(s) ?? ctx.dataEnd) > PERIOD_DAYS[s.frequency] * 1.5 + 3;
     // A cancellation email sent after the last charges ends the subscription. One sent before
     // the first charge was for an earlier plan (Google One monthly, then yearly).
@@ -106,7 +107,20 @@ export interface Report<T extends ReportItem = DetectedSubscription> {
   /** Marked "not a subscription": out of every total, kept only to undo. */
   hidden: T[];
   needsLabel: T[];
+  /** The currency of the totals above. */
   currency: string;
+  /** Yearly totals paid in other currencies, kept apart (never converted). */
+  otherCurrencies: { currency: string; totalYearly: number; potentialSavings: number; savedYearly: number }[];
+}
+
+/**
+ * The currency most of the money goes out in. Amounts are never converted: totals add up this
+ * currency only, and what is paid in another one is shown next to them, in its own currency.
+ */
+export function mainCurrency(subs: Pick<ReportItem, "currency" | "yearlyCost">[]): string {
+  const by = new Map<string, number>();
+  for (const s of subs) by.set(s.currency, (by.get(s.currency) ?? 0) + s.yearlyCost);
+  return [...by].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "EUR";
 }
 
 /** Bundles are one subscription, so their parts are never counted twice. */
@@ -115,8 +129,11 @@ export function buildReport<T extends ReportItem>(subs: T[]): Report<T> {
   const hidden = subs.filter((s) => s.usage === "notsub");
   const rest = subs.filter((s) => s.usage !== "stopped" && s.usage !== "notsub");
   const live = rest.filter((s) => s.status !== "cancelled");
-  const sum = (xs: T[]) => Math.round(xs.reduce((t, s) => t + s.yearlyCost, 0) * 100) / 100;
   const idle = rest.filter((s) => s.status === "idle");
+  const currency = mainCurrency(live.length ? live : [...stopped, ...rest]);
+  const sumIn = (cur: string) => (xs: T[]) => Math.round(xs.filter((s) => s.currency === cur).reduce((t, s) => t + s.yearlyCost, 0) * 100) / 100;
+  const sum = sumIn(currency);
+  const others = [...new Set([...live, ...idle, ...stopped].map((s) => s.currency))].filter((c) => c !== currency).sort();
   return {
     totalYearly: sum(live),
     potentialSavings: sum(idle),
@@ -128,6 +145,7 @@ export function buildReport<T extends ReportItem>(subs: T[]): Report<T> {
     stopped,
     hidden,
     needsLabel: rest.filter((s) => s.needsLabel && s.status !== "cancelled"),
-    currency: live[0]?.currency ?? subs[0]?.currency ?? "EUR",
+    currency,
+    otherCurrencies: others.map((c) => ({ currency: c, totalYearly: sumIn(c)(live), potentialSavings: sumIn(c)(idle), savedYearly: sumIn(c)(stopped) })),
   };
 }

@@ -1,4 +1,5 @@
 import type { Channel, Frequency } from "./types";
+import { withFrenchSpaces } from "./typo";
 
 /**
  * The interface in French and English. The locale comes from a cookie set by the language link,
@@ -17,20 +18,27 @@ export function pickLocale(cookie?: string | null, acceptLanguage?: string | nul
   return /\bfr\b/.test(acceptLanguage ?? "") ? "fr" : "en";
 }
 
+/** The formatting locale: French from France, English from the United States. */
+export const intlLocale = (locale: Locale) => (locale === "fr" ? "fr-FR" : "en-US");
+
+/**
+ * An amount in the currency it was paid in, never converted: "9,99 €" or "€9.99", "12,00 $US" or
+ * "$12.00". Only the way it is written follows the language.
+ */
 export const money = (amount: number, currency = "EUR", locale: Locale = "en") =>
-  new Intl.NumberFormat(locale === "fr" ? "fr-FR" : "en-IE", { style: "currency", currency }).format(amount);
+  new Intl.NumberFormat(intlLocale(locale), { style: "currency", currency }).format(amount);
 
 /** A rounded amount for tight spots (a calendar cell, a chart label): "40 €". */
 export const moneyRound = (amount: number, currency = "EUR", locale: Locale = "en") =>
-  new Intl.NumberFormat(locale === "fr" ? "fr-FR" : "en-IE", { style: "currency", currency, maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(amount);
+  new Intl.NumberFormat(intlLocale(locale), { style: "currency", currency, maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(amount);
 
-/** "13 Apr 2026" or "13 avr. 2026"; `short` adds the weekday and drops the year. */
+/** "Apr 13, 2026" or "13 avr. 2026"; `short` adds the weekday and drops the year. */
 export function formatDate(iso: string, locale: Locale, short = false): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
   const opts: Intl.DateTimeFormatOptions = short
     ? { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }
     : { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" };
-  return new Date(`${iso}T12:00:00Z`).toLocaleDateString(locale === "fr" ? "fr-FR" : "en-GB", opts);
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString(intlLocale(locale), opts);
 }
 
 const en = {
@@ -46,7 +54,6 @@ const en = {
     intro: "Connect your bank and your mailbox, read-only. We find every subscription, unmask the ones hidden behind PayPal or the app stores, and show what you could stop paying for. About two minutes.",
     bankOk: (n: string) => `Bank read: ${n} transactions. The access is already closed.`,
     bankOkWatch: (n: string, days: number) => `Bank read: ${n} transactions. Watching is on for ${days} days.`,
-    bankWatched: "read, watched every night",
     paypalOk: (n: string) => `PayPal read: ${n} payments. The access is already closed.`,
     paypalOkWatch: (n: string, days: number) => `PayPal read: ${n} payments. Watching is on for ${days} days.`,
     paypalEmptyNoAccount: "PayPal shared no account, so nothing was read or kept. If you are testing in Enable Banking's restricted mode, first link your PayPal account in its Control Panel (API applications, then Link accounts), then connect again.",
@@ -59,7 +66,7 @@ const en = {
     bankErrorCode: (code: string) => `(Bank error: ${code})`,
     messages: {
       bank: {
-        denied: "The bank connection was cancelled. Nothing was read.",
+        denied: "The bank connection was canceled. Nothing was read.",
         expired: "The bank connection took too long. Please try again.",
         error: "We could not read your bank this time. Nothing was kept. Please try again.",
       },
@@ -76,23 +83,16 @@ const en = {
         unavailable: "Outlook scanning is not available on this server.",
       },
     } as Record<string, Record<string, string>>,
-    step1: "Connect your bank",
-    bankDone: "read, access closed",
     addAnother: "Add another bank, a card (Amex...) or PayPal",
     paypalHint: "Do you pay with PayPal? Connect it too: it names the real service behind each PayPal payment.",
-    paypalConnect: "Connect PayPal",
     bankNotSetUp: "Bank connection is not set up on this server yet. You can",
     importStatement: "import a statement",
     instead: "instead.",
     bankNote: "You sign in on your bank's own page. We never see your password and cannot move money: the access is read-only, used once, then closed, unless you ask us to keep watching.",
-    step2: "Connect your mailbox",
-    mailDone: "receipts read, access closed",
     mailWhy: "Receipts name the real service behind PayPal and app store charges, and catch trials about to turn paid.",
     mailNotSetUp: "Mailbox connection is not set up on this server yet.",
     mailNote: "We only open emails that look like receipts, keep the amount and the service, and never store the emails.",
     seeReport: "See my report",
-    reportSoon: "Your report appears as soon as your bank or mailbox is connected.",
-    advancedLink: "Advanced: import files instead",
   },
   picker: {
     placeholder: "Search your bank (Crédit Mutuel, BNP, Amex...)",
@@ -105,21 +105,9 @@ const en = {
     unreachable: "This bank cannot be reached right now.",
   },
   ui: {
-    caseFile: "Your case file",
-    perDay: (amount: string) => `${amount} a day`,
     saved: "Already saved",
-    savedHint: "a year, thanks to what you cancelled",
     mastery: "Mastery",
     masteryTitle: (pct: number) => (pct >= 100 ? "Your case is closed: everything is under control." : `Your case is ${pct}% solved`),
-    nextAction: "Your next move",
-    missionBank: "Connect your bank",
-    missionMail: "Connect your mailbox to name what is hidden",
-    missionName: (n: number) => `Name ${n} unknown charge${n === 1 ? "" : "s"}`,
-    missionAnswer: (n: number) => `Say if you still use ${n} subscription${n === 1 ? "" : "s"}`,
-    missionIdle: (n: number, amount: string) => `Cancel ${n} subscription${n === 1 ? "" : "s"} you don't use: ${amount} a year`,
-    missionWatch: "Turn on the nightly watch, to hear about any new charge",
-    missionDone: "Nothing left to do. We keep watching for you.",
-    go: "Go",
     reveals: "What the case reveals",
     insightLifetime: (amount: string, since: string) => `Since ${since}, ${amount} has already gone to your subscriptions.`,
     insightRises: (amount: string, n: number) => `Price rises add ${amount} a year, on ${n} subscription${n === 1 ? "" : "s"}.`,
@@ -129,18 +117,11 @@ const en = {
     insightFiveYears: (amount: string) => `Stopping what you no longer use keeps ${amount} in your pocket over 5 years.`,
     insightDaily: (amount: string) => `Every day, ${amount} leaves for subscriptions. Even on days you use none.`,
     byCategory: "By category",
-    stoppedTitle: "Cancelled by you",
-    stoppedNote: "Counted in your savings. If a charge comes back, the watch tells you.",
     categories: { streaming: "streaming", music: "music", "cloud storage": "cloud storage", dating: "dating", news: "news", gaming: "gaming", software: "software", productivity: "productivity", telecom: "phone and internet", energy: "energy", insurance: "insurance", transport: "transport", fitness: "sport", food: "food delivery", education: "learning", wellbeing: "wellbeing", security: "security", creators: "creators", career: "career", books: "books", shopping: "shopping", bundle: "bundles", "bank fees": "bank fees", other: "other" } as Record<string, string>,
     aYear: "a year",
     perYear: "a year on subscriptions",
     perMonth: (amount: string) => `that's ${amount} a month`,
-    activeCount: (n: number) => `${n} active subscription${n === 1 ? "" : "s"}`,
-    savingsHint: (n: number) => `Answer ${n} quick question${n === 1 ? "" : "s"} to reveal them`,
-    savingsFound: "if you stop what you no longer use",
     split: "By way of paying",
-    splitHint: "Tap one to filter the whole case.",
-    agenda: "Agenda",
     files: "Case files",
     details: "Details",
     howToCancel: "How to cancel",
@@ -155,7 +136,6 @@ const en = {
     limitMail: "At most the 500 newest receipt-like emails per scan. Promotions and personal emails are never opened.",
     limitFile: "Everything in the file was read.",
     openCase: "See my overview",
-    sourcesTitle: "Your sources",
     sourcesProgress: (n: number) => `${n} of 3 kinds of source connected`,
     banksTitle: "Banks and cards",
     paypalTitle: "PayPal",
@@ -169,45 +149,27 @@ const en = {
   report: {
     empty: "Nothing to report yet.",
     emptyLink: "Connect your bank and your mailbox",
-    emptyEnd: "to start.",
     title: "Your forgotten subscriptions report",
     yearly: "Yearly spend on subscriptions",
-    savings: "Potential savings per year",
-    next30: "Next 30 days",
     trialEnds: "Trial ends",
-    newPrice: "New price",
     cancel: "Cancel",
     remindMe: "Remind me",
     unanswered: (n: number) => `${n} subscription${n === 1 ? "" : "s"} still need${n === 1 ? "s" : ""} a "Still using this?" answer.`,
-    answerNow: "Answer now",
-    answerEnd: "to see your full savings.",
-    recently: "Started recently:",
-    recentlyWarn: (many: boolean) => `Trials often turn into paid plans without warning: check you meant to keep ${many ? "them" : "it"}.`,
     idle: "Idle: you said you don't use these",
-    idleNote: "Cancelling these is your potential saving.",
     forgotten: "Possibly forgotten",
     active: "Active",
     stopped: "Stopped (no recent charge)",
-    stoppedNote: "Not counted in the yearly total.",
     since: "since",
-    last: "last",
     unmasked: "unmasked via",
     paidWith: "Paid with",
-    filterAll: "All",
-    filterLabel: "Paid with:",
     viaFile: "Imported statement",
     viaReceipts: "Email receipts",
-    filtered: (n: number, amount: string, name: string) => `${n} subscription${n === 1 ? "" : "s"} paid with ${name}: ${amount} a year.`,
     sources: { bank: "bank", paypal: "PayPal", apple: "Apple", google: "Google Play", email: "receipt" } as Record<string, string>,
     nextCharge: "Next charge around",
-    paidSoFar: "paid so far",
-    priceChanged: "Price changed:",
-    priceStep: (from: string, to: string, date: string) => `${from} to ${to} on ${date}`,
     bundle: "Bundle, counted once:",
-    cancelledOn: (date: string, ends?: string) => `Cancelled on ${date}${ends ? `, access ends on ${ends}` : ""}.`,
+    cancelledOn: (date: string, ends?: string) => `Canceled on ${date}${ends ? `, access ends on ${ends}` : ""}.`,
     howToCancel: "How to cancel",
     accountPage: (name: string) => `${name} account page`,
-    noLink: "No cancellation link for this service yet.",
     confidence: "Confidence",
     remindBefore: "Remind me before it renews",
   },
@@ -254,7 +216,6 @@ const en = {
     addReminder: "Add reminder",
     howToCancel: "How to cancel",
     remove: "Done, remove",
-    pageTitle: "Free trials",
     pageIntro: "Most forgotten subscriptions start as a free trial. Note it here when you sign up, and add a reminder to your calendar so the first charge never surprises you.",
     formTitle: "Just started a free trial?",
     formIntro: "Tell us when it ends. We'll show it here and you can add a reminder to your calendar two days before.",
@@ -266,12 +227,10 @@ const en = {
     couldNotSave: "Could not save",
   },
   questions: {
-    stillUsing: "Still using this?",
     yes: "Yes",
     rarely: "Rarely",
     no: "No",
-    stopped: "I cancelled it",
-    undoStopped: "Not cancelled after all",
+    stopped: "I canceled it",
     whatIs: "What is",
     remember: "We'll remember your answer.",
     namePh: "Service name, e.g. FocusFlow",
@@ -285,8 +244,6 @@ const en = {
     empty: "No subscriptions yet.",
     emptyLink: "Connect your bank and your mailbox",
     found: (n: number) => `We found ${n} subscription${n === 1 ? "" : "s"}`,
-    nameFirst: (n: number) => `First, help us name ${n === 1 ? "this charge" : "these charges"}`,
-    stillUsingThem: "Are you still using them?",
     includes: "Includes",
     seeReport: "See my report",
   },
@@ -380,7 +337,7 @@ export type Messages = typeof en;
 
 const fr: Messages = {
   lang: "fr",
-  switchTo: { label: "English", locale: "en" },
+  switchTo: { label: "English (US)", locale: "en" },
   appTitle: "Subscription Detective",
   tagline: "Vous payez pour des choses que vous avez oubliées.",
   nav: { connect: "Sources", review: "Vérifier", report: "Enquête", trials: "Essais", privacy: "Confidentialité" },
@@ -391,7 +348,6 @@ const fr: Messages = {
     intro: "Connectez votre banque et votre boîte mail, en lecture seule. Nous trouvons chaque abonnement, démasquons ceux cachés derrière PayPal ou les magasins d'applications, et montrons ce que vous pourriez arrêter de payer. Deux minutes environ.",
     bankOk: (n) => `Banque lue : ${n} opérations. L'accès est déjà fermé.`,
     bankOkWatch: (n, days) => `Banque lue : ${n} opérations. Surveillance activée pour ${days} jours.`,
-    bankWatched: "lue, surveillée chaque nuit",
     paypalOk: (n) => `PayPal lu : ${n} paiements. L'accès est déjà fermé.`,
     paypalOkWatch: (n, days) => `PayPal lu : ${n} paiements. Surveillance activée pour ${days} jours.`,
     paypalEmptyNoAccount: "PayPal n'a partagé aucun compte : rien n'a été lu ni conservé. Si vous testez en mode restreint d'Enable Banking, reliez d'abord votre compte PayPal dans son Control Panel (API applications, puis Link accounts), puis reconnectez-le.",
@@ -421,23 +377,16 @@ const fr: Messages = {
         unavailable: "La lecture d'Outlook n'est pas disponible sur ce serveur.",
       },
     },
-    step1: "Connectez votre banque",
-    bankDone: "lue, accès fermé",
     addAnother: "Ajouter une autre banque, une carte (Amex...) ou PayPal",
     paypalHint: "Vous payez avec PayPal ? Connectez-le aussi : il indique le vrai service derrière chaque paiement PayPal.",
-    paypalConnect: "Connecter PayPal",
     bankNotSetUp: "La connexion bancaire n'est pas encore configurée sur ce serveur. Vous pouvez",
     importStatement: "importer un relevé",
     instead: "à la place.",
     bankNote: "Vous vous connectez sur la page de votre banque. Nous ne voyons jamais votre mot de passe et ne pouvons pas déplacer d'argent : l'accès est en lecture seule, utilisé une fois, puis fermé, sauf si vous demandez la surveillance.",
-    step2: "Connectez votre boîte mail",
-    mailDone: "reçus lus, accès fermé",
     mailWhy: "Les reçus nomment le vrai service derrière les paiements PayPal et des magasins d'applications, et repèrent les essais qui vont devenir payants.",
     mailNotSetUp: "La connexion à la boîte mail n'est pas encore configurée sur ce serveur.",
     mailNote: "Nous n'ouvrons que les e-mails qui ressemblent à des reçus, gardons le montant et le service, et ne conservons jamais les e-mails.",
     seeReport: "Voir mon rapport",
-    reportSoon: "Votre rapport apparaît dès que votre banque ou votre boîte mail est connectée.",
-    advancedLink: "Avancé : importer des fichiers à la place",
   },
   picker: {
     placeholder: "Cherchez votre banque (Crédit Mutuel, BNP, Amex...)",
@@ -450,21 +399,9 @@ const fr: Messages = {
     unreachable: "Cette banque est injoignable pour le moment.",
   },
   ui: {
-    caseFile: "Votre enquête",
-    perDay: (amount) => `${amount} par jour`,
     saved: "Déjà économisé",
-    savedHint: "par an, grâce à vos résiliations",
     mastery: "Maîtrise",
     masteryTitle: (pct) => (pct >= 100 ? "Enquête bouclée : tout est sous contrôle." : `Votre enquête est résolue à ${pct} %`),
-    nextAction: "Votre prochaine action",
-    missionBank: "Connectez votre banque",
-    missionMail: "Connectez votre boîte mail pour nommer ce qui est caché",
-    missionName: (n) => `Nommez ${n} prélèvement${n > 1 ? "s" : ""} inconnu${n > 1 ? "s" : ""}`,
-    missionAnswer: (n) => `Dites si vous utilisez encore ${n} abonnement${n > 1 ? "s" : ""}`,
-    missionIdle: (n, amount) => `Résiliez ${n} abonnement${n > 1 ? "s" : ""} inutilisé${n > 1 ? "s" : ""} : ${amount} par an`,
-    missionWatch: "Activez la surveillance de nuit, pour être prévenu de tout nouveau prélèvement",
-    missionDone: "Plus rien à faire. Nous continuons de veiller pour vous.",
-    go: "Y aller",
     reveals: "Ce que l'enquête révèle",
     insightLifetime: (amount, since) => `Depuis le ${since}, ${amount} sont déjà partis dans vos abonnements.`,
     insightRises: (amount, n) => `Les hausses de prix vous coûtent ${amount} de plus par an, sur ${n} abonnement${n > 1 ? "s" : ""}.`,
@@ -474,18 +411,11 @@ const fr: Messages = {
     insightFiveYears: (amount) => `Arrêter ce que vous n'utilisez plus vous laisse ${amount} en 5 ans.`,
     insightDaily: (amount) => `Chaque jour, ${amount} partent en abonnements. Même les jours où vous n'en utilisez aucun.`,
     byCategory: "Par catégorie",
-    stoppedTitle: "Résiliés par vous",
-    stoppedNote: "Comptés dans vos économies. Si un prélèvement revient, la surveillance vous prévient.",
     categories: { streaming: "streaming", music: "musique", "cloud storage": "stockage en ligne", dating: "rencontre", news: "presse", gaming: "jeux vidéo", software: "logiciels", productivity: "productivité", telecom: "téléphonie et internet", energy: "énergie", insurance: "assurance", transport: "transport", fitness: "sport", food: "livraison de repas", education: "formation", wellbeing: "bien-être", security: "sécurité", creators: "créateurs", career: "carrière", books: "livres", shopping: "shopping", bundle: "offres groupées", "bank fees": "frais bancaires", other: "autres" },
     aYear: "par an",
     perYear: "par an en abonnements",
     perMonth: (amount) => `soit ${amount} par mois`,
-    activeCount: (n) => `${n} abonnement${n > 1 ? "s" : ""} actif${n > 1 ? "s" : ""}`,
-    savingsHint: (n) => `Répondez à ${n} question${n > 1 ? "s" : ""} rapide${n > 1 ? "s" : ""} pour les révéler`,
-    savingsFound: "en arrêtant ce que vous n'utilisez plus",
     split: "Par moyen de paiement",
-    splitHint: "Touchez-en un pour filtrer toute l'enquête.",
-    agenda: "Agenda",
     files: "Les dossiers",
     details: "Détails",
     howToCancel: "Comment résilier",
@@ -500,7 +430,6 @@ const fr: Messages = {
     limitMail: "Au plus les 500 e-mails les plus récents qui ressemblent à des reçus, par lecture. Promotions et e-mails personnels ne sont jamais ouverts.",
     limitFile: "Tout le fichier a été lu.",
     openCase: "Voir ma vue d'ensemble",
-    sourcesTitle: "Vos sources",
     sourcesProgress: (n) => `${n} type${n > 1 ? "s" : ""} de source sur 3 connecté${n > 1 ? "s" : ""}`,
     banksTitle: "Banques et cartes",
     paypalTitle: "PayPal",
@@ -514,45 +443,27 @@ const fr: Messages = {
   report: {
     empty: "Rien à afficher pour l'instant.",
     emptyLink: "Connectez votre banque et votre boîte mail",
-    emptyEnd: "pour commencer.",
     title: "Votre rapport d'abonnements oubliés",
     yearly: "Dépense annuelle en abonnements",
-    savings: "Économies possibles par an",
-    next30: "Les 30 prochains jours",
     trialEnds: "Fin d'essai",
-    newPrice: "Nouveau prix",
     cancel: "Résilier",
     remindMe: "Me le rappeler",
     unanswered: (n) => `${n} abonnement${n > 1 ? "s attendent" : " attend"} encore une réponse à « Vous l'utilisez encore ? ».`,
-    answerNow: "Répondez maintenant",
-    answerEnd: "pour voir toutes vos économies.",
-    recently: "Commencé récemment :",
-    recentlyWarn: (many) => `Les essais deviennent souvent payants sans prévenir : vérifiez que vous vouliez ${many ? "les" : "le"} garder.`,
     idle: "Inutilisés : vous avez dit ne plus vous en servir",
-    idleNote: "Les résilier, ce sont vos économies possibles.",
     forgotten: "Peut-être oubliés",
     active: "Actifs",
     stopped: "Arrêtés (pas de prélèvement récent)",
-    stoppedNote: "Non comptés dans le total annuel.",
     since: "depuis le",
-    last: "dernier le",
     unmasked: "démasqué grâce à",
     paidWith: "Payé via",
-    filterAll: "Tout",
-    filterLabel: "Payé via :",
     viaFile: "Relevé importé",
     viaReceipts: "Reçus e-mail",
-    filtered: (n, amount, name) => `${n} abonnement${n > 1 ? "s" : ""} payé${n > 1 ? "s" : ""} via ${name} : ${amount} par an.`,
     sources: { bank: "banque", paypal: "PayPal", apple: "Apple", google: "Google Play", email: "un reçu" },
     nextCharge: "Prochain prélèvement vers le",
-    paidSoFar: "payé jusqu'ici",
-    priceChanged: "Prix modifié :",
-    priceStep: (from, to, date) => `de ${from} à ${to} le ${date}`,
     bundle: "Offre groupée, comptée une fois :",
     cancelledOn: (date, ends) => `Résilié le ${date}${ends ? `, accès jusqu'au ${ends}` : ""}.`,
     howToCancel: "Comment résilier",
     accountPage: (name) => `Page du compte ${name}`,
-    noLink: "Pas encore de lien de résiliation pour ce service.",
     confidence: "Fiabilité",
     remindBefore: "Me le rappeler avant le renouvellement",
   },
@@ -599,7 +510,6 @@ const fr: Messages = {
     addReminder: "Ajouter un rappel",
     howToCancel: "Comment résilier",
     remove: "C'est fait, retirer",
-    pageTitle: "Essais gratuits",
     pageIntro: "La plupart des abonnements oubliés commencent par un essai gratuit. Notez-le ici quand vous vous inscrivez, et ajoutez un rappel à votre agenda pour que le premier prélèvement ne vous surprenne jamais.",
     formTitle: "Vous venez de commencer un essai gratuit ?",
     formIntro: "Dites-nous quand il se termine. Nous l'afficherons ici et vous pourrez ajouter un rappel dans votre agenda deux jours avant.",
@@ -611,12 +521,10 @@ const fr: Messages = {
     couldNotSave: "Impossible d'enregistrer",
   },
   questions: {
-    stillUsing: "Vous l'utilisez encore ?",
     yes: "Oui",
     rarely: "Rarement",
     no: "Non",
     stopped: "Je l'ai résilié",
-    undoStopped: "Finalement non",
     whatIs: "Qu'est-ce que",
     remember: "Nous retiendrons votre réponse.",
     namePh: "Nom du service, ex. FocusFlow",
@@ -630,8 +538,6 @@ const fr: Messages = {
     empty: "Aucun abonnement pour l'instant.",
     emptyLink: "Connectez votre banque et votre boîte mail",
     found: (n) => `Nous avons trouvé ${n} abonnement${n > 1 ? "s" : ""}`,
-    nameFirst: (n) => `D'abord, aidez-nous à nommer ${n === 1 ? "ce prélèvement" : "ces prélèvements"}`,
-    stillUsingThem: "Vous les utilisez encore ?",
     includes: "Comprend",
     seeReport: "Voir mon rapport",
   },
@@ -721,15 +627,24 @@ const fr: Messages = {
   },
 };
 
-export const MESSAGES: Record<Locale, Messages> = { en, fr };
+export const MESSAGES: Record<Locale, Messages> = { en, fr: withFrenchSpaces(fr) };
 export const messages = (locale: Locale): Messages => MESSAGES[locale];
 
-// Engine texts, in English, and their French version. "€43.29" style prices are re-formatted.
-const euro = (s: string) => s.replace(/€(\d+(?:,\d{3})*)\.(\d{2})/g, (_, a: string, b: string) => `${a.replace(/,/g, " ")},${b} €`);
+// Engine texts, in English, and their French version. Prices written by the engine ("€43.29",
+// "$12.00", "£5", "12.00 CHF") are re-written in French in the same currency, never converted.
+const SYMBOLS: Record<string, string> = { "€": "EUR", $: "USD", "£": "GBP" };
+const euro = (s: string) =>
+  s
+    .replace(/([€$£])(\d+(?:,\d{3})*)(?:\.(\d{2}))?/g, (_, sym: string, a: string, b?: string) => {
+      const n = Number(`${a.replace(/,/g, "")}.${b ?? "00"}`);
+      const f = new Intl.NumberFormat("fr-FR", { style: "currency", currency: SYMBOLS[sym], minimumFractionDigits: b ? 2 : 0, maximumFractionDigits: b ? 2 : 0 }).format(n);
+      return f;
+    })
+    .replace(/\b(\d+)\.(\d{2}) ([A-Z]{3})\b/g, (_, a: string, b: string, c: string) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: c }).format(Number(`${a}.${b}`)));
 const fdate = (s: string) => s.replace(/\b(\d{4}-\d{2}-\d{2})\b/g, (d) => formatDate(d, "fr"));
 const REASONS: [RegExp, (m: RegExpMatchArray) => string][] = [
   [/^Billed once a year, easy to forget between renewals$/, () => "Facturé une fois par an, facile à oublier entre deux renouvellements"],
-  [/^Small charge, under €10 a month$/, () => "Petit montant, moins de 10 € par mois"],
+  [/^Small charge, under (.+) a month$/, (m) => `Petit montant, moins de ${euro(m[1])} par mois`],
   [/^Started as a free trial$/, () => "A commencé par un essai gratuit"],
   [/^No receipt email found$/, () => "Aucun reçu trouvé par e-mail"],
   [/^Already included in (.+)$/, (m) => `Déjà inclus dans ${m[1]}`],
@@ -739,7 +654,7 @@ const REASONS: [RegExp, (m: RegExpMatchArray) => string][] = [
   [/^Charged twice: two accounts or a duplicate subscription\?$/, () => "Payé deux fois : deux comptes ou un abonnement en double ?"],
   [/^Seen twice so far: your bank shares about 3 months of history$/, () => "Vu deux fois pour l'instant : votre banque ne partage qu'environ 3 mois d'historique"],
   [/^Seen twice so far: PayPal shares about 3 months of history$/, () => "Vu deux fois pour l'instant : PayPal ne partage qu'environ 3 mois d'historique"],
-  [/^Trial ended on (.+) and no cancellation was found: check your statement for ([\d.]+) (\w+)$/, (m) => `L'essai s'est terminé le ${fdate(m[1])} sans résiliation trouvée : cherchez ${m[2].replace(".", ",")} ${m[3]} sur votre relevé`],
+  [/^Trial ended on (.+) and no cancellation was found: check your statement for ([\d.]+) (\w+)$/, (m) => `L'essai s'est terminé le ${fdate(m[1])} sans résiliation trouvée : cherchez ${euro(`${m[2]} ${m[3]}`)} sur votre relevé`],
 ];
 
 export function translateReason(reason: string, locale: Locale): string {

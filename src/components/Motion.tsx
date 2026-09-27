@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { intlLocale, type Locale } from "@/lib/i18n";
 
 const ease = (t: number) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
 
@@ -10,7 +11,7 @@ const ease = (t: number) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
  */
 export function CountUp({ value, locale, currency, id, decimals = 0, className = "" }: { value: number; locale: string; currency: string; id: string; decimals?: number; className?: string }) {
   const format = (n: number) =>
-    new Intl.NumberFormat(locale === "fr" ? "fr-FR" : "en-GB", { style: "currency", currency, maximumFractionDigits: decimals, minimumFractionDigits: decimals }).format(n);
+    new Intl.NumberFormat(intlLocale(locale as Locale), { style: "currency", currency, maximumFractionDigits: decimals, minimumFractionDigits: decimals }).format(n);
   const [shown, setShown] = useState(value);
   const done = useRef(false);
   useEffect(() => {
@@ -48,7 +49,7 @@ export function ScoreRing({ value, label, size = 88 }: { value: number; label: s
     return () => cancelAnimationFrame(id);
   }, [value]);
   return (
-    <div className="relative" style={{ width: size, height: size }} role="img" aria-label={`${label} ${value} %`}>
+    <div className="relative" style={{ width: size, height: size }} role="img" aria-label={`${label} ${value}%`}>
       <svg viewBox="0 0 88 88" className="h-full w-full -rotate-90">
         <circle cx="44" cy="44" r={r} fill="none" stroke="currentColor" strokeOpacity="0.15" strokeWidth="7" />
         <circle

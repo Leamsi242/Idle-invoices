@@ -1,6 +1,7 @@
 import type { DetectedSubscription } from "./types";
 import { PER_YEAR } from "./engine/recurring";
 import { daysBetween } from "./dates";
+import { mainCurrency } from "./engine/flags";
 
 /**
  * Facts worth coming back for, computed from the subscriptions alone: each one is a number the
@@ -21,7 +22,10 @@ export type Insight =
 const OVERLAP = new Set(["streaming", "music", "cloud storage", "dating", "news", "gaming"]);
 
 export function insights(subs: Sub[], today: string): Insight[] {
-  const live = subs.filter((s) => s.status !== "cancelled" && s.usage !== "stopped" && s.usage !== "notsub");
+  const running = subs.filter((s) => s.status !== "cancelled" && s.usage !== "stopped" && s.usage !== "notsub");
+  // Sums are in one currency: what is paid in another one is left out rather than converted.
+  const cur = mainCurrency(running);
+  const live = running.filter((s) => s.currency === cur);
   if (live.length === 0) return [];
   const out: Insight[] = [];
   const yearly = live.reduce((t, s) => t + s.yearlyCost, 0);
@@ -58,7 +62,7 @@ export function insights(subs: Sub[], today: string): Insight[] {
   if (idle > 0) out.push({ kind: "fiveYears", amount: idle * 5 });
 
   // Everything paid since the first charge found, stopped subscriptions included.
-  const real = subs.filter((s) => s.usage !== "notsub");
+  const real = subs.filter((s) => s.usage !== "notsub" && s.currency === cur);
   const since = real.map((s) => s.firstSeen).sort()[0];
   const paid = real.reduce((t, s) => t + (s.totalPaid ?? 0), 0);
   if (paid > 0 && since) out.push({ kind: "lifetime", amount: paid, since });
@@ -70,8 +74,10 @@ export function insights(subs: Sub[], today: string): Insight[] {
 /** Yearly spend per category, largest first; anything without a category is "other". */
 export function byCategory(subs: Sub[]): { category: string; amount: number; count: number }[] {
   const totals = new Map<string, { amount: number; count: number }>();
-  for (const s of subs) {
-    if (s.status === "cancelled" || s.usage === "stopped" || s.usage === "notsub") continue;
+  const running = subs.filter((s) => s.status !== "cancelled" && s.usage !== "stopped" && s.usage !== "notsub");
+  const cur = mainCurrency(running);
+  for (const s of running) {
+    if (s.currency !== cur) continue;
     const key = s.category ?? "other";
     const t = totals.get(key) ?? { amount: 0, count: 0 };
     totals.set(key, { amount: t.amount + s.yearlyCost, count: t.count + 1 });
@@ -92,7 +98,8 @@ export interface Mission {
  * "next move" shown on top of the report; the share done is the mastery score.
  */
 export function missions(input: { banks: number; mailboxes: number; unnamed: number; unanswered: number; idle: Sub[]; watching: boolean }): { steps: Mission[]; score: number; next?: Mission } {
-  const idleAmount = input.idle.reduce((t, s) => t + s.yearlyCost, 0);
+  const cur = mainCurrency(input.idle);
+  const idleAmount = input.idle.filter((s) => s.currency === cur).reduce((t, s) => t + s.yearlyCost, 0);
   const steps: Mission[] = [
     { id: "bank", done: input.banks > 0, href: "/#bank" },
     { id: "mail", done: input.mailboxes > 0, href: "/" },

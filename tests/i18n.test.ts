@@ -15,7 +15,7 @@ describe("French and English", () => {
   it("formats prices and dates the French way", () => {
     expect(money(1234.5, "EUR", "fr")).toMatch(/^1\s234,50\s€$/);
     expect(formatDate("2026-10-10", "fr")).toBe("10 oct. 2026");
-    expect(formatDate("2026-10-10", "en")).toBe("10 Oct 2026");
+    expect(formatDate("2026-10-10", "en")).toBe("Oct 10, 2026");
   });
 
   it("translates every reason the engine gives", () => {
@@ -33,9 +33,12 @@ describe("French and English", () => {
       "Trial ended on 2026-09-14 and no cancellation was found: check your statement for 49.99 EUR",
     ];
     for (const r of reasons) expect(translateReason(r, "fr")).not.toBe(r);
-    expect(translateReason("Billed every week, about €43.29 a month", "fr")).toBe("Facturé chaque semaine, environ 43,29 € par mois");
-    expect(translateReason("Started with a €0.99 trial on 2026-09-07", "fr")).toBe("A commencé par un essai à 0,99 € le 7 sept. 2026");
+    expect(translateReason("Billed every week, about €43.29 a month", "fr")).toBe("Facturé chaque semaine, environ 43,29\u00a0€ par mois");
+    expect(translateReason("Started with a €0.99 trial on 2026-09-07", "fr")).toBe("A commencé par un essai à 0,99\u00a0€ le 7 sept. 2026");
     expect(translateReason("No receipt email found", "en")).toBe("No receipt email found");
+    // Other currencies stay in their currency, written the French way.
+    expect(translateReason("Small charge, under $10 a month", "fr")).toBe("Petit montant, moins de 10\u00a0$US par mois");
+    expect(translateReason("Billed every week, about £12.50 a month", "fr")).toBe("Facturé chaque semaine, environ 12,50\u00a0£GB par mois");
   });
 
   it("has the same texts in both languages", () => {
@@ -45,7 +48,7 @@ describe("French and English", () => {
   });
 
   it("writes cancellation steps and calendar reminders in French", () => {
-    expect(cancellationSteps("google", "Tinder", "fr")[0]).toBe("Tinder est facturé par Google Play : résiliez-le dans le Play Store.");
-    expect(renewalReminder("Claude", "2026-10-10", "216,00 €", undefined, "fr").title).toBe("Claude prélève 216,00 € le 10 oct. 2026");
+    expect(cancellationSteps("google", "Tinder", "fr")[0]).toBe("Tinder est facturé par Google Play\u00a0: résiliez-le dans le Play Store.");
+    expect(renewalReminder("Claude", "2026-10-10", "216,00 €", undefined, "fr").title).toBe("Claude prélève 216,00\u00a0€ le 10 oct. 2026");
   });
 });

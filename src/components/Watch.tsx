@@ -35,7 +35,7 @@ export function WatchControls({ watch, emailEnabled }: { watch: WatchView; email
         >
           <label className="w-full text-xs text-muted" htmlFor={`email-${watch.id}`}>{w.emailLabel}</label>
           <input id={`email-${watch.id}`} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={watch.hasEmail ? "••••" : w.emailPlaceholder} className="min-w-0 flex-1 rounded-lg border border-line px-2 py-1" />
-          <button disabled={pending} className="rounded-lg bg-brand px-3 py-1 font-medium text-white disabled:opacity-40">{saved ? w.emailSaved : w.emailSave}</button>
+          <button disabled={pending} className="rounded-lg bg-brand px-3 py-1 font-medium text-on-accent disabled:opacity-40">{saved ? w.emailSaved : w.emailSave}</button>
         </form>
       ) : (
         <p className="text-xs text-muted">{w.emailOff}</p>

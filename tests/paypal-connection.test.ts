@@ -112,7 +112,7 @@ describe("PayPal connection", () => {
     const before = analyze(bank, { today }).subscriptions;
     const facts = collectFacts(bank, new Set());
     const doubts = findDoubts(before, facts, { banks: ["Demo bank (test data)"], mailboxes: [], files: 0 }, "fr", { canConnect: true });
-    expect(doubts[0]).toMatchObject({ kind: "paypal", bank: "PayPal", title: "1 abonnement payé via PayPal : connectez PayPal pour le nommer" });
+    expect(doubts[0]).toMatchObject({ kind: "paypal", bank: "PayPal", title: "1 abonnement payé via PayPal\u00a0: connectez PayPal pour le nommer" });
     expect(doubts.some((d) => d.kind === "name" && /PayPal/.test(d.title))).toBe(false);
     expect(doubts.find((d) => d.kind === "mail")?.title).toMatch(/Google Play ou Apple/);
     // Without a way to connect, the mailbox is asked for PayPal too.

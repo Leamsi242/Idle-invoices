@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { today as todayLocal } from "@/lib/today";
 import { getSessionId } from "@/lib/session";
 import { getConnections, getDoubts, getReport, listAlerts, listWatches, PAID_WITH_FILE, PAID_WITH_RECEIPTS, type StoredSubscription } from "@/lib/store";
 import { byCategory, insights, missions, type Insight } from "@/lib/insights";
@@ -11,14 +12,15 @@ import { alertLine } from "@/lib/notify";
 import { ServiceIcon } from "@/components/ServiceIcon";
 import { TryDemo } from "@/components/Nav";
 import { Card, Icon, Logo, SectionTitle } from "@/components/ui";
+import { mainCurrency } from "@/lib/engine/flags";
 import { projectedNext, upcomingCharges, type UpcomingCharge } from "@/lib/upcoming";
 import { getMessages } from "@/lib/locale";
-import { formatDate, money, type Locale, type Messages } from "@/lib/i18n";
+import { formatDate, intlLocale, money, moneyRound, type Locale, type Messages } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
 const payName = (p: string, m: Messages) => (p === PAID_WITH_FILE ? m.report.viaFile : p === PAID_WITH_RECEIPTS ? m.report.viaReceipts : p);
-const whole = (n: number, currency: string, locale: Locale) => money(Math.round(n), currency, locale).replace(/[.,]00(?=\D*$)/, "");
+const whole = (n: number, currency: string, locale: Locale) => moneyRound(n, currency, locale);
 
 /**
  * The yearly spend split by way of paying: one bar, one colored segment per bank, card or PayPal.
@@ -26,8 +28,9 @@ const whole = (n: number, currency: string, locale: Locale) => money(Math.round(
  */
 function PaySplit({ subs, m, locale, perYear }: { subs: StoredSubscription[]; m: Messages; locale: Locale; perYear: string }) {
   const totals = new Map<string, number>();
+  const cur = mainCurrency(subs.filter((s) => s.status !== "cancelled" && counted(s)));
   for (const s of subs) {
-    if (s.status === "cancelled" || !counted(s)) continue;
+    if (s.status === "cancelled" || !counted(s) || s.currency !== cur) continue;
     const ways = s.paidWith?.length ? s.paidWith : [PAID_WITH_RECEIPTS];
     // A PayPal payment debited from a bank is one expense: count it once, under PayPal.
     const main = ways.includes("PayPal") ? "PayPal" : ways[0];
@@ -39,7 +42,7 @@ function PaySplit({ subs, m, locale, perYear }: { subs: StoredSubscription[]; m:
   const color = (name: string) => `var(--series-${(order.indexOf(name) % 8) + 1})`;
   const sum = rows.reduce((t, [, v]) => t + v, 0);
   if (rows.length === 0) return null;
-  const currency = subs.find(counted)?.currency ?? "EUR";
+  const currency = cur;
   return (
     <Card className="space-y-4">
       <SectionTitle title={m.ui.split} aside={<span className="text-sm text-muted">{perYear}</span>} />
@@ -53,7 +56,7 @@ function PaySplit({ subs, m, locale, perYear }: { subs: StoredSubscription[]; m:
           <span key={name} className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-medium text-ink-2">
             <span className="h-2.5 w-2.5 rounded-full" style={{ background: color(name) }} />
             {payName(name, m)}
-            <span className="tabular text-xs opacity-70">{money(Math.round(v), currency, locale).replace(/[.,]00(?=\D*$)/, "")}</span>
+            <span className="tabular text-xs opacity-70">{moneyRound(v, currency, locale)}</span>
           </span>
         ))}
       </div>
@@ -70,7 +73,7 @@ const INSIGHT_ICON: Record<Insight["kind"], "clock" | "calendar" | "spark" | "li
 function Reveals({ items, m, locale, currency }: { items: Insight[]; m: Messages; locale: Locale; currency: string }) {
   if (items.length === 0) return null;
   const u = m.ui;
-  const $ = (n: number, d = 0) => new Intl.NumberFormat(locale === "fr" ? "fr-FR" : "en-GB", { style: "currency", currency, maximumFractionDigits: d, minimumFractionDigits: d }).format(n);
+  const $ = (n: number, d = 0) => new Intl.NumberFormat(intlLocale(locale), { style: "currency", currency, maximumFractionDigits: d, minimumFractionDigits: d }).format(n);
   const card = (x: Insight): { big: string; text: string; tone: string } => {
     switch (x.kind) {
       case "daily": return { big: $(x.amount, 2), text: u.insightDaily($(x.amount, 2)), tone: "text-leak" };
@@ -121,7 +124,7 @@ function CategoryBars({ rows, m, locale, currency, perYear }: { rows: { category
           <li key={r.category} className="space-y-1">
             <div className="flex items-baseline justify-between gap-3 text-sm">
               <span className="font-medium first-letter:uppercase">{m.ui.categories[r.category] ?? r.category} <span className="font-normal text-muted">({r.count})</span></span>
-              <span className="tabular font-semibold">{money(Math.round(r.amount), currency, locale).replace(/[.,]00(?=\D*$)/, "")}</span>
+              <span className="tabular font-semibold">{moneyRound(r.amount, currency, locale)}</span>
             </div>
             <div className="h-2 rounded-full bg-surface-2">
               <div className="grow-x h-full rounded-full bg-brand" style={{ width: `${Math.max(3, (r.amount / max) * 100)}%`, animationDelay: `${i * 80}ms` }} />
@@ -173,7 +176,7 @@ function Rhythm({ data, w, locale, currency }: { data: { month: string; amount: 
         ))}
       </div>
       <div className="grid grid-cols-6 gap-3 text-center text-xs capitalize text-muted">
-        {data.map((d) => <span key={d.month}>{new Date(`${d.month}-15T12:00:00Z`).toLocaleDateString(locale === "fr" ? "fr-FR" : "en-GB", { month: "short", timeZone: "UTC" })}</span>)}
+        {data.map((d) => <span key={d.month}>{new Date(`${d.month}-15T12:00:00Z`).toLocaleDateString(intlLocale(locale), { month: "short", timeZone: "UTC" })}</span>)}
       </div>
     </Card>
   );
@@ -210,7 +213,7 @@ function Upcoming({ charges, subs, w, locale }: { charges: UpcomingCharge[]; sub
 }
 
 /** The five biggest subscriptions, each opening its detail. */
-function Glance({ subs, m, w, locale }: { subs: StoredSubscription[]; m: Messages; w: V3; locale: Locale }) {
+function Glance({ subs, m, w, locale, today }: { subs: StoredSubscription[]; m: Messages; w: V3; locale: Locale; today: string }) {
   const top = [...subs].sort((a, b) => b.yearlyCost - a.yearlyCost).slice(0, 5);
   if (top.length === 0) return null;
   return (
@@ -228,7 +231,7 @@ function Glance({ subs, m, w, locale }: { subs: StoredSubscription[]; m: Message
               </span>
               <span className="text-right">
                 <span className="tabular block font-semibold">{money(monthly(s), s.currency, locale)}<span className="text-xs font-normal text-muted"> {w.perMonth}</span></span>
-                <span className="text-xs text-muted">{s.status === "cancelled" ? "" : formatDate(projectedNext(s, new Date().toISOString().slice(0, 10)), locale)}</span>
+                <span className="text-xs text-muted">{s.status === "cancelled" ? "" : formatDate(projectedNext(s, today), locale)}</span>
               </span>
               <Icon name="chevron" className="h-5 w-5 text-muted" />
             </Link>
@@ -244,8 +247,9 @@ export default async function Overview() {
   const u = m.ui;
   const w = v3(locale);
   const sessionId = await getSessionId();
+  const today = await todayLocal();
   const [report, doubts, alerts, connections, watches] = sessionId
-    ? await Promise.all([getReport(sessionId), getDoubts(sessionId, locale), listAlerts(sessionId), getConnections(sessionId), listWatches(sessionId)])
+    ? await Promise.all([getReport(sessionId, today), getDoubts(sessionId, locale), listAlerts(sessionId), getConnections(sessionId), listWatches(sessionId)])
     : [null, [], [], null, []];
   if (!report || report.uploads === 0) {
     return (
@@ -262,14 +266,12 @@ export default async function Overview() {
     );
   }
   const r = report;
-  const today = new Date().toISOString().slice(0, 10);
   const subs = r.subscriptions;
   const liveSubs = subs.filter((s) => counted(s) && s.status !== "cancelled");
   const currency = r.currency;
-  const $ = (n: number) => money(n, currency, locale);
   const toReview = liveSubs.filter((s) => statusOf(s) === "todo" || s.status === "idle" || s.needsLabel);
   // Money to look at: what is unconfirmed or flagged, not a certain loss.
-  const atRisk = toReview.reduce((t, s) => t + s.yearlyCost, 0) / 12;
+  const atRisk = toReview.filter((s) => s.currency === currency).reduce((t, s) => t + s.yearlyCost, 0) / 12;
   const mission = missions({
     banks: connections?.banks.length ?? 0,
     mailboxes: connections?.mailboxes.length ?? 0,
@@ -286,7 +288,7 @@ export default async function Overview() {
     mailboxes: connections?.mailboxes.length ?? 0,
     watching: watches.length > 0,
     t: { trial: w.aTrial, renewal: w.aRenewal, price: w.aPriceUp, unknown: w.aUnknown, answer: w.aAnswer, idle: w.aIdle, doubts: w.aDoubts, mail: w.aMail, watch: w.aWatch },
-    money: $,
+    money: (n, cur) => money(n, cur, locale),
     date: (d) => formatDate(d, locale),
   });
   const icons = Object.fromEntries(items.filter((i) => i.name).map((i) => [i.name!, <ServiceIcon key={i.name} name={i.name!} />]));
@@ -323,13 +325,18 @@ export default async function Overview() {
           <Kpi id="risk" label={w.kpiRisk} value={atRisk} decimals={2} hint={w.kpiRiskHint} locale={locale} currency={currency} icon="eye" tone={atRisk ? "text-leak" : ""} suffix={w.perMonth} />
           <Kpi id="potential" label={w.kpiPotential} value={r.potentialSavings} hint={w.kpiPotentialHint} locale={locale} currency={currency} icon="spark" tone="text-brand" />
           <Kpi id="confirmed" label={w.kpiConfirmed} value={r.savedYearly} hint={w.kpiConfirmedHint} locale={locale} currency={currency} icon="check" tone="text-save" />
+          {r.otherCurrencies.some((o) => o.totalYearly > 0) && (
+            <p className="col-span-2 rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink-2">
+              {w.otherCurrencies(r.otherCurrencies.filter((o) => o.totalYearly > 0).map((o) => `${money(o.totalYearly / 12, o.currency, locale)} ${w.perMonth}`).join(", "))}
+            </p>
+          )}
         </div>
       </div>
 
       <Attention items={items} icons={icons} t={{ title: w.attention, hint: w.attentionHint, empty: w.attentionEmpty, snooze: w.snooze, see: w.see, tags: { trial: w.tagTrial, renewal: w.tagRenewal, price: w.tagPrice, todo: w.tagTodo, setup: w.tagSetup } }} />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
-        <Rhythm data={rhythm(subs, today)} w={w} locale={locale} currency={currency} />
+        <Rhythm data={rhythm(subs, today, 6, currency)} w={w} locale={locale} currency={currency} />
         <Upcoming charges={charges} subs={subs} w={w} locale={locale} />
       </div>
 
@@ -340,7 +347,7 @@ export default async function Overview() {
         <CategoryBars rows={byCategory(subs)} m={m} locale={locale} currency={currency} perYear={w.perYear} />
       </div>
 
-      <Glance subs={liveSubs} m={m} w={w} locale={locale} />
+      <Glance subs={liveSubs} m={m} w={w} locale={locale} today={today} />
     </div>
   );
 }

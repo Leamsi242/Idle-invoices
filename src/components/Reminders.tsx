@@ -68,7 +68,7 @@ export function TrialForm() {
         });
       }}
     >
-      <h2 className="font-semibold">{t.formTitle}</h2>
+      <h3 className="font-semibold">{t.formTitle}</h3>
       <p className="text-sm text-muted">{t.formIntro}</p>
       <input required value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder={t.servicePh} aria-label={t.servicePh} className="w-full rounded border border-line px-3 py-2 text-sm" />
       <div className="grid grid-cols-2 gap-2">
@@ -87,7 +87,7 @@ export function TrialForm() {
         <option value="yearly">{m.per.yearly}</option>
       </select>
       {error && <p className="text-sm text-leak">{error}</p>}
-      <button disabled={pending} className="w-full rounded-lg bg-brand px-4 py-2 font-semibold text-white disabled:opacity-40">{t.track}</button>
+      <button disabled={pending} className="w-full rounded-lg bg-brand px-4 py-2 font-semibold text-on-accent disabled:opacity-40">{t.track}</button>
     </form>
   );
 }

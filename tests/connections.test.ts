@@ -208,7 +208,7 @@ describe("doubts in French", () => {
     const { subscriptions } = analyze(transactions, { today: "2026-09-26" });
     const doubts = findDoubts(subscriptions, collectFacts(transactions, new Set()), { banks: ["Demo"], mailboxes: [], files: 0 }, "fr");
     expect(doubts[1].title).toBe("Votre banque paie une carte American Express chaque mois");
-    expect(doubts.find((d) => d.kind === "name" && d.store === "google")?.title).toMatch(/^Quel service se cache derrière 9,99\s€ par semaine payés via Google Play \?$/);
+    expect(doubts.find((d) => d.kind === "name" && d.store === "google")?.title).toMatch(/^Quel service se cache derrière 9,99\s€ par semaine payés via Google Play\s\?$/);
   });
 });
 

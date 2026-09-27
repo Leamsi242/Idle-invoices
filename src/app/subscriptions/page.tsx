@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { today as todayLocal } from "@/lib/today";
 import { getSessionId } from "@/lib/session";
 import { getReport, PAID_WITH_FILE, PAID_WITH_RECEIPTS, type StoredSubscription } from "@/lib/store";
 import { getMessages } from "@/lib/locale";
@@ -92,7 +93,7 @@ function Detail({ s, m, w, locale, today }: { s: StoredSubscription; m: Messages
 
         <section className="space-y-3">
           <p className="font-semibold">{w.decide}</p>
-          <Decisions labelKey={s.key} usage={s.usage} t={{ keep: w.keep, notUsed: w.notUsed, cancelled: w.cancelled, notSub: w.notSub, undo: w.undo }} />
+          <Decisions labelKey={s.key} frequency={s.frequency} usage={s.usage} t={{ keep: w.keep, notUsed: w.notUsed, cancelled: w.cancelled, notSub: w.notSub, undo: w.undo }} />
         </section>
 
         {!ended && s.usage !== "notsub" && (
@@ -121,9 +122,9 @@ export default async function Subscriptions({ searchParams }: { searchParams: Pr
   const { m, locale } = await getMessages();
   const w = v3(locale);
   const sessionId = await getSessionId();
-  const report = sessionId ? await getReport(sessionId) : null;
+  const today = await todayLocal();
+  const report = sessionId ? await getReport(sessionId, today) : null;
   const subs = report?.subscriptions ?? [];
-  const today = new Date().toISOString().slice(0, 10);
   const rows: SubRow[] = subs.map((s) => {
     const status = statusOf(s);
     const next = projectedNext(s, today);

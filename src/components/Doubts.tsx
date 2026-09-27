@@ -42,7 +42,7 @@ function NameAnswer({ labelKey, store }: { labelKey: string; store?: "apple" | "
         }}
       >
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.namePlaceholder} aria-label={t.nameAria} className="min-w-0 flex-1 rounded-2xl border border-line px-3 py-2 text-sm" />
-        <button type="submit" disabled={pending || !name.trim()} className="rounded-2xl bg-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{t.save}</button>
+        <button type="submit" disabled={pending || !name.trim()} className="rounded-2xl bg-brand px-4 py-2 text-sm font-semibold text-on-accent disabled:opacity-40">{t.save}</button>
       </form>
       {store && (
         <label className="block cursor-pointer text-sm text-brand underline">
@@ -60,7 +60,7 @@ export function Doubts({ doubts, gmail, outlook, banking }: { doubts: Doubt[]; g
   const { m } = useI18n();
   const t = m.doubts;
   if (doubts.length === 0) return null;
-  const button = "inline-flex items-center gap-1.5 rounded-full bg-brand px-3.5 py-1.5 text-sm font-semibold text-white transition hover:opacity-90";
+  const button = "inline-flex items-center gap-1.5 rounded-full bg-brand px-3.5 py-1.5 text-sm font-semibold text-on-accent transition hover:opacity-90";
   return (
     <section className="space-y-3">
       <div className="flex items-end justify-between gap-3">

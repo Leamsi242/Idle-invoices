@@ -11,6 +11,7 @@ import { getSessionId } from "@/lib/session";
 import { subscriptionsForRequest } from "@/lib/store";
 import { statusOf } from "@/lib/engagements";
 import { inDemo } from "@/lib/demo-mode";
+import { TimeZone } from "@/components/TimeZone";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { m } = await getMessages();
@@ -40,8 +41,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     { href: "/", label: w.nav.sources, icon: "bank" },
   ];
   return (
-    <html lang={locale}>
+    <html lang={locale === "fr" ? "fr-FR" : "en-US"}>
       <body className="min-h-dvh">
+        <TimeZone />
         <I18nProvider locale={locale}>
           <div className="lg:grid lg:grid-cols-[260px_1fr]">
             <div className="hidden border-r border-line bg-surface lg:block">
@@ -86,7 +88,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </div>
               </header>
               {demo && (
-                <div className="flex flex-wrap items-center justify-between gap-2 bg-brand px-4 py-2 text-xs text-white sm:px-8">
+                <div className="flex flex-wrap items-center justify-between gap-2 bg-brand px-4 py-2 text-xs text-on-accent sm:px-8">
                   <span><span className="font-semibold uppercase tracking-widest">{w.demoTag}</span> · {w.demoBanner}</span>
                   <QuitDemo label={w.quitDemo} />
                 </div>

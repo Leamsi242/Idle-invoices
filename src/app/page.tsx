@@ -39,7 +39,7 @@ function Tile({ icon, title, done, m, children }: { icon: "bank" | "wallet" | "m
     <Card className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3">
-          <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${done ? "bg-brand text-white" : "bg-surface-2 text-ink-2"}`}>
+          <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${done ? "bg-brand text-on-accent" : "bg-surface-2 text-ink-2"}`}>
             <Icon name={icon} className="h-[22px] w-[22px]" />
           </span>
           <h2 className="font-display text-lg font-semibold tracking-tight">{title}</h2>

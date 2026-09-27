@@ -12,7 +12,7 @@ export async function TrialList({ trials }: { trials: ReportTrial[] }) {
   const t = m.trials;
   return (
     <section className="space-y-3">
-      <h2 className="font-semibold">{t.listTitle} <span className="text-muted">({trials.length})</span></h2>
+      <h3 className="font-semibold">{t.listTitle} <span className="text-muted">({trials.length})</span></h3>
       {trials.map((trial) => {
         const price = trial.amount ? `${money(trial.amount, trial.currency, locale)}${trial.frequency ? ` ${m.per[trial.frequency]}` : ""}` : undefined;
         const left = daysLeft(trial.startsCharging);
@@ -20,7 +20,7 @@ export async function TrialList({ trials }: { trials: ReportTrial[] }) {
         return (
           <article key={`${trial.serviceName}-${trial.startsCharging}`} className="space-y-2 rounded-2xl border border-warn/40 bg-warn-soft p-4">
             <div className="flex items-baseline justify-between gap-2">
-              <h3 className="font-medium">{trial.serviceName}</h3>
+              <h4 className="font-medium">{trial.serviceName}</h4>
               {price && <span className="whitespace-nowrap font-semibold">{price}</span>}
             </div>
             <p className="text-sm text-ink-2">

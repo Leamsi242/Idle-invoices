@@ -1,5 +1,6 @@
 import type { StoredSubscription } from "./store";
 import type { UpcomingTrial } from "./engine/trials";
+import { mainCurrency } from "./engine/flags";
 import { addMonths, daysBetween } from "./dates";
 
 /**
@@ -43,11 +44,14 @@ export const counted = (s: Pick<StoredSubscription, "usage">) => s.usage !== "st
  * What subscriptions cost each month over the last `months` months (the current one included,
  * still in progress), from the payments behind each subscription.
  */
-export function rhythm(subs: StoredSubscription[], today: string, months = 6): { month: string; amount: number; current: boolean }[] {
+export function rhythm(subs: StoredSubscription[], today: string, months = 6, currency?: string): { month: string; amount: number; current: boolean }[] {
   const first = addMonths(`${today.slice(0, 7)}-01`, -(months - 1));
   const out = Array.from({ length: months }, (_, i) => ({ month: addMonths(first, i).slice(0, 7), amount: 0, current: i === months - 1 }));
-  for (const s of subs) {
-    if (s.usage === "notsub") continue;
+  // History keeps what was paid, canceled since or not; only one currency is added up.
+  const paid = subs.filter((s) => s.usage !== "notsub");
+  const cur = currency ?? mainCurrency(paid);
+  for (const s of paid) {
+    if (s.currency !== cur) continue;
     for (const c of s.charges ?? []) {
       const slot = out.find((o) => o.month === c.date.slice(0, 7));
       if (slot && c.amount > 0) slot.amount += c.amount;
@@ -94,7 +98,8 @@ export function attention(input: {
     mail: string;
     watch: string;
   };
-  money: (n: number) => string;
+  /** Formats an amount in the currency it is paid in. */
+  money: (n: number, currency: string) => string;
   date: (iso: string) => string;
 }): AttentionItem[] {
   const { subs, trials, today, t } = input;
@@ -106,17 +111,18 @@ export function attention(input: {
   }
   for (const s of live) {
     if (s.frequency === "yearly" && s.nextCharge >= today && daysBetween(today, s.nextCharge) <= 30) {
-      items.push({ id: `renewal:${s.key}:${s.nextCharge}`, tag: "renewal", name: s.serviceName, text: t.renewal(s.serviceName, input.money(s.currentAmount), input.date(s.nextCharge)), href: `/subscriptions?open=${encodeURIComponent(refOf(s))}` });
+      items.push({ id: `renewal:${s.key}:${s.nextCharge}`, tag: "renewal", name: s.serviceName, text: t.renewal(s.serviceName, input.money(s.currentAmount, s.currency), input.date(s.nextCharge)), href: `/subscriptions?open=${encodeURIComponent(refOf(s))}` });
     }
   }
   for (const s of live) {
     const rise = s.priceChanges.filter((p) => p.to > p.from * 1.02 && daysBetween(p.date, today) <= 60).at(-1);
-    if (rise) items.push({ id: `price:${s.key}:${rise.date}`, tag: "price", name: s.serviceName, text: t.price(s.serviceName, input.money(rise.from), input.money(rise.to)), href: `/subscriptions?open=${encodeURIComponent(refOf(s))}` });
+    if (rise) items.push({ id: `price:${s.key}:${rise.date}`, tag: "price", name: s.serviceName, text: t.price(s.serviceName, input.money(rise.from, s.currency), input.money(rise.to, s.currency)), href: `/subscriptions?open=${encodeURIComponent(refOf(s))}` });
   }
   const unnamed = live.filter((s) => s.needsLabel).length;
   if (unnamed) items.push({ id: `unknown:${unnamed}`, tag: "todo", text: t.unknown(unnamed), href: "/subscriptions?f=todo" });
   const idle = live.filter((s) => s.status === "idle");
-  if (idle.length) items.push({ id: `idle:${idle.length}`, tag: "todo", text: t.idle(idle.length, input.money(idle.reduce((x, s) => x + s.yearlyCost, 0))), href: "/subscriptions?f=todo" });
+  const idleCur = mainCurrency(idle);
+  if (idle.length) items.push({ id: `idle:${idle.length}`, tag: "todo", text: t.idle(idle.length, input.money(idle.filter((s) => s.currency === idleCur).reduce((x, s) => x + s.yearlyCost, 0), idleCur)), href: "/subscriptions?f=todo" });
   const todo = live.filter((s) => !s.usage).length;
   if (todo) items.push({ id: `answer:${todo}`, tag: "todo", text: t.answer(todo), href: "/subscriptions?f=todo" });
   if (input.doubts) items.push({ id: `doubts:${input.doubts}`, tag: "setup", text: t.doubts(input.doubts), href: "/#clarify" });
@@ -126,9 +132,10 @@ export function attention(input: {
 }
 
 /** The first day shown by a month grid (a Monday) and its 42 cells. */
-export function monthGrid(month: string): string[] {
+export function monthGrid(month: string, weekStartsOn: 0 | 1 = 1): string[] {
   const first = new Date(`${month}-01T12:00:00Z`);
-  const offset = (first.getUTCDay() + 6) % 7;
+  // Weeks start on Monday in France, on Sunday in the United States.
+  const offset = (first.getUTCDay() - weekStartsOn + 7) % 7;
   const start = new Date(first.getTime() - offset * 86_400_000);
   return Array.from({ length: 42 }, (_, i) => new Date(start.getTime() + i * 86_400_000).toISOString().slice(0, 10));
 }

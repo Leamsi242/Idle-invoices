@@ -35,7 +35,7 @@ export function BankPicker({ initialQuery = "" }: { initialQuery?: string }) {
     fetch(`/api/bank/institutions?country=${country}`)
       .then(async (r) => {
         const json = await r.json();
-        if (!r.ok) throw new Error(json.error ?? t.unavailable);
+        if (!r.ok) throw new Error(t.unavailable);
         if (live) setList(json.institutions);
       })
       .catch((e) => live && setError(e instanceof Error ? e.message : t.unavailable));
@@ -57,7 +57,7 @@ export function BankPicker({ initialQuery = "" }: { initialQuery?: string }) {
     try {
       const res = await fetch("/api/bank/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...i, watch }) });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? t.unreachable);
+      if (!res.ok) throw new Error(t.unreachable);
       window.location.href = json.url;
     } catch (e) {
       setError(e instanceof Error ? e.message : t.unreachable);

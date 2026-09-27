@@ -27,7 +27,7 @@ export function SideNav({ items, label, badgeHint }: { items: NavItem[]; label: 
         >
           <Icon name={i.icon} className="h-[18px] w-[18px]" />
           <span className="flex-1">{i.label}</span>
-          {!!i.badge && <span className="tabular rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">{i.badge}<span className="sr-only"> {badgeHint}</span></span>}
+          {!!i.badge && <span className="tabular rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-on-accent">{i.badge}<span className="sr-only"> {badgeHint}</span></span>}
         </Link>
       ))}
     </nav>
@@ -45,7 +45,7 @@ export function TabBar({ items, label, badgeHint }: { items: NavItem[]; label: s
             <Link href={i.href} aria-current={on(i.href) ? "page" : undefined} className={`relative flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${on(i.href) ? "text-brand" : "text-muted"}`}>
               <Icon name={i.icon} className="h-6 w-6" />
               {i.label}
-              {!!i.badge && <span className="tabular absolute right-[22%] top-1 rounded-full bg-brand px-1.5 text-[10px] font-semibold text-white">{i.badge}<span className="sr-only"> {badgeHint}</span></span>}
+              {!!i.badge && <span className="tabular absolute right-[22%] top-1 rounded-full bg-brand px-1.5 text-[10px] font-semibold text-on-accent">{i.badge}<span className="sr-only"> {badgeHint}</span></span>}
             </Link>
           </li>
         ))}

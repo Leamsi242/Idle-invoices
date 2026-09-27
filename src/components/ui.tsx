@@ -113,9 +113,9 @@ export function Pill({ children, tone = "neutral", className = "" }: { children:
 
 export const buttonClass = {
   primary: "inline-flex items-center justify-center gap-2 rounded-2xl bg-ink px-5 py-3 font-semibold text-bg transition hover:opacity-90 active:scale-[0.99] disabled:opacity-40",
-  brand: "inline-flex items-center justify-center gap-2 rounded-2xl bg-brand px-5 py-3 font-semibold text-white transition hover:opacity-90 active:scale-[0.99] disabled:opacity-40",
+  brand: "inline-flex items-center justify-center gap-2 rounded-2xl bg-brand px-5 py-3 font-semibold text-on-accent transition hover:opacity-90 active:scale-[0.99] disabled:opacity-40",
   ghost: "inline-flex items-center justify-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm font-medium text-ink-2 transition hover:border-brand hover:text-brand disabled:opacity-40",
-  small: "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-brand px-3.5 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40",
+  small: "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-brand px-3.5 py-1.5 text-sm font-semibold text-on-accent transition hover:opacity-90 disabled:opacity-40",
 };
 
 /** Colors for the ways of paying, used in the split bar and its legend. */

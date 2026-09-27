@@ -59,18 +59,20 @@ export function demoRefresh(today: string): NormalizedTransaction[] {
 
 /**
  * The PayPal account behind the demo bank's monthly "PAYPAL EUROPE" 23.99, as PayPal's PSD2 feed
- * shapes it (date in transaction_date, payee in creditor): the subscription it pays, money sent to
+ * shapes it (date in transaction_date, payee in creditor): the subscription it pays, one paid in dollars, money sent to
  * a friend, a one-off purchase from the balance and a payout to the bank, which is not a payment.
  */
 export function demoPaypalTransactions(today: string): BankRead {
   const lines: EbTransaction[] = [];
-  const line = (date: string, amount: number, creditor: EbTransaction["creditor"], indicator: "DBIT" | "CRDT" = "DBIT") => {
-    if (date <= today) lines.push({ transaction_date: date, status: "BOOK", credit_debit_indicator: indicator, transaction_amount: { amount: amount.toFixed(2), currency: "EUR" }, creditor, remittance_information: [] });
+  const line = (date: string, amount: number, creditor: EbTransaction["creditor"], indicator: "DBIT" | "CRDT" = "DBIT", currency = "EUR") => {
+    if (date <= today) lines.push({ transaction_date: date, status: "BOOK", credit_debit_indicator: indicator, transaction_amount: { amount: amount.toFixed(2), currency }, creditor, remittance_information: [] });
   };
   const start = addMonths(today.slice(0, 8) + "01", -3);
   for (let m = 0; m <= 3; m++) {
     const month = addMonths(start, m);
     line(addDays(month, 2), 23.99, { name: "Adobe Systems Software Ireland Ltd", contact_details: { email_address: "paypal@adobe.com" } });
+    // Paid in dollars from the PayPal balance: shown in dollars, never converted.
+    line(addDays(month, 11), 10, { name: "Midjourney Inc" }, "DBIT", "USD");
   }
   line(addDays(today, -40), 50, { name: "Marie Martin", contact_details: { email_address: "marie.martin@gmail.com" } });
   line(addDays(today, -25), 18.5, { name: "Vinted UAB" });

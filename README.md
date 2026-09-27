@@ -114,7 +114,15 @@ The report shows "This report may be incomplete" while items are left to add. Th
 
 ## Languages
 
-The interface is in French and English (`lib/i18n.ts`, one dictionary per language). The language comes from the browser (Accept-Language), and the link in the footer switches it and remembers the choice in a cookie. Texts made by the engine (reasons, doubts) are written in English and translated for display by `translateReason`, so the engine and its tests stay language-free; cancellation steps and calendar reminders take the locale. The import checklist (`/start`) and the column-mapping screen, both under "Advanced", are still in English only.
+The interface is in French (France) and American English (`lib/i18n.ts`, `lib/i18n-v3.ts`, `lib/i18n-onboarding.ts`, one dictionary per language, the import checklist and column mapping included). The language comes from the browser (Accept-Language), and the link in the menu switches it and remembers the choice in a cookie. American English uses US dates ("Oct 10, 2026"), weeks starting on Sunday and US spelling ("canceled"); French uses French dates, weeks starting on Monday and no-break spaces before « : ; ? ! % » (`lib/typo.ts`, applied to the whole French dictionary). Texts made by the engine (reasons, doubts) are written in English and translated for display by `translateReason`, so the engine and its tests stay language-free.
+
+### Currencies
+
+Every amount is shown in the currency it was paid in, never converted: only the way it is written follows the language (`€9.99` or `9,99 €`, `$10.00` or `10,00 $US`). Totals, charts and savings add up the main currency (the one most of the money goes out in, `mainCurrency` in `engine/flags.ts`); what is paid in another currency is listed next to them on the overview ("Also paid in another currency, not added to the totals") and keeps its own amounts everywhere else. The demo includes one subscription paid in dollars through PayPal.
+
+### Dates
+
+"Today" is the visitor's today: the browser sends its time zone once in a cookie (`components/TimeZone.tsx`, `lib/today.ts`), Paris until it has.
 
 ## Privacy and security
 

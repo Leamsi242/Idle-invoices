@@ -23,6 +23,8 @@
   --warn: #f5a524;
   --warn-soft: #fff6e5;
   --night: #0b0c14;
+  /* Text on a brand, save or leak fill: white on the deep light-mode colors, ink on the lighter dark-mode ones. */
+  --on-accent: #ffffff;
   --shadow: 0 1px 2px rgb(13 15 22 / 0.04), 0 8px 24px -12px rgb(13 15 22 / 0.12);
   /* Categorical series, fixed order, validated for color vision deficiency (dataviz reference palette). */
   --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
@@ -48,6 +50,7 @@
     --warn: #fbbf24;
     --warn-soft: #2a2110;
     --night: #06070b;
+    --on-accent: #0b0c14;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -16px rgb(0 0 0 / 0.6);
     --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
     --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
@@ -73,6 +76,7 @@
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-night: var(--night);
+  --color-on-accent: var(--on-accent);
   --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-display: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", Roboto, sans-serif;
   --shadow-card: var(--shadow);

@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { today as todayLocal } from "@/lib/today";
 import { getSessionId } from "@/lib/session";
 import { getReport, listTrackedTrials } from "@/lib/store";
 import { getMessages } from "@/lib/locale";
 import { v3 } from "@/lib/i18n-v3";
-import { formatDate, money, moneyRound } from "@/lib/i18n";
+import { formatDate, intlLocale, money, moneyRound } from "@/lib/i18n";
 import { addMonths, daysBetween } from "@/lib/dates";
-import { counted, monthGrid } from "@/lib/engagements";
+import { monthGrid } from "@/lib/engagements";
 import { upcomingCharges } from "@/lib/upcoming";
 import { ServiceIcon } from "@/components/ServiceIcon";
 import { TrialForm } from "@/components/Reminders";
@@ -24,16 +25,17 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
   const q = await searchParams;
   const { m, locale } = await getMessages();
   const w = v3(locale);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = await todayLocal();
   const month = /^\d{4}-\d{2}$/.test(q.m ?? "") ? q.m! : today.slice(0, 7);
   const day = /^\d{4}-\d{2}-\d{2}$/.test(q.d ?? "") && q.d!.startsWith(month) ? q.d : undefined;
   const sessionId = await getSessionId();
-  const [report, tracked] = sessionId ? await Promise.all([getReport(sessionId), listTrackedTrials(sessionId)]) : [null, []];
-  const subs = (report?.subscriptions ?? []).filter(counted);
+  const [report, tracked] = sessionId ? await Promise.all([getReport(sessionId, today), listTrackedTrials(sessionId)]) : [null, []];
 
   const lastDay = addMonths(`${month}-01`, 1);
   const events: Event[] = [];
-  for (const s of subs) for (const c of s.charges ?? []) if (c.date.startsWith(month) && c.date <= today && c.amount > 0) events.push({ date: c.date, name: s.serviceName, amount: c.amount, currency: s.currency, kind: "paid" });
+  // What was paid stays in the history, canceled since or not, like the spending chart.
+  const paid = (report?.subscriptions ?? []).filter((s) => s.usage !== "notsub");
+  for (const s of paid) for (const c of s.charges ?? []) if (c.date.startsWith(month) && c.date <= today && c.amount > 0) events.push({ date: c.date, name: s.serviceName, amount: c.amount, currency: s.currency, kind: "paid" });
   const ahead = daysBetween(today, lastDay);
   if (ahead > 0 && report) {
     const live = [...report.forgotten, ...report.active, ...report.idle];
@@ -46,12 +48,19 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
     }
   }
   const on = (d: string) => events.filter((e) => e.date === d);
-  const cells = monthGrid(month);
-  const title = new Date(`${month}-15T12:00:00Z`).toLocaleDateString(locale === "fr" ? "fr-FR" : "en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
-  const weekdays = Array.from({ length: 7 }, (_, i) => new Date(Date.UTC(2024, 0, 1 + i)).toLocaleDateString(locale === "fr" ? "fr-FR" : "en-GB", { weekday: "short", timeZone: "UTC" }));
+  const weekStart = locale === "fr" ? 1 : 0;
+  const cells = monthGrid(month, weekStart);
+  const title = new Date(`${month}-15T12:00:00Z`).toLocaleDateString(intlLocale(locale), { month: "long", year: "numeric", timeZone: "UTC" });
+  const weekdays = Array.from({ length: 7 }, (_, i) => new Date(Date.UTC(2024, 0, 1 - (1 - weekStart) + i)).toLocaleDateString(intlLocale(locale), { weekday: "short", timeZone: "UTC" }));
   const list = day ? on(day) : [...events].sort((a, b) => a.date.localeCompare(b.date));
-  const monthTotal = events.reduce((t, e) => t + e.amount, 0);
-  const currency = subs[0]?.currency ?? "EUR";
+  // Each currency is added up on its own, never converted.
+  const totals = (evs: Event[]) => {
+    const by = new Map<string, number>();
+    for (const e of evs) by.set(e.currency, (by.get(e.currency) ?? 0) + e.amount);
+    return [...by].sort((a, b) => b[1] - a[1]);
+  };
+  const currency = report?.currency ?? "EUR";
+  const monthTotals = totals(events);
   const link = (params: Record<string, string>) => `/calendar?${new URLSearchParams(params)}`;
 
   return (
@@ -71,7 +80,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
               <Link href={link({ m: addMonths(`${month}-01`, 1).slice(0, 7) })} className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-surface-2" aria-label={w.nextMonth}><Icon name="chevron" className="h-5 w-5" /></Link>
             </div>
             <div className="flex items-center gap-3">
-              <span className="tabular hidden text-sm font-semibold sm:inline">{money(monthTotal, currency, locale)}</span>
+              <span className="tabular hidden text-sm font-semibold sm:inline">{(monthTotals.length ? monthTotals : [[currency, 0] as [string, number]]).map(([c, v]) => money(v, c, locale)).join(" + ")}</span>
               <Link href="/calendar" className="rounded-full border border-line px-3 py-1.5 text-sm font-medium hover:border-ink">{w.today}</Link>
             </div>
           </div>
@@ -82,7 +91,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
             {cells.map((d, i) => {
               const inMonth = d.startsWith(month);
               const ev = inMonth ? on(d) : [];
-              const total = ev.reduce((t, e) => t + e.amount, 0);
+              const sums = totals(ev);
               const selected = d === day;
               const isToday = d === today;
               return (
@@ -90,10 +99,10 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
                   key={d}
                   href={inMonth ? link({ m: month, d }) : link({ m: d.slice(0, 7) })}
                   scroll={false}
-                  aria-label={`${formatDate(d, locale)}${ev.length ? `, ${ev.map((e) => e.name).join(", ")}, ${money(total, currency, locale)}` : ""}`}
+                  aria-label={`${formatDate(d, locale)}${ev.length ? `, ${ev.map((e) => e.name).join(", ")}, ${sums.map(([c, v]) => money(v, c, locale)).join(" + ")}` : ""}`}
                   aria-current={isToday ? "date" : selected ? "true" : undefined}
                   className={`rise flex aspect-square flex-col rounded-xl border p-1.5 text-left transition sm:aspect-[1.1] sm:p-2 ${
-                    selected ? "border-brand bg-brand text-white" : isToday ? "border-ink/60" : "border-line hover:border-ink/40"
+                    selected ? "border-brand bg-brand text-on-accent" : isToday ? "border-ink/60" : "border-line hover:border-ink/40"
                   } ${inMonth ? "" : "opacity-30"} ${ev.length && !selected ? "bg-brand-soft/50" : ""}`}
                   style={{ animationDelay: `${Math.min(i, 41) * 8}ms` }}
                 >
@@ -103,7 +112,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
                       <span className="hidden -space-x-2 sm:flex">
                         {ev.slice(0, 1).map((e) => <ServiceIcon key={e.name} name={e.name} size="sm" />)}{ev.length > 1 && <span className="ml-2.5 self-center text-[10px] font-semibold text-muted">+{ev.length - 1}</span>}
                       </span>
-                      <span className={`tabular whitespace-nowrap text-[10px] font-semibold sm:text-xs ${selected ? "" : ev.some((e) => e.kind !== "paid") ? "text-brand" : "text-ink-2"}`}>{moneyRound(total, currency, locale)}</span>
+                      <span className={`tabular whitespace-nowrap text-[10px] font-semibold sm:text-xs ${selected ? "" : ev.some((e) => e.kind !== "paid") ? "text-brand" : "text-ink-2"}`}>{sums.map(([c, v]) => <span key={c} className="block text-right">{moneyRound(v, c, locale)}</span>)}</span>
                     </span>
                   )}
                 </Link>

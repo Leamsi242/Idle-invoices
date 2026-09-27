@@ -1,6 +1,8 @@
 import type { NormalizedTransaction, Source } from "./types";
 import { cleanLabel, isExcludedLabel } from "./engine/labels";
 import { daysBetween } from "./dates";
+import type { Locale } from "./i18n";
+import { onboardingText } from "./i18n-onboarding";
 
 /**
  * Onboarding: the user says how they pay and where their receipts go, and gets a checklist of
@@ -23,50 +25,31 @@ export const EMPTY_ANSWERS: Answers = { banks: [], cards: [], wallets: [], store
 
 export interface Choice { id: string; label: string; hint?: string }
 
-export const BANKS: Choice[] = [
-  { id: "credit-mutuel", label: "Crédit Mutuel / CIC" },
-  { id: "bnp", label: "BNP Paribas" },
-  { id: "societe-generale", label: "Société Générale" },
-  { id: "credit-agricole", label: "Crédit Agricole / LCL" },
-  { id: "bpce", label: "Caisse d'Épargne / Banque Populaire" },
-  { id: "banque-postale", label: "La Banque Postale" },
-  { id: "boursobank", label: "BoursoBank / Hello bank! / Fortuneo" },
-  { id: "n26", label: "N26" },
-  { id: "revolut", label: "Revolut" },
-  { id: "other-bank", label: "Another bank" },
-];
+type ChoiceKey = Exclude<keyof Answers, "done">;
 
-export const CARDS: Choice[] = [
-  { id: "amex", label: "American Express", hint: "Its charges are only on the Amex statement" },
-  { id: "deferred", label: "A card with deferred debit", hint: "One monthly line on the bank account" },
-  { id: "other-card", label: "Another credit card (Visa, Mastercard) with its own statement" },
-];
+const CHOICE_IDS: Record<ChoiceKey, string[]> = {
+  banks: ["credit-mutuel", "bnp", "societe-generale", "credit-agricole", "bpce", "banque-postale", "boursobank", "n26", "revolut", "other-bank"],
+  cards: ["amex", "deferred", "other-card"],
+  wallets: ["paypal", "apple-pay", "google-pay", "lydia"],
+  stores: ["apple", "google", "amazon"],
+  mailboxes: ["gmail", "outlook", "icloud", "yahoo", "other-mail"],
+  other: ["operator", "bnpl"],
+};
 
-export const WALLETS: Choice[] = [
-  { id: "paypal", label: "PayPal" },
-  { id: "apple-pay", label: "Apple Pay", hint: "Charges show on the card's statement" },
-  { id: "google-pay", label: "Google Pay", hint: "Charges show on the card's statement" },
-  { id: "lydia", label: "Lydia / Sumeria" },
-];
+/** The answer choices with their labels in the given language. */
+export function choiceLists(locale: Locale = "en"): Record<ChoiceKey, Choice[]> {
+  const texts = onboardingText(locale).choices;
+  const list = (key: ChoiceKey): Choice[] => CHOICE_IDS[key].map((id) => ({ id, ...texts[key][id] }));
+  return { banks: list("banks"), cards: list("cards"), wallets: list("wallets"), stores: list("stores"), mailboxes: list("mailboxes"), other: list("other") };
+}
 
-export const STORES: Choice[] = [
-  { id: "apple", label: "iPhone / iPad (App Store)" },
-  { id: "google", label: "Android (Google Play)" },
-  { id: "amazon", label: "Amazon (Prime, Channels, Kindle, Audible)" },
-];
-
-export const MAILBOXES: Choice[] = [
-  { id: "gmail", label: "Gmail" },
-  { id: "outlook", label: "Outlook / Hotmail" },
-  { id: "icloud", label: "iCloud Mail" },
-  { id: "yahoo", label: "Yahoo" },
-  { id: "other-mail", label: "Another mailbox (Orange, Free, SFR, work...)" },
-];
-
-export const OTHER: Choice[] = [
-  { id: "operator", label: "Services billed by my phone or internet operator", hint: "Canal+, Netflix or app purchases on the box or mobile bill" },
-  { id: "bnpl", label: "Pay in instalments (Klarna, Alma, Oney, PayPal 4X)" },
-];
+const EN_CHOICES = choiceLists("en");
+export const BANKS: Choice[] = EN_CHOICES.banks;
+export const CARDS: Choice[] = EN_CHOICES.cards;
+export const WALLETS: Choice[] = EN_CHOICES.wallets;
+export const STORES: Choice[] = EN_CHOICES.stores;
+export const MAILBOXES: Choice[] = EN_CHOICES.mailboxes;
+export const OTHER: Choice[] = EN_CHOICES.other;
 
 /** What the uploaded data tells us, for the checklist. */
 export interface Facts {
@@ -130,6 +113,8 @@ export type ItemStatus = "done" | "todo" | "optional";
 export interface PlanItem {
   id: string;
   title: string;
+  /** Short name of the source, e.g. "PayPal", for lists of sources. */
+  short: string;
   why: string;
   steps: string[];
   accepts: string;
@@ -143,50 +128,48 @@ export interface PlanItem {
   connect?: string;
 }
 
-const bankSteps = (id: string): string[] => {
-  const common = [
-    "Open your bank's website (exports are easier there than in the app) and go to the account's list of operations.",
-    "Look for Export, Download or Télécharger. Choose CSV (sometimes called Excel or tableur).",
-    "Pick the last 12 months: yearly renewals only show once a year.",
-    "Upload the file here. Repeat for each current account.",
-  ];
-  if (id === "credit-mutuel") return [...common.slice(0, 3), "If only PDF statements are offered, download the monthly PDF statements (Relevés de compte): they are read as well.", common[3]];
-  if (id === "revolut") return ["In the Revolut app, open the account, then Statement (Relevé).", "Choose Excel/CSV and the last 12 months.", "Upload the file here."];
-  if (id === "n26") return ["In the N26 web app, open Downloads or Statements and export the transactions as CSV.", "Choose the last 12 months.", "Upload the file here."];
-  return common;
+type PlanText = ReturnType<typeof onboardingText>["plan"];
+
+const bankSteps = (id: string, t: PlanText["bank"]): string[] => {
+  const common = t.steps;
+  if (id === "credit-mutuel") return [...common.slice(0, 3), t.creditMutuelPdf, common[3]];
+  if (id === "revolut") return [...t.revolut];
+  if (id === "n26") return [...t.n26];
+  return [...common];
 };
 
 function item(partial: Omit<PlanItem, "status"> & { status?: ItemStatus }): PlanItem {
   return { status: "todo", ...partial };
 }
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
-
 /** The checklist: one item per source to add, with its status from the uploaded data. */
 /** `canConnect`: this server can connect accounts, so PayPal can be connected instead of exported. */
-export function buildPlan(answers: Answers, facts: Facts, opts: { canConnect?: boolean } = {}): PlanItem[] {
+export function buildPlan(answers: Answers, facts: Facts, opts: { canConnect?: boolean; locale?: Locale } = {}): PlanItem[] {
+  const text = onboardingText(opts.locale ?? "en");
+  const t = text.plan;
   const items: PlanItem[] = [];
   const has = (s: Source) => (facts.uploads[s] ?? 0) > 0;
-  const bankLabel = (id: string) => BANKS.find((b) => b.id === id)?.label ?? "Bank";
+  const bankLabel = (id: string) => (id === "other-bank" ? t.bank.yourBank : (text.choices.banks[id]?.label ?? t.bank.yourBank));
 
   // 1. Bank accounts: the backbone, every charge goes through one.
   const banks = answers.banks.length ? answers.banks : ["other-bank"];
   for (const id of banks) {
     items.push(item({
       id: `bank:${id}`,
-      title: `${id === "other-bank" ? "Your bank account" : bankLabel(id)}: 12 months of operations`,
-      why: "Every subscription ends up on a bank account, even the ones paid through PayPal or an app store.",
-      steps: bankSteps(id),
-      accepts: "CSV, or PDF statements",
+      title: t.bank.title(bankLabel(id)),
+      short: bankLabel(id),
+      why: t.bank.why,
+      steps: bankSteps(id, t.bank),
+      accepts: t.bank.accepts,
       action: "upload",
       // A file does not say which bank it comes from: with several banks, the user ticks each one.
       status: has("bank") && banks.length === 1 ? "done" : "todo",
-      alert: has("bank") && banks.length > 1 ? "We have read statements from one of your banks. Tick this item once this bank's are added too." : undefined,
+      alert: has("bank") && banks.length > 1 ? t.bank.alertSeveral : undefined,
     }));
   }
   const bankDone = items.find((i) => i.id.startsWith("bank:") && i.status === "done");
   if (bankDone && facts.bankFrom && facts.bankTo && daysBetween(facts.bankFrom, facts.bankTo) < 300) {
-    bankDone.alert = `Your statements cover ${facts.bankFrom} to ${facts.bankTo}. Add older months to catch yearly renewals (12 months is best).`;
+    bankDone.alert = t.bank.alertShort(facts.bankFrom, facts.bankTo);
   }
 
   // 2. Cards with their own statement.
@@ -194,45 +177,40 @@ export function buildPlan(answers: Answers, facts: Facts, opts: { canConnect?: b
   if (answers.cards.includes("amex") || amexDetected) {
     items.push(item({
       id: "card:amex",
-      title: "American Express: monthly statements",
-      why: "Your bank only shows one monthly payment to Amex. The subscriptions paid with the card are on the Amex statement.",
-      steps: [
-        "Sign in to your American Express account on the website.",
-        "Open Statements (Relevés) and download the PDF statement of each of the last 12 months.",
-        "Upload all the PDFs here at once.",
-      ],
-      accepts: "PDF statements",
+      title: t.amex.title,
+      short: t.amex.short,
+      why: t.amex.why,
+      steps: [...t.amex.steps],
+      accepts: t.amex.accepts,
       action: "upload",
       detected: amexDetected,
       status: facts.amexStatement ? "done" : "todo",
-      alert: facts.amexSettlements && !facts.amexStatement ? `We found ${plural(facts.amexSettlements, "payment")} to American Express on your bank account, but not the card's own statement.` : undefined,
+      alert: facts.amexSettlements && !facts.amexStatement ? t.amex.alert(facts.amexSettlements) : undefined,
     }));
   }
   const deferredDetected = facts.deferredCard > 0 && !answers.cards.includes("deferred");
   if (answers.cards.includes("deferred") || deferredDetected) {
     items.push(item({
       id: "card:deferred",
-      title: "Deferred debit card: card statements",
-      why: "With deferred debit, the account statement can show a single monthly total. If your card operations are not listed one by one, add the card statement.",
-      steps: [
-        "In your online banking, open the card (Mes cartes) and its statement (relevé d'opérations carte).",
-        "Export it as CSV, or download the monthly PDF statements, for the last 12 months.",
-        "Upload the files here.",
-      ],
-      accepts: "CSV or PDF",
+      title: t.deferred.title,
+      short: t.deferred.short,
+      why: t.deferred.why,
+      steps: [...t.deferred.steps],
+      accepts: t.deferred.accepts,
       action: "upload",
       detected: deferredDetected,
       status: "optional",
-      alert: facts.deferredCard ? `We found ${plural(facts.deferredCard, "monthly card total")} on your bank account.` : undefined,
+      alert: facts.deferredCard ? t.deferred.alert(facts.deferredCard) : undefined,
     }));
   }
   if (answers.cards.includes("other-card")) {
     items.push(item({
       id: "card:other",
-      title: "Credit card: its own statement",
-      why: "Charges on a credit card are only listed on the card's statement.",
-      steps: ["Download the card statements of the last 12 months from the card issuer's website (CSV or PDF).", "Upload them here."],
-      accepts: "CSV or PDF",
+      title: t.otherCard.title,
+      short: t.otherCard.short,
+      why: t.otherCard.why,
+      steps: [...t.otherCard.steps],
+      accepts: t.otherCard.accepts,
       action: "upload",
       status: "optional",
     }));
@@ -241,25 +219,20 @@ export function buildPlan(answers: Answers, facts: Facts, opts: { canConnect?: b
   // 3. PayPal: hides the real merchant.
   const pp = facts.intermediaries.paypal;
   const paypalDetected = pp.charges > 0 && !answers.wallets.includes("paypal");
+  const canConnect = !!opts.canConnect;
   if (answers.wallets.includes("paypal") || paypalDetected) {
     items.push(item({
       id: "paypal",
-      title: opts.canConnect ? "PayPal: connect it, or download its activity" : "PayPal: activity download",
-      why: "On a bank statement every PayPal payment reads \"PAYPAL\". PayPal's own data says which service each one paid.",
-      steps: [
-        ...(opts.canConnect ? ["Simplest: connect PayPal from the home page, like your bank (read-only, you sign in on PayPal's page). Or, without a connection:"] : []),
-        "Sign in on paypal.com (the website, not the app).",
-        "Open Activity, then Statements (Relevés), then Activity download (Télécharger l'activité).",
-        "Choose Completed payments, CSV format, and the longest period offered.",
-        "Upload the CSV here. PayPal receipts found by the Gmail scan also help.",
-        "If PayPal only offers a few months, ask for your full history under the GDPR right of access (template below).",
-      ],
-      accepts: opts.canConnect ? "a PayPal connection or its CSV" : "CSV",
+      title: t.paypal.title(canConnect),
+      short: t.paypal.short,
+      why: t.paypal.why,
+      steps: [...(canConnect ? [t.paypal.connectStep] : []), ...t.paypal.steps],
+      accepts: t.paypal.accepts(canConnect),
       action: "gdpr",
-      connect: opts.canConnect ? "PayPal" : undefined,
+      connect: canConnect ? "PayPal" : undefined,
       detected: paypalDetected,
       status: has("paypal") ? "done" : "todo",
-      alert: pp.unexplained ? `${plural(pp.unexplained, "PayPal payment")} on your statements ${pp.unexplained === 1 ? "is" : "are"} still unnamed.` : undefined,
+      alert: pp.unexplained ? t.paypal.alert(pp.unexplained) : undefined,
     }));
   }
 
@@ -269,19 +242,15 @@ export function buildPlan(answers: Answers, facts: Facts, opts: { canConnect?: b
   if (answers.stores.includes("apple") || appleDetected) {
     items.push(item({
       id: "apple",
-      title: "Apple: your subscriptions list",
-      why: "Every App Store subscription reads \"APPLE.COM/BILL\" on a statement. The list on your iPhone names them.",
-      steps: [
-        "On your iPhone, open Settings, tap your name, then Subscriptions.",
-        "Take a screenshot of the list (Active and Inactive), or copy its text.",
-        "Upload the screenshot here, or paste the text and choose \"Apple\".",
-        "For past purchases, reportaproblem.apple.com lists every charge.",
-      ],
-      accepts: "Screenshot or pasted text",
+      title: t.apple.title,
+      short: t.apple.short,
+      why: t.apple.why,
+      steps: [...t.apple.steps],
+      accepts: t.apple.accepts,
       action: "paste",
       detected: appleDetected,
       status: has("apple") ? "done" : "todo",
-      alert: ap.unexplained ? `${plural(ap.unexplained, "Apple charge")} on your statements ${ap.unexplained === 1 ? "is" : "are"} still unnamed.` : undefined,
+      alert: ap.unexplained ? t.apple.alert(ap.unexplained) : undefined,
     }));
   }
   const gp = facts.intermediaries.google;
@@ -289,32 +258,26 @@ export function buildPlan(answers: Answers, facts: Facts, opts: { canConnect?: b
   if (answers.stores.includes("google") || googleDetected) {
     items.push(item({
       id: "google",
-      title: "Google Play: your subscriptions list",
-      why: "Google Play charges read \"GOOGLE*GOOGLE PLAY APPS\" whatever the app. Several apps can cost the same price.",
-      steps: [
-        "Open the Play Store, tap your profile picture, then Payments and subscriptions, then Subscriptions.",
-        "Take a screenshot of the list, or copy its text, and add it here with \"Google Play\".",
-        "Even better: the Gmail scan reads every Google Play order confirmation, including past and cancelled subscriptions.",
-      ],
-      accepts: "Screenshot, pasted text, or Gmail scan",
+      title: t.google.title,
+      short: t.google.short,
+      why: t.google.why,
+      steps: [...t.google.steps],
+      accepts: t.google.accepts,
       action: "paste",
       detected: googleDetected,
       status: has("google") || (has("email") && gp.charges > 0 && gp.unexplained === 0) ? "done" : "todo",
-      alert: gp.unexplained ? `${plural(gp.unexplained, "Google charge")} on your statements ${gp.unexplained === 1 ? "is" : "are"} still unnamed.` : undefined,
+      alert: gp.unexplained ? t.google.alert(gp.unexplained) : undefined,
     }));
   }
   const am = facts.intermediaries.amazon;
   if (answers.stores.includes("amazon") || am.charges > 0) {
     items.push(item({
       id: "amazon",
-      title: "Amazon: memberships and subscriptions",
-      why: "Prime, Prime Video Channels, Kindle Unlimited and Audible renew on their own, often once a year.",
-      steps: [
-        "On amazon.fr, open Your Account, then Memberships and subscriptions.",
-        "Check each active one. Their receipts come by email: the Gmail scan finds them.",
-        "Tick this item once checked.",
-      ],
-      accepts: "Receipts by email",
+      title: t.amazon.title,
+      short: t.amazon.short,
+      why: t.amazon.why,
+      steps: [...t.amazon.steps],
+      accepts: t.amazon.accepts,
       detected: !answers.stores.includes("amazon"),
       status: "optional",
     }));
@@ -324,24 +287,14 @@ export function buildPlan(answers: Answers, facts: Facts, opts: { canConnect?: b
   const boxes = answers.mailboxes.length ? answers.mailboxes : [];
   for (const id of boxes) {
     const gmail = id === "gmail";
+    const box = text.choices.mailboxes[id]?.label ?? t.mail.mailbox;
     items.push(item({
       id: `mail:${id}`,
-      title: gmail ? "Gmail: one-time receipt scan" : `${MAILBOXES.find((m) => m.id === id)?.label ?? "Mailbox"}: receipts`,
-      why: "Receipts name the real service, the plan, the price and the next renewal. They also catch trials that are about to convert.",
-      steps: gmail
-        ? [
-            "Tap \"Connect Gmail and scan\" on the upload page.",
-            "Google asks for read-only access. We read receipts only, keep amounts and merchants, and revoke the access right away.",
-            "Repeat for each Gmail address you use for purchases.",
-          ]
-        : [
-            "Search the mailbox for: receipt, invoice, facture, reçu, abonnement, subscription, renewal, trial.",
-            id === "outlook"
-              ? "Open each receipt, then More actions (...), then Download: it saves a .eml file."
-              : "Save each receipt as a file (.eml), or forward them to a Gmail address and use the Gmail scan.",
-            "Upload the .eml files here, or paste the text of a receipt in the paste box.",
-          ],
-      accepts: gmail ? "Gmail scan" : ".eml files or pasted text",
+      title: gmail ? t.mail.gmailTitle : t.mail.title(box),
+      short: box,
+      why: t.mail.why,
+      steps: gmail ? [...t.mail.gmailSteps] : [t.mail.search, id === "outlook" ? t.mail.outlook : t.mail.saveEml, t.mail.uploadEml],
+      accepts: gmail ? t.mail.acceptsGmail : t.mail.acceptsOther,
       action: gmail ? "gmail" : "upload",
       status: has("email") ? "done" : "todo",
     }));
@@ -351,15 +304,11 @@ export function buildPlan(answers: Answers, facts: Facts, opts: { canConnect?: b
   if (answers.other.includes("operator") || facts.operatorBills > 0) {
     items.push(item({
       id: "operator",
-      title: "Phone and internet bills: options and third-party purchases",
-      why: "Options on the box (Canal+, Netflix) and purchases billed to the phone (\"Internet+\", \"achats de contenus\") are hidden in the monthly bill.",
-      steps: [
-        "Open your operator's customer area and the latest bill.",
-        "Look at Options, Services, Achats de contenus or Internet+ / SMS+.",
-        "Anything you do not use: remove it there, and in Internet+ you can block third-party purchases.",
-        "Tick this item once checked.",
-      ],
-      accepts: "Checked by hand",
+      title: t.operator.title,
+      short: t.operator.short,
+      why: t.operator.why,
+      steps: [...t.operator.steps],
+      accepts: t.operator.accepts,
       detected: !answers.other.includes("operator"),
       status: "optional",
     }));
@@ -367,10 +316,11 @@ export function buildPlan(answers: Answers, facts: Facts, opts: { canConnect?: b
   if (answers.other.includes("bnpl")) {
     items.push(item({
       id: "bnpl",
-      title: "Instalment plans (Klarna, Alma, Oney, PayPal 4X)",
-      why: "Instalments repeat every month but pay for one purchase. They are left out of the report on purpose, so nothing to add.",
-      steps: ["Nothing to do. If a subscription was paid in instalments, its receipt still shows it."],
-      accepts: "Nothing",
+      title: t.bnpl.title,
+      short: t.bnpl.short,
+      why: t.bnpl.why,
+      steps: [...t.bnpl.steps],
+      accepts: t.bnpl.accepts,
       status: "done",
     }));
   }
@@ -406,19 +356,6 @@ export function sanitizeAnswers(input: unknown): Answers {
 }
 
 /** GDPR right of access request, for services that only export a few months (PayPal). */
-export function gdprRequest(service: string, since: string): string {
-  return [
-    `Subject: Right of access request (GDPR article 15): full ${service} transaction history`,
-    ``,
-    `Hello,`,
-    ``,
-    `Under article 15 of the General Data Protection Regulation (EU 2016/679), I ask for a copy of all the personal data you hold about me, and in particular the complete history of my transactions since ${since}, with for each one the date, the amount, the currency, the merchant and the funding source.`,
-    ``,
-    `Under article 20 (right to data portability), I ask for this history in a structured, commonly used and machine-readable format, such as CSV.`,
-    ``,
-    `Article 12(3) gives you one month from receipt of this request to answer. My account is registered with this email address.`,
-    ``,
-    `Thank you,`,
-    `[Your name]`,
-  ].join("\n");
+export function gdprRequest(service: string, since: string, locale: Locale = "en"): string {
+  return onboardingText(locale).gdpr(service, since).join("\n");
 }

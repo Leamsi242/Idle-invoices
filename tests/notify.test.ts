@@ -26,7 +26,7 @@ describe("alert emails", () => {
     process.env.ALERT_FROM = "Subscription Detective <alertes@app.example>";
     expect(await sendAlertEmail("me@example.com", [tinder], "fr", "https://app.example", f)).toBe(true);
     const body = JSON.parse(calls[0].body);
-    expect([calls[0].url, calls[0].auth, body.to, body.subject]).toEqual(["https://api.resend.com/emails", "Bearer re_test", ["me@example.com"], "Subscription Detective : un changement dans vos abonnements"]);
+    expect([calls[0].url, calls[0].auth, body.to, body.subject]).toEqual(["https://api.resend.com/emails", "Bearer re_test", ["me@example.com"], "Subscription Detective\u00a0: un changement dans vos abonnements"]);
     expect(body.text).toContain("https://app.example/report");
   });
 });

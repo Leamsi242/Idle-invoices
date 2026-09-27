@@ -14,6 +14,7 @@ import { diffSubscriptions, type Change } from "./engine/changes";
 import { bankingConfigured, closeAccess, connectionFileName, isPaypal, readAgain, type BankAccess } from "./banking";
 import { sendAlertEmail } from "./notify";
 import { buildPlan, collectFacts, EMPTY_ANSWERS, sanitizeAnswers, type Answers, type Facts, type PlanItem } from "./onboarding";
+import { addDays } from "./dates";
 
 /** Data older than this is purged automatically (see the privacy page). */
 export const RETENTION_DAYS = 30;
@@ -92,10 +93,12 @@ export async function recompute(sessionId: string) {
   const [txs, userDescriptors, previous] = await Promise.all([
     loadTransactions(sessionId),
     loadDescriptors(sessionId),
-    prisma.subscription.findMany({ where: { sessionId }, select: { labelKey: true, usage: true } }),
+    prisma.subscription.findMany({ where: { sessionId }, select: { labelKey: true, frequency: true, usage: true } }),
   ]);
-  const usage = Object.fromEntries(previous.filter((p) => p.usage).map((p) => [p.labelKey, p.usage as Usage]));
-  const { subscriptions, matches } = analyze(txs, { userDescriptors, usage, today: new Date().toISOString().slice(0, 10) });
+  // Keyed by plan, so a decision on the monthly plan leaves the yearly one of the same service alone.
+  const usage = Object.fromEntries(previous.filter((p) => p.usage).map((p) => [`${p.labelKey}|${p.frequency}`, p.usage as Usage]));
+  const today = new Date().toISOString().slice(0, 10);
+  const { subscriptions, matches } = analyze(txs, { userDescriptors, usage, today });
   const uploads = await prisma.upload.findMany({ where: { sessionId }, select: { id: true, fileName: true, sourceType: true } });
   const paidWith = paymentMethods(uploads);
 
@@ -142,7 +145,8 @@ export async function recompute(sessionId: string) {
           endsOn: s.endsOn,
           paidWith: paidWith(s),
           // The payments behind the subscription, newest first: the proof shown in its detail.
-          charges: [...s.transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 24).map((t) => ({ date: t.date, amount: t.amount, source: t.source })),
+          // Thirteen months at most (a weekly plan pays about 56 times): enough for the history charts.
+          charges: [...s.transactions].sort((a, b) => b.date.localeCompare(a.date)).filter((t) => t.date >= addDays(today, -400)).slice(0, 80).map((t) => ({ date: t.date, amount: t.amount, source: t.source })),
           nextConfirmed: !!announcedCharge(s),
         })),
       })),
@@ -213,17 +217,12 @@ export async function listSubscriptions(sessionId: string): Promise<StoredSubscr
 export type ReportTrial = UpcomingTrial & { id?: string; tracked: boolean };
 
 export async function getReport(sessionId: string, today = new Date().toISOString().slice(0, 10)): Promise<Report<StoredSubscription> & { subscriptions: StoredSubscription[]; uploads: number; trials: ReportTrial[] }> {
-  let [subs, uploads, txs, tracked] = await Promise.all([
-    listSubscriptions(sessionId),
+  const [subs, uploads, txs, tracked] = await Promise.all([
+    subscriptionsForRequest(sessionId),
     prisma.upload.count({ where: { sessionId } }),
     transactionsForRequest(sessionId),
     listTrackedTrials(sessionId),
   ]);
-  // Subscriptions computed before "paid with" existed get it now (once).
-  if (subs.some((s) => !s.paidWith || !s.charges)) {
-    await recompute(sessionId);
-    subs = await listSubscriptions(sessionId);
-  }
   const found: ReportTrial[] = upcomingTrials(txs, today).map((t) => ({ ...t, tracked: false }));
   const trials = [...tracked.filter((t) => t.startsCharging >= today), ...found.filter((f) => !tracked.some((t) => t.serviceName === f.serviceName))]
     .sort((a, b) => a.startsCharging.localeCompare(b.startsCharging));
@@ -272,8 +271,8 @@ export async function removeTrackedTrial(sessionId: string, id: string) {
 
 /** Row ids change on every recompute, so answers are keyed by the subscription's label key. */
 /** `null` undoes the decision: the subscription waits for one again. */
-export async function setUsage(sessionId: string, labelKey: string, usage: Usage | null) {
-  const { count } = await prisma.subscription.updateMany({ where: { labelKey, sessionId }, data: { usage } });
+export async function setUsage(sessionId: string, labelKey: string, usage: Usage | null, frequency?: Frequency) {
+  const { count } = await prisma.subscription.updateMany({ where: { labelKey, sessionId, ...(frequency ? { frequency } : {}) }, data: { usage } });
   if (count === 0) throw new Error("Subscription not found");
   await recompute(sessionId);
 }
@@ -358,7 +357,17 @@ export async function setItemDone(sessionId: string, itemId: string, done: boole
 export interface Onboarding { answers: Answers | null; facts: Facts; plan: PlanItem[] }
 
 /** The layout and the page both need the subscriptions: read them once per request. */
-export const subscriptionsForRequest = cache(listSubscriptions);
+/**
+ * The subscriptions for this request, brought up to date first when they were computed before the
+ * last change of stored fields. Shared by the layout (its badge) and the page, so both count the
+ * same rows.
+ */
+export const subscriptionsForRequest = cache(async (sessionId: string): Promise<StoredSubscription[]> => {
+  const subs = await listSubscriptions(sessionId);
+  if (!subs.some((s) => !s.paidWith || !s.charges)) return subs;
+  await recompute(sessionId);
+  return listSubscriptions(sessionId);
+});
 
 /** Pages ask for the transactions several times per request (report, doubts, trials): read them once. */
 const transactionsForRequest = cache(loadTransactions);

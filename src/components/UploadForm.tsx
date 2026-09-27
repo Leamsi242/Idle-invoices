@@ -138,7 +138,7 @@ export default function UploadForm() {
         <button
           type="submit"
           disabled={busy || (files.length === 0 && !pasted.trim())}
-          className="w-full rounded-2xl bg-brand px-4 py-3 font-semibold text-white disabled:opacity-40"
+          className="w-full rounded-2xl bg-brand px-4 py-3 font-semibold text-on-accent disabled:opacity-40"
         >
           {busy ? u.reading : u.find}
         </button>
@@ -164,7 +164,7 @@ export default function UploadForm() {
             <a href="/start" className="block text-sm text-brand underline">{u.missing}</a>
           )}
           {response.results.length > 0 && response.needsMapping.length === 0 && (
-            <button onClick={() => router.push("/subscriptions?f=todo")} className="w-full rounded-2xl bg-brand px-4 py-3 font-semibold text-white">
+            <button onClick={() => router.push("/subscriptions?f=todo")} className="w-full rounded-2xl bg-brand px-4 py-3 font-semibold text-on-accent">
               {u.continue(response.subscriptions ?? 0)}
             </button>
           )}
@@ -174,8 +174,27 @@ export default function UploadForm() {
   );
 }
 
+const MAPPER = {
+  en: {
+    intro: (f: string) => <>We don&apos;t know the layout of <strong>{f}</strong> yet. Tell us which column is which.</>,
+    date: "Date", description: "Description (one or more)", amounts: "Amounts", single: "One amount column", split: "Separate debit and credit columns",
+    amount: "Amount", negative: "Payments are negative numbers", debit: "Debit", credit: "Credit", dateFormat: "Date format",
+    dmy: "Day/Month/Year", mdy: "Month/Day/Year", ymd: "Year-Month-Day", currency: "Currency",
+    again: (f: string) => `Select ${f} again (we deleted it after the first read)`,
+  },
+  fr: {
+    intro: (f: string) => <>Nous ne connaissons pas encore la présentation de <strong>{f}</strong>. Indiquez-nous le rôle de chaque colonne.</>,
+    date: "Date", description: "Libellé (une ou plusieurs colonnes)", amounts: "Montants", single: "Une seule colonne de montant", split: "Colonnes débit et crédit séparées",
+    amount: "Montant", negative: "Les paiements sont en négatif", debit: "Débit", credit: "Crédit", dateFormat: "Format de date",
+    dmy: "Jour/Mois/Année", mdy: "Mois/Jour/Année", ymd: "Année-Mois-Jour", currency: "Devise",
+    again: (f: string) => `Sélectionnez à nouveau ${f} (nous l\u2019avons supprimé après la première lecture)`,
+  },
+};
+
 /** Manual column mapping for a bank CSV layout we don't know. The user re-selects the file: we never kept it. */
 function ColumnMapper({ info, busy, onSubmit }: { info: NeedsMapping; busy: boolean; onSubmit: (file: File, m: ColumnMapping) => void }) {
+  const { m } = useI18n();
+  const t = MAPPER[m.lang];
   const h = info.headers;
   const [date, setDate] = useState(h[0] ?? "");
   const [label, setLabel] = useState<string[]>(h[1] ? [h[1]] : []);
@@ -200,7 +219,7 @@ function ColumnMapper({ info, busy, onSubmit }: { info: NeedsMapping; busy: bool
   return (
     <div className="space-y-3 rounded-lg border border-warn/40 bg-warn-soft p-4">
       <p className="text-sm">
-        We don&apos;t know the layout of <strong>{info.fileName}</strong> yet. Tell us which column is which.
+        {t.intro(info.fileName)}
       </p>
       <div className="overflow-x-auto">
         <table className="text-xs">
@@ -209,53 +228,53 @@ function ColumnMapper({ info, busy, onSubmit }: { info: NeedsMapping; busy: bool
         </table>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        {select(date, setDate, "Date")}
+        {select(date, setDate, t.date)}
         <label className="block text-sm">
-          <span className="text-muted">Description (one or more)</span>
+          <span className="text-muted">{t.description}</span>
           <select multiple className="mt-1 w-full rounded border border-line px-2 py-1" value={label} onChange={(e) => setLabel(Array.from(e.target.selectedOptions).map((o) => o.value))}>
             {h.map((x) => <option key={x}>{x}</option>)}
           </select>
         </label>
         <label className="block text-sm">
-          <span className="text-muted">Amounts</span>
+          <span className="text-muted">{t.amounts}</span>
           <select className="mt-1 w-full rounded border border-line px-2 py-2" value={mode} onChange={(e) => setMode(e.target.value as "single" | "split")}>
-            <option value="single">One amount column</option>
-            <option value="split">Separate debit and credit columns</option>
+            <option value="single">{t.single}</option>
+            <option value="split">{t.split}</option>
           </select>
         </label>
         {mode === "single" ? (
           <>
-            {select(amount, setAmount, "Amount")}
+            {select(amount, setAmount, t.amount)}
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={negative} onChange={(e) => setNegative(e.target.checked)} /> Payments are negative numbers
+              <input type="checkbox" checked={negative} onChange={(e) => setNegative(e.target.checked)} /> {t.negative}
             </label>
           </>
         ) : (
           <>
-            {select(debit, setDebit, "Debit")}
-            {select(credit, setCredit, "Credit")}
+            {select(debit, setDebit, t.debit)}
+            {select(credit, setCredit, t.credit)}
           </>
         )}
         <label className="block text-sm">
-          <span className="text-muted">Date format</span>
+          <span className="text-muted">{t.dateFormat}</span>
           <select className="mt-1 w-full rounded border border-line px-2 py-2" value={dateOrder} onChange={(e) => setDateOrder(e.target.value as "DMY")}>
-            <option value="DMY">Day/Month/Year</option>
-            <option value="MDY">Month/Day/Year</option>
-            <option value="YMD">Year-Month-Day</option>
+            <option value="DMY">{t.dmy}</option>
+            <option value="MDY">{t.mdy}</option>
+            <option value="YMD">{t.ymd}</option>
           </select>
         </label>
         <label className="block text-sm">
-          <span className="text-muted">Currency</span>
+          <span className="text-muted">{t.currency}</span>
           <input className="mt-1 w-full rounded border border-line px-2 py-2" value={currency} maxLength={3} onChange={(e) => setCurrency(e.target.value.toUpperCase())} />
         </label>
       </div>
       <label className="block text-sm">
-        <span className="text-muted">Select {info.fileName} again (we deleted it after the first read)</span>
+        <span className="text-muted">{t.again(info.fileName)}</span>
         <input type="file" accept=".csv" className="mt-1 block w-full text-sm" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
       </label>
       <button
         disabled={busy || !file || label.length === 0}
-        className="w-full rounded-lg bg-brand px-4 py-2 font-semibold text-white disabled:opacity-40"
+        className="w-full rounded-lg bg-brand px-4 py-2 font-semibold text-on-accent disabled:opacity-40"
         onClick={() =>
           file &&
           onSubmit(new File([file], info.fileName, { type: file.type }), {
