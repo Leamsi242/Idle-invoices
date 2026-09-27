@@ -4,6 +4,7 @@ import { bankingConfigured, psuHeaders, startConnection } from "@/lib/banking";
 import { BANK_COOKIE, encodePending } from "@/lib/banking/cookie";
 import { getOrCreateSessionId } from "@/lib/session";
 import { rateLimit } from "@/lib/rate-limit";
+import { betaCheck } from "@/lib/beta";
 
 /** Starts a read-only bank connection: returns the bank's sign-in page. Body: { name, country, watch? }. */
 export async function POST(req: Request) {
@@ -15,6 +16,11 @@ export async function POST(req: Request) {
   if (!name || !/^[A-Z]{2}$/.test(country)) return NextResponse.json({ error: "Choose a bank." }, { status: 400 });
   const sessionId = await getOrCreateSessionId();
   if (!rateLimit(`bank:${sessionId}`, 10, 60 * 60 * 1000).ok) return NextResponse.json({ error: "Too many connections this hour. Please try again later." }, { status: 429 });
+  // The made-up banks (local demo) use no provider: no beta rule applies to them.
+  if (!name.includes("(test data)")) {
+    const refusal = (await betaCheck("bank", sessionId)) ?? (watch ? await betaCheck("watch", sessionId) : null);
+    if (refusal) return NextResponse.json({ error: "Beta limit", beta: refusal }, { status: 403 });
+  }
   const origin = new URL(req.url).origin;
   const state = randomBytes(16).toString("base64url");
   const psu = psuHeaders(req);

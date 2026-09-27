@@ -2,13 +2,16 @@ import { NextResponse } from "next/server";
 import { createHash, randomBytes } from "node:crypto";
 import { authUrl, gmailConfigured } from "@/lib/gmail";
 import { getOrCreateSessionId } from "@/lib/session";
+import { betaCheck } from "@/lib/beta";
 import { clearProgress, revokeScanInProgress } from "@/lib/gmail-scan-cookie";
 
 const GMAIL_COOKIE = "sd_gmail_oauth";
 
 export async function GET(req: Request) {
   if (!gmailConfigured()) return NextResponse.json({ error: "Gmail scanning is not configured." }, { status: 404 });
-  await getOrCreateSessionId();
+  const sessionId = await getOrCreateSessionId();
+  const refusal = await betaCheck("mail", sessionId);
+  if (refusal) return NextResponse.redirect(new URL(`/?beta=${refusal}`, req.url));
   // Starting again ends a scan still in progress in this browser.
   const stopped = await revokeScanInProgress();
   const origin = new URL(req.url).origin;

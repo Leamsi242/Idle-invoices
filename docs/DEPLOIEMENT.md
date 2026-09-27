@@ -2,7 +2,7 @@
 
 Ce guide va du code sur GitHub à une application en ligne où vous connectez votre Crédit Mutuel et votre Gmail. Comptez une heure la première fois. Chaque étape se termine par une vérification.
 
-Tous les services utilisés ont une offre gratuite suffisante pour la phase de test : Vercel (hébergement), Turso (base de données), Enable Banking (connexion bancaire, mode « restricted production »), Google Cloud (lecture de Gmail).
+Tous les services utilisés ont une offre gratuite suffisante pour la phase de test : Vercel (hébergement), Turso (base de données), Enable Banking (connexion bancaire, mode « restricted production », limité à vos propres comptes reliés), Google Cloud (lecture de Gmail). Pour faire tester l'application par d'autres personnes, lisez [BETA.md](BETA.md) : règles, limites, coûts et durée de la bêta.
 
 ## 1. Préparer deux secrets
 
@@ -107,7 +107,7 @@ Si la connexion bancaire échoue, la page d'accueil affiche le code d'erreur de 
 
 - Chaque nuit à 3 h (heure UTC), `/api/cron/purge` efface les données de plus de 30 jours.
 - Chaque nuit à 5 h (UTC), `/api/cron/refresh` relit les comptes que leurs propriétaires ont demandé de surveiller, et crée les alertes (nouvel abonnement, hausse de prix, abonnement qui redémarre).
-- Les deux tâches sont déclarées dans `vercel.json` et protégées par `CRON_SECRET`. L'offre gratuite de Vercel autorise deux tâches quotidiennes.
+- Les deux tâches sont déclarées dans `vercel.json` et protégées par `CRON_SECRET`. L'offre gratuite de Vercel les accepte (depuis janvier 2026, jusqu'à 100 tâches par projet sur toutes les offres, partiellement vérifié : https://vercel.com/changelog/cron-jobs-now-support-100-per-project-on-every-plan).
 - Sans surveillance, les accès bancaires et mail sont fermés juste après chaque lecture. Avec, l'accès bancaire est fermé à l'arrêt de la surveillance, à « Tout supprimer » ou au bout de 90 jours.
 
 Pour tester la surveillance sans attendre la nuit : `curl -H "Authorization: Bearer <CRON_SECRET>" https://<domaine>/api/cron/refresh`.

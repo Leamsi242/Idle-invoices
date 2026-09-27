@@ -5,6 +5,9 @@ import { purgeExpired, recompute, saveUpload } from "@/lib/store";
 import { maskSensitive } from "@/lib/mask";
 import { rateLimit } from "@/lib/rate-limit";
 import { getLocale } from "@/lib/locale";
+import { betaCheck } from "@/lib/beta";
+import { v3 } from "@/lib/i18n-v3";
+import { isSupportedImage } from "@/lib/parsers/screenshot";
 import type { Locale } from "@/lib/i18n";
 
 const TEXTS = {
@@ -71,6 +74,9 @@ export async function POST(req: Request) {
 
   if (files.length > MAX_FILES) return NextResponse.json({ error: t.maxFiles(MAX_FILES) }, { status: 400 });
   const sessionId = await getOrCreateSessionId();
+  const names = [...files.map((f) => f.name), ...(typeof pastedText === "string" && pastedText.trim() ? ["pasted text"] : [])];
+  const refusal = await betaCheck(files.some((f) => isSupportedImage(f.type)) ? "screenshot" : "upload", sessionId, { files: names });
+  if (refusal) return NextResponse.json({ error: v3(locale).beta[refusal], beta: refusal }, { status: 403 });
 
   const results: { fileName: string; source: string; count: number }[] = [];
   const needsMapping: { fileName: string; headers: string[]; preview: string[][] }[] = [];

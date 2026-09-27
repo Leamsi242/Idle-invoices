@@ -105,7 +105,10 @@ function fieldPaths(t: object, into: Set<string>, prefix = "") {
 }
 
 /** An ASPSP as listed by Enable Banking. */
-interface Aspsp { name: string; country: string; psu_types?: string[]; maximum_consent_validity?: number }
+export interface Aspsp { name: string; country: string; psu_types?: string[]; maximum_consent_validity?: number; sandbox?: boolean; beta?: boolean }
+
+/** PayPal is kept even when listed for business accounts only: the sign-in is the same, and start() picks the PSU type. */
+export const shownToUsers = (a: Aspsp) => !a.psu_types || a.psu_types.includes("personal") || /^paypal\b/i.test(a.name);
 
 export class EnableBanking implements BankProvider {
   id = "enable-banking";
@@ -147,15 +150,13 @@ export class EnableBanking implements BankProvider {
     return { transactions, stats };
   }
 
-  private async aspsps(country: string): Promise<Aspsp[]> {
+  /** The banks as Enable Banking lists them for this application (the owner's bank check reads it too). */
+  async aspsps(country: string): Promise<Aspsp[]> {
     return (await this.call<{ aspsps?: Aspsp[] }>(`/aspsps?country=${encodeURIComponent(country)}`)).aspsps ?? [];
   }
 
   async listInstitutions(country: string): Promise<Institution[]> {
-    // PayPal is kept even when listed for business accounts only: the sign-in is the same, and start() picks the PSU type.
-    return (await this.aspsps(country))
-      .filter((a) => !a.psu_types || a.psu_types.includes("personal") || /^paypal\b/i.test(a.name))
-      .map((a) => ({ name: a.name, country: a.country }));
+    return (await this.aspsps(country)).filter(shownToUsers).map((a) => ({ name: a.name, country: a.country }));
   }
 
   async start({ institution, redirectUrl, state, psu, keepDays = 0 }: { institution: Institution; redirectUrl: string; state: string; psu?: PsuContext; keepDays?: number }) {

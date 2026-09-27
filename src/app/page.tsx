@@ -13,6 +13,8 @@ import { Doubts } from "@/components/Doubts";
 import { DeleteEverythingButton } from "@/components/Questions";
 import { TryDemo } from "@/components/Nav";
 import { v3 } from "@/lib/i18n-v3";
+import { bankOpenToMe, hasBetaAccess } from "@/lib/beta";
+import { BetaCode } from "@/components/BetaCode";
 import { buttonClass, Card, Icon, Pill, SectionTitle } from "@/components/ui";
 import { getMessages } from "@/lib/locale";
 import type { Messages } from "@/lib/i18n";
@@ -56,11 +58,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const { m, locale } = await getMessages();
   const h = m.home;
   const u = m.ui;
-  const note = message(q, m);
-  const sessionId = await getSessionId();
   const w = v3(locale);
+  const betaNote = q.beta && q.beta in w.beta ? w.beta[q.beta as keyof typeof w.beta] : null;
+  const note = betaNote ?? message(q, m);
+  // Invitation-only beta: the code is asked before the first real connection, not after a refusal.
+  const askCode = q.beta === "code" || !(await hasBetaAccess());
+  const sessionId = await getSessionId();
   const [c, watches, sources, doubts] = await Promise.all([getConnections(sessionId), listWatches(sessionId), getSources(sessionId), sessionId ? getDoubts(sessionId, locale) : Promise.resolve([])]);
   const banking = bankingConfigured();
+  const bankOpen = banking && (await bankOpenToMe());
   const gmail = gmailConfigured();
   const outlook = outlookConfigured();
   const wallets = c.wallets ?? [];
@@ -103,14 +109,22 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
         ))}
       </ol>
 
-      {note && <p className="rise rounded-2xl border border-line bg-surface p-4 text-sm shadow-card">{note}</p>}
+      {note && !askCode && <p className="rise rounded-2xl border border-line bg-surface p-4 text-sm shadow-card">{note}</p>}
+      {askCode && (
+        <div className="rise rounded-2xl border border-line bg-surface p-4 text-sm shadow-card">
+          <p>{w.beta.code}</p>
+          <BetaCode t={{ codeLabel: w.beta.codeLabel, codeSubmit: w.beta.codeSubmit, codeWrong: w.beta.codeWrong }} />
+        </div>
+      )}
       {q.gmail === "partial" && <GmailContinue scanned={Number(q.scanned) || 0} total={Number(q.total) || 0} />}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 [&>*]:min-w-0">
         <Tile icon="bank" title={u.banksTitle} done={c.banks.length > 0} m={m}>
           {of("bank").map((x) => <CoverageLine key={x.name} s={x} m={m} locale={locale} />)}
           {watchesFor(c.banks).map((w) => <WatchControls key={w.id} watch={w} emailEnabled={emailConfigured()} />)}
-          {banking ? (
+          {banking && !bankOpen ? (
+            <p className="text-sm text-muted">{w.beta.owner} <Link href="/advanced#upload" className="text-brand underline">{w.beta.ownerCta}</Link></p>
+          ) : banking ? (
             c.banks.length > 0 && !pickBank ? (
               <details id="bank" className="group rounded-2xl bg-surface-2 p-3">
                 <summary className="flex items-center gap-1 text-sm font-medium text-brand"><Icon name="chevron" className="chev h-4 w-4" />{h.addAnother}</summary>
@@ -122,7 +136,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
           ) : (
             <p className="text-sm text-muted">{h.bankNotSetUp} <Link href="/advanced" className="text-brand underline">{h.importStatement}</Link> {h.instead}</p>
           )}
-          <p className="text-xs text-muted">{h.bankNote}</p>
+          {(!banking || bankOpen) && <p className="text-xs text-muted">{h.bankNote}</p>}
         </Tile>
 
         <div className="grid gap-5">
@@ -132,7 +146,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
             {wallets.length === 0 && (
               <>
                 <p className="text-sm text-muted">{h.paypalHint}</p>
-                {banking && <BankPicker initialQuery="PayPal" />}
+                {bankOpen && <BankPicker initialQuery="PayPal" />}
+                {banking && !bankOpen && <Link href="/advanced#upload" className="text-sm text-brand underline">{w.beta.ownerCta}</Link>}
               </>
             )}
           </Tile>
@@ -152,7 +167,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
 
       {doubts.length > 0 && (
         <section id="clarify" className="scroll-mt-24 space-y-2">
-          <Doubts doubts={doubts} gmail={gmail} outlook={outlook} banking={banking} />
+          <Doubts doubts={doubts} gmail={gmail} outlook={outlook} banking={bankOpen} />
         </section>
       )}
 

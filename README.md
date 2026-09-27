@@ -16,7 +16,7 @@ npx prisma db push                 # creates prisma/dev.db (SQLite)
 npm run dev                        # http://localhost:3000
 ```
 
-Then upload the files in [`samples/`](samples) to see a full report. Optional: set `ANTHROPIC_API_KEY` to read app store screenshots (without it, paste the text of the list instead).
+Then upload the files in [`samples/`](samples) to see a full analysis, or press "Try with made-up data" (demo mode). Optional: set `ANTHROPIC_API_KEY` to read app store screenshots (without it, paste the text of the list instead).
 
 ## Run the tests
 
@@ -34,7 +34,7 @@ Uploaded files
   -> parsers (src/lib/parsers)        one NormalizedTransaction format, numbers masked
   -> reconcile (engine/reconcile.ts)  vague bank charge = record with same amount and currency within 3 days
   -> detect (engine/recurring.ts)     same label, amount within 10%, weekly / monthly / quarterly / yearly
-  -> label (engine/descriptors.ts)    55 known services (src/data/descriptors.json) + the user's answers
+  -> label (engine/descriptors.ts)    93 known services (src/data/descriptors.json) + the user's answers
   -> flag (engine/flags.ts)           possibly forgotten, idle, cancelled, bundles
   -> report
 ```
@@ -58,10 +58,10 @@ Uploaded files
 - **App store lists** show the next renewal, not past charges, so the parser projects the last 12 months of charges back from the renewal date to reconcile them with `APPLE.COM/BILL` lines.
 - **"No receipt email"** is only used as a reason when the user uploaded at least one receipt; otherwise every subscription would be flagged.
 - **"Possibly forgotten" vs "idle".** Answering "Yes" to "Still using this?" clears the forgotten flag; "Rarely" or "No" makes it idle and adds its yearly cost to the potential savings. A subscription with no charge for 1.5 periods is shown as stopped and left out of the total.
-- **Free trials not yet charged** (for example "Free trial, then €69.99/year" in an app store list) are shown at the top of the report with the date of the first charge, so the user can cancel in time (Calm in the samples).
+- **Free trials not yet charged** (for example "Free trial, then €69.99/year" in an app store list) are shown in the calendar and among the priorities of the overview with the date of the first charge, so the user can cancel in time (Calm in the samples).
 - **Trials that keep charging.** A subscription first charged in the last 60 days is marked "New" and shown in a "Started recently" banner (only when the statements go back at least 30 days before it, so everything is not "new" on a short statement). Weekly billing is flagged with its monthly cost ("about €43.29 a month"), and a small first charge (at most half the price, up to 35 days before) is shown as a paid trial. A known service (in the descriptor map) is accepted after 2 charges instead of 3, so a converted trial is caught after its first renewal. In the samples: WeTransfer at €9.99 a week and Strava after a €1 trial.
-- **Reminders.** On the Trials page the user notes a free trial they just started; the report lists it with the trial found in app store lists. Every trial and every subscription has a button that downloads a calendar reminder (.ics): 2 days before a trial ends, 3 days before a renewal, at 9:00. It works with any phone calendar and needs no account or email address.
-- **How to cancel** depends on how the user pays: Apple and Google Play subscriptions can only be cancelled in the store, PayPal payments also need the automatic payment stopped, and direct debits can be backed by revoking the SEPA mandate. The report shows these steps plus the service's account page, the next charge date and the amount paid so far.
+- **Reminders.** In the calendar ("Free trials") the user notes a free trial they just started; it is listed with the trials found in app store lists. Every trial and every subscription has a button that downloads a calendar reminder (.ics): 2 days before a trial ends, 3 days before a renewal, at 9:00. It works with any phone calendar and needs no account or email address.
+- **How to cancel** depends on how the user pays: Apple and Google Play subscriptions can only be cancelled in the store, PayPal payments also need the automatic payment stopped, and direct debits can be backed by revoking the SEPA mandate. The detail panel of each subscription shows these steps plus the service's account page, the next charge date and the amount paid so far.
 - **A mailbox is enough on its own.** Receipts that no bank line accounts for become charges themselves (one per payment: a PayPal receipt and the merchant's own email for the same payment count once). The parser reads the formats met in a real mailbox: Google Play order confirmations (the real app is only named in the body; weekly, monthly, every 3 months or yearly), PayPal receipts in French and English (a payment to "Google Payment Ireland" is named after its item line, e.g. Google AI Pro, which is Google One), Stripe and Paddle receipts, Amazon Channels introductory prices, renewal reminders. Cancellation emails are kept as evidence and end a subscription; instalment plans, transfers to people, refunds and failed payments are ignored.
 - **Trials that converted without a cancellation** ("On September 14 you will be charged €49.99 every month", no cancellation email since) are reported as probably charging, with the amount to look for on the statement. Announced price increases ("€49.99 the first year, then €99.99") appear in the "Coming up" section with a reminder.
 - **Duplicates.** The same service paid twice over the same period, at the same billing frequency (two accounts, or the app store and the website), is flagged "Charged twice". A monthly plan followed by a yearly one is a plan change, and a cancellation email sent before a plan started does not end it.
@@ -74,10 +74,10 @@ Uploaded files
 1. **Connect your bank** (`/`): search the bank, sign in on the bank's own page (PSD2 strong authentication), come back. The app reads the transactions of every account the user shared, up to 24 months (90 days at Crédit Mutuel, the bank's limit), once, then deletes the consent (`lib/banking`, `api/bank/*`). Cards with their own statement (American Express) are connected the same way.
 2. **Connect your mailbox**: Gmail or Outlook / Hotmail, one-time read-only scan of receipts (`lib/gmail.ts`, `lib/outlook.ts`).
 3. **Overview** (`/report`): a summary hero with a mastery score, four figures (recurring per month, money to review, potential and confirmed savings), "What deserves your attention" (three priorities at most, each can be snoozed for 7 days), the six-month spending rhythm, the next charges, what the investigation reveals, the split by way of paying and by category.
-4. **Commitments** (`/subscriptions`): every subscription in one table (search, filter by state or way of paying, sort). A row opens a side panel with the proof (last payments, sources) and four decisions: I keep it, I no longer use it, I cancelled it, not a subscription (hidden and left out of the totals, can be undone). `/review` now points here.
+4. **Subscriptions** (`/subscriptions`): every subscription in one table (search, filter by state or way of paying, sort). A row opens a side panel with the proof (last payments, sources) and four decisions: I keep it, I no longer use it, I cancelled it, not a subscription (hidden and left out of the totals, can be undone). A decision applies to one plan: the monthly and the yearly plan of the same service are decided separately. `/review` now points here.
 5. **Calendar** (`/calendar`): the month, with what was paid on past days and what is expected ahead (confirmed or estimated), plus the free trials the user tracks. `/trials` now points here.
 6. **Sources** (`/`), with "We need your help" on top (`lib/doubts.ts`): only the points the data could not settle, each with one small action. Unnamed PayPal subscriptions ask to connect PayPal (one action names them all, and no name question is asked meanwhile); unnamed Google Play or Apple payments without a mailbox connected ask for the mailbox; a bank paying an American Express card asks to connect the card; a recurring charge still unnamed asks for its name, or a screenshot of the store's subscription list.
-7. **Watching (optional)**: ticking "Keep watching for 90 days" at the bank step keeps the read-only access (encrypted, `BankLink`). Every night `/api/cron/refresh` reads the account again from a few days before the last read, re-analyses, and compares with the previous analysis (`engine/changes.ts`): a new subscription, a price increase or a stopped subscription charging again becomes an alert on top of the report, and an email when the user gave an address and Resend is set up (`lib/notify.ts`). Stopping the watch, "Delete everything" or the 90-day end close the access at the bank. No account is needed: the watch belongs to the browser session.
+7. **Watching (optional)**: ticking "Keep watching for 90 days" at the bank step keeps the read-only access (encrypted, `BankLink`). Every night `/api/cron/refresh` reads the account again from a few days before the last read, re-analyses, and compares with the previous analysis (`engine/changes.ts`): a new subscription, a price increase or a stopped subscription charging again becomes an alert on top of the overview, and an email when the user gave an address and Resend is set up (`lib/notify.ts`). Stopping the watch, "Delete everything" or the 90-day end close the access at the bank. No account is needed: the watch belongs to the browser session.
 8. **Demo mode**: "Try the demo" (on an empty overview or on Sources) swaps the browser to a separate session filled with made-up bank and PayPal data (`POST /api/demo`); "Quit the demo" deletes it and restores the real session (`DELETE /api/demo`). Nothing of the real session is read or changed.
 9. **Advanced** (`/advanced`, `/start`): manual import of files and the import checklist, for testing, for banks the provider does not cover, or for a PayPal export.
 
@@ -94,7 +94,7 @@ Setup: create an application in the Enable Banking control panel, register the r
 3. Put the application id and its private key in `ENABLE_BANKING_APP_ID` and `ENABLE_BANKING_PRIVATE_KEY`, then run `npm run bank:check -- https://<your-domain>/api/bank/callback "Crédit Mutuel"`. It checks the key, the application, the redirect URL, and lists the Crédit Mutuel entries with the headers the bank requires. Nothing is connected.
 4. Open the app, search "Crédit Mutuel", sign in on the bank's page and confirm in the Crédit Mutuel app.
 
-What to expect: Crédit Mutuel shares 90 days of history through PSD2. The app asks for 24 months, then 13, then 90 days, and keeps the first period the bank accepts. With 90 days, a monthly charge shows two or three times: two identical charges a month apart count, marked "Seen twice so far". Yearly renewals are outside that window, so the report asks to connect the mailbox, whose receipts go back years. If the connection fails, the home page shows the bank's error code (for example `PSU_HEADER_NOT_PROVIDED`) and the server log has the details.
+What to expect: Crédit Mutuel shares 90 days of history through PSD2. The app asks for 24 months, then 13, then 90 days, and keeps the first period the bank accepts. With 90 days, a monthly charge shows two or three times: two identical charges a month apart count, marked "Seen twice so far". Yearly renewals are outside that window, so the overview asks to connect the mailbox, whose receipts go back years. If the connection fails, the Sources page shows the bank's error code (for example `PSU_HEADER_NOT_PROVIDED`) and the server log has the details.
 
 ### Outlook setup
 
@@ -110,7 +110,7 @@ The checklist also reads what was uploaded (`lib/onboarding.ts`):
 - sources the user did not mention are added when the statements point to them: PayPal, Apple or Google charges that nothing explains yet (with the count), payments to American Express without the Amex statement, a deferred debit card total, telecom bills;
 - statements covering less than about 10 months get a note, since yearly renewals would be missed.
 
-The report shows "This report may be incomplete" while items are left to add. The answers hold known ids only, are encrypted, and are deleted with everything else.
+The overview shows "This report may be incomplete" while items are left to add. The answers hold known ids only, are encrypted, and are deleted with everything else.
 
 ## Languages
 
@@ -124,6 +124,22 @@ Every amount is shown in the currency it was paid in, never converted: only the 
 
 "Today" is the visitor's today: the browser sends its time zone once in a cookie (`components/TimeZone.tsx`, `lib/today.ts`), Paris until it has.
 
+## Closed beta
+
+The rules for a closed beta of up to 100 testers are in `src/lib/beta.ts`, set with environment variables, and explained in French with their costs and sources in [docs/BETA.md](docs/BETA.md). They are checked before anything a provider limits or bills: a bank connection, a mailbox scan, a file or screenshot upload, a nightly watch. Counts come from the database, so they hold across server instances; the demo is never limited.
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `BETA_ACCESS_CODE` | none | Invitation code asked once per browser before any real connection (invite link: `/api/beta?code=...`) |
+| `BETA_OWNER_CODE` | none | The owner's code, typed in the same field: no limit applies to that browser |
+| `BETA_BANK_MODE` | `all` | `owner`: only the owner connects banks and PayPal directly (Enable Banking's free restricted mode only returns accounts linked in the owner's Control Panel); testers import statements |
+| `BETA_MAX_TESTERS` | 100 | Browsers that may import or connect real data (Google's testing status allows 100 test users) |
+| `BETA_BANK_CONNECTIONS_PER_DAY`, `BETA_UPLOADS_PER_DAY`, `BETA_SCREENSHOTS_PER_DAY` | 3, 30, 5 | Per tester, over 24 hours |
+| `BETA_SCREENSHOTS_PER_MONTH` | 200 | For everyone, per calendar month (the Claude API is the only per-use cost) |
+| `BETA_MAX_WATCHES` | 100 | Bank accounts watched every night at the same time |
+
+Two owner-only routes, protected by `CRON_SECRET` (`Authorization: Bearer ...`): `/api/beta/usage` (testers, watches, this month's connections, scans, screenshots and files) and `/api/beta/banks?country=FR` (every bank Enable Banking lists for the application's keys, and whether the app offers it).
+
 ## Privacy and security
 
 What the code does for each point of the spec's "Privacy and security" section:
@@ -131,7 +147,7 @@ What the code does for each point of the spec's "Privacy and security" section:
 | Rule | Where |
 | --- | --- |
 | Delete uploaded files right after parsing | Files are read into memory only, wiped (`fill(0)`) after parsing and never written to disk (`api/upload/route.ts`; `tests/privacy.test.ts` fails if any file-writing call appears). The `Upload` row is created with `deletedAt` already set. |
-| "Delete everything" button | On the report and privacy pages; `DELETE /api/data` erases every row of the session in every table and clears the cookie. Data is also purged automatically 30 days after the last upload. |
+| "Delete everything" button | On the Sources ("Your control" card) and privacy pages; `DELETE /api/data` erases every row of the session in every table and clears the cookie. Data is also purged automatically 30 days after the last upload. |
 | Mask account numbers, IBANs and card numbers during parsing | `lib/mask.ts`, applied by `makeTx()` in every parser and to stored file names. |
 | Encrypt the database at rest | Labels, merchants, plans and subscription details are encrypted with AES-256-GCM before storage (`lib/crypto.ts`, key in `DATA_ENCRYPTION_KEY`). Dates and amounts are not. For production, also use a database with disk encryption (Turso and managed Postgres provide it). |
 | HTTPS everywhere | HSTS, Content-Security-Policy and other security headers in `next.config.ts`; the session cookie is `Secure` in production; Vercel serves HTTPS only. |
@@ -194,7 +210,12 @@ src/lib/parsers/         one parser per source, plus file-type detection
 src/lib/engine/          reconcile, detect, label, flag, pipeline
 src/data/descriptors.json
 src/lib/store.ts         database access, recompute, delete everything, retention
-src/app/                 pages (sources, overview, commitments, calendar, privacy) and API routes
+src/app/                 pages (sources, overview, subscriptions, calendar, privacy, advanced) and API routes
+src/proxy.ts             refuses cross-site API writes
 src/lib/engagements.ts   status, type, rhythm and attention helpers shared by the pages
+src/lib/i18n*.ts         French and American English texts (i18n, i18n-v3, i18n-onboarding)
+src/lib/typo.ts          French no-break spaces, applied to every French text
+src/lib/today.ts         "today" in the visitor's time zone
+src/lib/banking/         Enable Banking client, demo bank and demo PayPal
 tests/                   Vitest suites
 ```

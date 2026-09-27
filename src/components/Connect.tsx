@@ -57,6 +57,8 @@ export function BankPicker({ initialQuery = "" }: { initialQuery?: string }) {
     try {
       const res = await fetch("/api/bank/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...i, watch }) });
       const json = await res.json();
+      // A beta rule said no: the Sources page explains why (and asks for the code if needed).
+      if (res.status === 403 && json.beta) return void (window.location.href = `/?beta=${json.beta}`);
       if (!res.ok) throw new Error(t.unreachable);
       window.location.href = json.url;
     } catch (e) {
