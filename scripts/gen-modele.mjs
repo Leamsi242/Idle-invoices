@@ -1,7 +1,7 @@
 // Writes docs/MODELE-ECONOMIQUE.md from docs/model.mjs, the model the masterplan page uses too.
 // Run: npm run modele (after changing a parameter in docs/model.mjs).
 import fs from "node:fs";
-import { PARAMS, GROUPS, CHOICES, defaults, allScenarios, project, breakEven, reachBy, atScale, breakEvenSubscribers, fmtEur, fmtInt } from "../docs/model.mjs";
+import { PARAMS, GROUPS, CHOICES, defaults, allScenarios, project, breakEven, reachBy, atScale, breakEvenSubscribers, ebCost, fmtEur, fmtInt } from "../docs/model.mjs";
 
 const p = defaults();
 const scenarios = allScenarios().map((s) => ({ s, r: project(p, s) }));
@@ -47,7 +47,7 @@ for (const [title, keys] of GROUPS) {
 const real = scenarios.filter((x) => x.s.realistic);
 out.push(`## 3. Les scénarios réalistes
 
-Tous en bouche-à-oreille, Outlook ouvert à tous (export pour Gmail), banque directe réservée au Premium, IA d'abord sauf mention contraire. Chacun change une chose par rapport au scénario central.
+Tous en bouche-à-oreille, Outlook ouvert à tous (export pour Gmail), banque directe réservée au Premium et contrat Enable Banking signé seulement à ${fmtInt(p.bankTrigger)} abonnés (jamais atteint en 24 mois, sauf mention), IA d'abord sauf mention contraire. Chacun change une chose par rapport au scénario central.
 `);
 out.push(row(["Code", "Scénario", "Dépenses 24 mois", "Résultat 24 mois", "Trésorerie à avancer", "Premium au mois 24", "Remboursé au", "Seuil de rentabilité (régime stable)"]));
 out.push(row(["---", "---", "---:", "---:", "---:", "---:", "---", "---"]));
@@ -166,7 +166,7 @@ for (const { s, r } of [...scenarios].filter((x) => x.s.monetize !== false).sort
   out.push(row([s.id, s.name, eur(x.spend24), eur(x.social24), eur(x.revenue24), `**${eur(x.result24)}**`, eur(x.cashNeed), fmtInt(x.premium), month(x.firstProfitMonth), month(x.paybackMonth)]));
 }
 out.push(`
-**Lecture** : la publicité payée fait perdre de l'argent dans tous les cas ; la banque directe ouverte à tous coûte plus qu'elle ne rapporte ; les meilleurs résultats viennent du bouche-à-oreille, d'une offre qui ne dépend pas du seul Premium mensuel, et de l'IA pour le travail répétitif.
+**Lecture** : la publicité payée fait perdre de l'argent dans tous les cas ; la banque directe signée dès le lancement (combinaisons P et T) coûte la licence Enable Banking chaque mois et fait perdre de l'argent sur 24 mois ; les meilleurs résultats viennent du bouche-à-oreille, d'une offre qui ne dépend pas du seul Premium mensuel, et de l'IA pour le travail répétitif.
 
 ## 8. Les phases gratuites (pas de revenu)
 `);
@@ -183,7 +183,6 @@ for (const { s, r } of scenarios.filter((x) => x.s.monetize === false)) out.push
 // Thresholds per expense.
 const pro = usd(p.vercelPro);
 const casaMonthly = p.casa / 12;
-const ebFor = (min) => breakEvenSubscribers(p, min, p.ebAccount * p.bankShare / 100);
 out.push(`
 ## 9. Les seuils où chaque dépense se rembourse
 
@@ -198,7 +197,7 @@ out.push(row(["Expert-comptable (société)", eur(p.accountant), fmtInt(breakEve
 out.push(row(["Turso Developer", eur(usd(p.tursoDev)), fmtInt(breakEvenSubscribers(p, usd(p.tursoDev))), `Au-delà de ${fmtInt(p.tursoFreeActives)} actifs`]));
 out.push(row(["Resend Pro", eur(usd(p.resendPro)), fmtInt(breakEvenSubscribers(p, usd(p.resendPro))), `Au-delà de ${fmtInt(p.resendFree)} e-mails par mois`]));
 out.push(row(["Un salarié à temps plein", eur(p.employeeCost), fmtInt(breakEvenSubscribers(p, p.employeeCost, 0, true)), `Quand plus de ${fmtInt(p.employeeCost / p.freelanceRate)} heures payées par mois sont nécessaires`]));
-for (const min of [100, 300]) out.push(row([`Enable Banking, minimum de ${eur(min)}`, eur(min), fmtInt(ebFor(min)), "Signer le contrat quand ce nombre d'abonnés est atteint, connexion réservée au Premium"]));
+for (const [y, fee] of [[1, p.ebFee1], [2, p.ebFee2], [3, p.ebFee3]]) out.push(row([`Licence Enable Banking, ${y === 3 ? "3e année et après" : y === 1 ? "1re année" : "2e année"}`, eur(fee), `${fmtInt(breakEvenSubscribers(p, fee))} (${fmtInt(breakEvenSubscribers(p, fee, 0, true))} avec TVA)`, "Mais seuls les abonnés en plus grâce à la banque la paient : voir § 10 bis"]));
 
 // Gmail focus.
 const T = byId("T-R-org").r.summary, G = byId("G-R-org").r.summary, TG = byId("O>G-R-org").r.summary, O = byId("O-R-org").r.summary;
@@ -225,6 +224,40 @@ out.push(`
 Tout dépend de l'hypothèse « ${PARAMS.actGmail.label.charAt(0).toLowerCase() + PARAMS.actGmail.label.slice(1)} » (${p.actGmail} points contre ${p.actTakeout} pour l'export) : **mesurez-la pendant la bêta** avec les 100 places de test Gmail. Si l'écart réel apporte moins de ${fmtInt(breakEvenSubscribers(p, casaMonthly))} abonnés, l'export suffit.
 `);
 
+// Enable Banking.
+const ebScen = byId(REC).s;
+const accountsList = [50, 500, 1500, 3000, 10000, 60000];
+out.push(`## 10 bis. La connexion bancaire directe (Enable Banking)
+
+Offre écrite reçue d'Enable Banking (« Startup Offer 2026 », septembre 2026, verdict : confirmé) : une **licence mensuelle qui inclut un quota de comptes actifs**, avec une remise la 1re année, puis un prix par compte au-delà du quota, dégressif avec le volume. Enable Banking est agréé comme prestataire d'information sur les comptes (DSP2) et laisse les jeunes entreprises travailler sous son agrément : pas d'agrément à demander à l'ACPR. Un compte est facturé une fois par mois s'il a un consentement valide et qu'il est interrogé dans le mois ; le même IBAN reconnecté n'est pas recompté. Les tests avec vos propres comptes restent gratuits.
+
+| | 1re année | 2e année | 3e année et après |
+| --- | ---: | ---: | ---: |
+| Licence par mois | ${eur(p.ebFee1)} | ${eur(p.ebFee2)} | ${eur(p.ebFee3)} |
+| Comptes actifs inclus | ${fmtInt(p.ebIncl1)} | ${fmtInt(p.ebIncl2)} | ${fmtInt(p.ebIncl3)} |
+| Compte en plus | ${fmtEur(p.ebAccount, 2)} jusqu'au 5 000e, ${fmtEur(p.ebAccount2, 2)} jusqu'au 50 000e, ${fmtEur(p.ebAccount3, 2)} au-delà (le modèle facture chaque compte au prix de sa tranche ; à confirmer si toute la facture passe au prix de la tranche atteinte) | | |
+
+Coût mensuel selon le nombre de comptes connectés :
+`);
+out.push(row(["Comptes connectés", "1re année", "2e année", "3e année et après"]));
+out.push(row(["---:", "---:", "---:", "---:"]));
+for (const n of accountsList) out.push(row([fmtInt(n), eur(ebCost(p, n, 1)), eur(ebCost(p, n, 13)), eur(ebCost(p, n, 25))]));
+const withBank = (n) => atScale(p, { ...ebScen, bankAt: "launch" }, n), noBank = (n) => atScale(p, { ...ebScen, bank: "statements" }, n);
+const sizes = [2000, 5000, 10000, 20000, 50000];
+out.push(`
+**Quand signer.** La licence est un coût fixe, mais elle ne se paie pas par tous les abonnés : ils paieraient de toute façon avec les relevés importés. Elle se paie par les abonnés **en plus** que la connexion directe apporte (hypothèse : +${dec(p.convBank)} point de conversion, à mesurer). Il faut donc environ licence × ${dec(p.conv)} ÷ (${dec(p.convBank)} × marge d'un abonné) abonnés Premium, soit environ ${fmtInt(p.ebFee3 * p.conv / (p.convBank * 2.95))} pour la licence de ${eur(p.ebFee3)} avec la TVA due ; le tableau ci-dessous place l'équilibre entre 10 000 et 20 000 actifs. Le modèle signe donc à **${fmtInt(p.bankTrigger)} abonnés** (réglable). Un mois type à chaque taille, plan ${ebScen.id}, en régime stable (contrat de plus de 2 ans) :
+`);
+out.push(row(["Actifs", ...sizes.map(fmtInt)]));
+out.push(row(["---", ...sizes.map(() => "---:")]));
+const W = sizes.map(withBank), N = sizes.map(noBank);
+out.push(row(["Résultat sans banque directe", ...N.map((x) => eur(x.result))]));
+out.push(row(["Résultat avec banque directe", ...W.map((x) => eur(x.result))]));
+out.push(row(["dont Enable Banking", ...W.map((x) => eur(x.last.parts.bank))]));
+out.push(row(["**Différence**", ...W.map((x, i) => `**${eur(x.result - N[i].result)}**`)]));
+out.push(`
+Signer dès le lancement (R10) coûte ${eur(-byId("R10-banque-tot").r.summary.result24 + byId(REC).r.summary.result24)} de résultat sur 24 mois par rapport au plan sobre. Tant que le seuil n'est pas atteint, la banque directe reste en test gratuit sur vos propres comptes, et les utilisateurs importent leurs relevés.
+`);
+
 // Recommended plan.
 const rec = byId(REC);
 const recBe = breakEven(p, rec.s);
@@ -234,8 +267,8 @@ out.push(`## 11. Le masterplan recommandé
 | --- | --- | --- | --- | --- |
 | 0. Bêta gratuite | 1 à ${p.betaMonths} | A-Outlook : relevés, export Gmail, Outlook pour tous, 100 places Gmail de test pour mesurer l'effet de la connexion ; vous répondez vous-même | Taux d'analyse terminée, intention de payer, 5 entretiens avec des professionnels | 0 € |
 | 1. Lancement sobre | ${p.betaMonths + 1} à 9 | ${rec.s.id} : Premium mensuel et annuel, rapport unique, résiliation assistée, affiliation signalée ; un seul assistant IA ; Stripe, Vercel Pro | Seuil de rentabilité atteint (${beText(recBe)}) | environ ${eur(rec.r.rows[p.betaMonths + 1].spend)} par mois |
-| 2. Gmail pour tous | à partir du 10e mois, si l'effet mesuré dépasse ${fmtInt(breakEvenSubscribers(p, casaMonthly))} abonnés | Validation Google, audit CASA | Abonnés au-dessus du seuil Enable Banking | + ${eur(p.casa)} par an |
-| 3. Banque directe en Premium | au seuil du devis | Contrat Enable Banking, connexion réservée aux abonnés | Heures au-delà des vôtres | minimum du contrat + ${dec(p.ebAccount)} € par compte |
+| 2. Gmail pour tous | à partir du 10e mois, si l'effet mesuré dépasse ${fmtInt(breakEvenSubscribers(p, casaMonthly))} abonnés | Validation Google, audit CASA | Heures au-delà des vôtres | + ${eur(p.casa)} par an |
+| 3. Banque directe en Premium | à ${fmtInt(p.bankTrigger)} abonnés Premium (10 000 à 15 000 actifs) | Contrat Enable Banking, offre startup, connexion réservée aux abonnés | | ${eur(p.ebFee1)} par mois la 1re année (${fmtInt(p.ebIncl1)} comptes inclus), puis ${eur(p.ebFee2)}, puis ${eur(p.ebFee3)} |
 | 4. Premières personnes | quand les heures dépassent ${fmtInt(p.founderHours)} h par mois | Indépendant pour le support et les contenus, puis un salarié au-delà de ${fmtInt(p.employeeCost / p.freelanceRate)} h | Licences professionnelles validées par des entretiens | ${eur(p.freelanceRate)} de l'heure, puis ${eur(p.employeeCost)} par mois |
 | 5. Licences professionnelles | quand 3 professionnels ont dit oui | Marque blanche, ${eur(p.b2bPrice)} par mois | | ${fmtInt(p.b2bSetupHours)} h par licence |
 

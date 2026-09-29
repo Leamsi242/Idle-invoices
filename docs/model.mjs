@@ -41,8 +41,19 @@ export const PARAMS = {
   alertsPerPremium: { v: 4, unit: "e-mails par mois", label: "Alertes envoyées par abonné Premium", verdict: "hypothèse" },
   casa: { v: 700, unit: "€ par an", label: "Audit de sécurité CASA pour Gmail (niveau 2, puis chaque année)", note: "TAC Security : 540 $ (Basic), 720 $ (Premium, nouveaux passages illimités), 1 800 $ (Enterprise) ; Leviathan 800 à 1 200 $. Pas de voie gratuite depuis la fin de l'auto-analyse", verdict: "partiellement vérifié (sources tierces)" },
   gmailDelay: { v: 2, unit: "mois", label: "Délai de validation Google avant d'ouvrir Gmail à tous", note: "vérification de la marque en quelques jours, accès restreint « plusieurs semaines » selon Google, 2 à 8 semaines d'après des retours d'expérience", verdict: "partiellement vérifié" },
-  ebAccount: { v: 0.5, unit: "€ par compte et par mois", label: "Enable Banking, par compte connecté", verdict: "hypothèse, tarif sur devis" },
-  ebMin: { v: 0, unit: "€ par mois", label: "Enable Banking, minimum mensuel", verdict: "hypothèse, tarif sur devis" },
+  // Enable Banking, written startup offer: a monthly licence that includes a quota of active
+  // accounts and rises over 3 years, then a price per account beyond the quota, lower with volume.
+  ebFee1: { v: 900, unit: "€ par mois", label: "Enable Banking, licence la 1re année (remise de 40 %)", note: "offre écrite Enable Banking « Startup Offer 2026 », septembre 2026", verdict: "confirmé (offre écrite)" },
+  ebIncl1: { v: 1800, unit: "comptes", label: "Comptes actifs inclus la 1re année", verdict: "confirmé (offre écrite)" },
+  ebFee2: { v: 1200, unit: "€ par mois", label: "Enable Banking, licence la 2e année", verdict: "confirmé (offre écrite)" },
+  ebIncl2: { v: 2400, unit: "comptes", label: "Comptes actifs inclus la 2e année", verdict: "confirmé (offre écrite)" },
+  ebFee3: { v: 1500, unit: "€ par mois", label: "Enable Banking, licence à partir de la 3e année (tarif normal)", verdict: "confirmé (offre écrite)" },
+  ebIncl3: { v: 3000, unit: "comptes", label: "Comptes actifs inclus à partir de la 3e année", verdict: "confirmé (offre écrite)" },
+  ebAccount: { v: 0.5, unit: "€ par compte et par mois", label: "Compte au-delà du quota, jusqu'au 5 000e", note: "un compte = un IBAN unique avec un consentement valide, interrogé dans le mois ; reconnexions non recomptées ; le modèle applique les prix par tranche (chaque compte au prix de son rang), lecture de l'offre à confirmer", verdict: "confirmé (offre écrite), tranches à confirmer" },
+  ebAccount2: { v: 0.3, unit: "€ par compte et par mois", label: "Compte du 5 001e au 50 000e", verdict: "confirmé (offre écrite)" },
+  ebAccount3: { v: 0.2, unit: "€ par compte et par mois", label: "Compte au-delà du 50 000e", verdict: "confirmé (offre écrite)" },
+  bankTrigger: { v: 2500, unit: "abonnés Premium", label: "Abonnés Premium à partir desquels signer le contrat (scénarios « au seuil »)", note: "la licence ne se paie que par les abonnés en plus que la banque apporte : licence × conversion ÷ (conversion en plus × marge d'un abonné), soit environ 2 500 pour 1 500 € avec la TVA due", verdict: "calculé, à choisir" },
+  convBank: { v: 1, unit: "points", label: "Conversion en Premium en plus quand la banque directe y est incluse", verdict: "hypothèse à mesurer" },
   bankShare: { v: 60, unit: "%", label: "Part des concernés qui connectent leur banque", verdict: "hypothèse" },
   cac: { v: 1.5, unit: "€ par inscrit", label: "Coût d'acquisition en publicité payée", verdict: "hypothèse" },
   paidBoost: { v: 2, unit: "×", label: "Inscriptions multipliées par la publicité", verdict: "hypothèse" },
@@ -122,6 +133,20 @@ const OFFER = {
   full: { annual: true, aff: true, concierge: true, b2b: true },
 };
 
+/**
+ * Enable Banking's monthly bill for a number of active accounts, in the given month of the
+ * contract: the licence of that contract year, and each account beyond its quota at the price of
+ * its rank (0,50 € up to the 5 000th, 0,30 € up to the 50 000th, 0,20 € after).
+ */
+export function ebCost(p, accounts, contractMonth) {
+  if (contractMonth < 1) return 0;
+  const year = Math.min(3, Math.ceil(contractMonth / 12));
+  const fee = [p.ebFee1, p.ebFee2, p.ebFee3][year - 1];
+  const incl = [p.ebIncl1, p.ebIncl2, p.ebIncl3][year - 1];
+  const band = (from, to, price) => Math.max(0, Math.min(accounts, to) - Math.max(incl, from)) * price;
+  return fee + band(0, 5000, p.ebAccount) + band(5000, 50000, p.ebAccount2) + band(50000, Infinity, p.ebAccount3);
+}
+
 /** What paid work costs: freelancers by the hour, or salaried full-time staff when cheaper. */
 export function staffCost(p, hours) {
   if (hours <= 0) return { cost: 0, fte: 0, mode: "" };
@@ -143,7 +168,7 @@ export function project(p0, s) {
   const rows = [];
   const turnoverHistory = [];
   let free = 0, paidM = 0, paidY = 0, licences = 0, cumul = 0, costCumul = 0, spendCumul = 0, socialCumul = 0, revCumul = 0, minCumul = 0;
-  let vatFrom = null, companyFrom = null;
+  let vatFrom = null, companyFrom = null, bankFrom = null;
   for (let m = 1; m <= p.months; m++) {
     const beta = m <= p.betaMonths;
     // Google's verification starts in month gmailFrom (1 by default) and takes gmailDelay months:
@@ -160,7 +185,10 @@ export function project(p0, s) {
     const monetized = s.monetize !== false && !beta;
     // In a free phase the founder answers and builds alone: no AI subscription, no paid AI support.
     const ai = aiChoice && monetized;
-    const newPaid = monetized ? activated * p.conv / 100 : 0;
+    // Direct bank connection: from launch, or once the payers reach the trigger ("au seuil").
+    if (bankFrom === null && s.bank !== "statements" && monetized && (s.bankAt !== "trigger" || paidM + paidY >= p.bankTrigger)) bankFrom = m;
+    const bankOn = bankFrom !== null;
+    const newPaid = monetized ? activated * (p.conv + (bankOn && s.bank !== "statements" ? p.convBank : 0)) / 100 : 0;
     const newYearly = offer.annual ? newPaid * p.annualShare / 100 : 0;
     free = free * (1 - p.freeChurn / 100) + (activated - newPaid);
     // A free phase stays on free tiers: new testers are refused beyond Vercel Hobby's capacity (BETA_MAX_TESTERS).
@@ -212,8 +240,8 @@ export function project(p0, s) {
     // CASA: paid when the assessment is done (end of the delay), then every 12 months.
     const casaMonth = verifyFrom + Math.max(0, p.gmailDelay - 1);
     const casa = s.mail === "gmail" && m >= casaMonth && (m - casaMonth) % 12 === 0 ? p.casa : 0;
-    const connected = s.bank === "all" && !beta ? active * p.bankShare / 100 : s.bank === "premium" ? paid * p.bankShare / 100 : 0;
-    const bank = s.bank !== "statements" && !beta ? Math.max(connected * p.ebAccount, p.ebMin) : 0;
+    const connected = !bankOn ? 0 : s.bank === "all" ? active * p.bankShare / 100 : paid * p.bankShare / 100;
+    const bank = bankOn ? ebCost(p, connected, m - bankFrom + 1) : 0;
     const acquisition = s.acquisition === "paid" && !beta ? signups * p.cac : 0;
     const admin = (company ? p.accountant : 0) + (monetized ? p.rcPro : 0);
 
@@ -268,6 +296,7 @@ export function project(p0, s) {
       under1000: last.spendCumul <= 1000,
       vatFrom,
       companyFrom,
+      bankFrom,
       fte: last.team.fte,
     },
   };
@@ -296,7 +325,7 @@ export function allScenarios() {
  * package each, with prudent or ambitious variants of the hypotheses.
  */
 export function realistic() {
-  const o = { mail: "outlook", bank: "premium", acquisition: "organic", monetize: true, staff: "ia", realistic: true };
+  const o = { mail: "outlook", bank: "premium", bankAt: "trigger", acquisition: "organic", monetize: true, staff: "ia", realistic: true };
   return [
     { ...o, id: "R1-prudent", name: "Prudent (test de résistance) : Premium mensuel et annuel, conversion 3 %, croissance 6 % par mois", offer: "annual", over: { conv: 3, growth: 6 } },
     { ...o, id: "R2-central", name: "Central : Premium, annuel, affiliation et résiliation assistée", offer: "b2c" },
@@ -306,6 +335,7 @@ export function realistic() {
     { ...o, id: "R6-pro", name: "Central plus licences professionnelles dès le 12e mois", offer: "full" },
     { ...o, id: "R7-lent", name: "Central avec une croissance lente, 4 % par mois", offer: "b2c", over: { growth: 4 } },
     { ...o, id: "R9-sobre", name: "Central sobre : un seul assistant IA à 20 $ par mois, sans assurance", offer: "b2c", over: { aiDevTool: 20, aiContentTool: 0, aiDevGain: 20, rcPro: 0 } },
+    { ...o, id: "R10-banque-tot", name: "Sobre, mais contrat Enable Banking signé dès le lancement", offer: "b2c", bankAt: "launch", over: { aiDevTool: 20, aiContentTool: 0, aiDevGain: 20, rcPro: 0 } },
     { ...o, id: "R8-ambitieux", name: "Ambitieux : tout, Gmail pour tous au 10e mois, croissance 15 % par mois", offer: "full", mail: "gmail", preMail: "outlook", gmailFrom: 10, over: { growth: 15 } },
   ];
 }
@@ -387,7 +417,7 @@ export const GROUPS = [
   ["Hébergement et outils selon l'échelle", ["usdEur", "vercelPro", "hobbyCapacity", "proExtraPerActive", "tursoFreeActives", "tursoDev", "tursoDevActives", "tursoScaler", "domain", "resendFree", "resendPro", "resendScale", "alertsPerPremium", "emailsPerActive", "sentryFreeActives", "sentryTeam", "aiPerActive"]],
   ["Personnel et IA", ["founderHours", "founderPay", "ticketsPer100", "ticketMin", "aiSupportShare", "aiTicketCost", "devHours", "devPer1000", "aiDevGain", "aiDevTool", "mkHours", "aiContentGain", "aiContentTool", "adminHours", "adminPer1000", "aiAdminGain", "b2bSetupHours", "b2bHours", "freelanceRate", "employeeCost", "fteHours"]],
   ["Gmail pour tous", ["casa", "gmailDelay"]],
-  ["Banque directe", ["ebAccount", "ebMin", "bankShare"]],
+  ["Banque directe (Enable Banking)", ["ebFee1", "ebIncl1", "ebFee2", "ebIncl2", "ebFee3", "ebIncl3", "ebAccount", "ebAccount2", "ebAccount3", "bankTrigger", "convBank", "bankShare"]],
   ["Publicité", ["cac", "paidBoost"]],
 ];
 

@@ -62,6 +62,7 @@ Limites communes à toutes les banques (partiellement vérifié) :
 | Microsoft Graph (courrier) | 0 € | Aucun plafond d'utilisateurs trouvé | Partiellement vérifié |
 | Resend | 0 € | 3 000 e-mails par mois, 100 par jour, 1 domaine | Partiellement vérifié : [tarifs Resend](https://resend.com/pricing) |
 | Enable Banking restreint | 0 € | Vos comptes reliés seulement | Partiellement vérifié |
+| Enable Banking en production (offre startup) | 900 € par mois la 1re année, 1 200 € la 2e, 1 500 € ensuite | 1 800, 2 400 puis 3 000 comptes inclus, 0,50 € par compte au-delà | Confirmé (offre écrite, septembre 2026) |
 
 Deux précisions :
 
@@ -190,14 +191,14 @@ Réglages : les mêmes que le scénario A, avec l'application Google validée et
 | --- | --- | --- |
 | Qui connecte sa banque | **Les abonnés Premium seulement** (les gratuits importent un relevé) | Enable Banking facture chaque compte consulté dans le mois : le coût ne suit alors que les payants |
 | Lecture | Une lecture à la connexion, surveillance de nuit en Premium | Moins de comptes actifs à facturer |
-| Contrat | Demander un devis avec un minimum mensuel bas ou nul pour un démarrage, et la question de l'agrément ACPR | Le minimum mensuel est le principal risque (voir les seuils) |
-| Société | Micro-entreprise suffisante pour Stripe et la vérification Enable Banking (à confirmer avec eux) | Frais de création réduits (non vérifiable ici) |
+| Contrat | Offre startup Enable Banking : 900 € par mois la 1re année (1 800 comptes inclus), 1 200 € la 2e (2 400), 1 500 € ensuite (3 000), puis 0,50 € par compte au-delà (confirmé, offre écrite de septembre 2026) | La licence est le principal coût : ne signer qu'au seuil (voir plus bas) |
+| Agrément | Aucun à demander : Enable Banking est agréé (DSP2) et laisse les jeunes entreprises travailler sous son agrément (confirmé par écrit) | Pas de démarche auprès de l'ACPR |
 | Hébergement | Vercel Pro, 20 $ par mois | Obligatoire dès qu'il y a un revenu ou une société |
 | Gmail | Toujours Takeout pour le public | Évite l'audit CASA annuel |
 
-Coût : 20 $ par mois + le devis Enable Banking (tarif non public, non vérifiable) + environ 10 € par an de domaine pour les alertes.
+Coût : 20 $ par mois + la licence Enable Banking (900 € par mois la 1re année) + environ 10 € par an de domaine pour les alertes.
 
-À demander à Enable Banking avec le devis : faut-il votre propre agrément ou un statut d'agent auprès de l'ACPR, ou leur licence suffit-elle ? ([procédure d'agent de l'ACPR](https://acpr.banque-france.fr/fr/professionnels/lacpr-vous-accompagne/banque/creer-ma-societe/mes-procedures/agent-prestataire-de-services-de-paiement)). Non vérifiable sans leur réponse.
+Un compte est facturé une fois par mois s'il a un consentement valide et qu'il est interrogé dans le mois ; le même IBAN reconnecté n'est pas recompté. Les tests sur vos propres comptes restent gratuits. Le détail et le calcul du seuil sont dans [MODELE-ECONOMIQUE.md](MODELE-ECONOMIQUE.md), § 10 bis.
 
 ### Les seuils où il devient avantageux de payer, avant le lancement public
 
@@ -209,10 +210,10 @@ Coût : 20 $ par mois + le devis Enable Banking (tarif non public, non vérifiab
 | **Plus d'environ 1 250 testeurs actifs** | Lignes lues de Turso Free | Turso Developer | 4,99 $ par mois (partiellement vérifié) |
 | **Alertes envoyées à d'autres que vous** | Resend exige un domaine vérifié | Acheter un domaine | environ 10 € par an (estimation) |
 | **Plus de 100 alertes par jour ou 3 000 par mois** | Plafond de Resend Free | Resend Pro | 20 $ par mois (partiellement vérifié) |
-| **Passer au scénario B** | Le contrat Enable Banking coûte un minimum mensuel M | Le signer quand le nombre d'abonnés Premium dépasse **M ÷ 3,31** (marge d'un abonné à 4,99 € : 3,61 € sans TVA due, après Stripe et cotisations, moins 0,50 € par compte Enable Banking pour les 60 % d'abonnés qui relient leur banque, hypothèses) : 31 abonnés pour M = 100 €, 91 pour M = 300 € | M + 0,50 € par abonné connecté (hypothèse) |
+| **Passer au scénario B** | La licence Enable Banking coûte 900 € par mois la 1re année, puis 1 200 €, puis 1 500 € | La signer quand les abonnés **en plus** que la banque apporte la paient : environ **2 500 abonnés Premium** (10 000 à 20 000 actifs) si la connexion directe ajoute 1 point de conversion (hypothèse à mesurer). Couvrir la licence avec tous les abonnés demanderait 250 abonnés la 1re année (305 avec TVA), mais ils paieraient déjà sans elle | 900 à 1 500 € par mois, 0,50 € par compte au-delà du quota (confirmé) |
 | **L'import de relevé fait fuir** | Plus de 40 % des testeurs s'arrêtent à l'étape « importer un relevé » (à mesurer) | Argument pour le scénario B, à condition que le seuil précédent soit proche | |
 
-Deux choses rendent le modèle perdant, d'après le masterplan : la publicité payée (résultat négatif dans les 9 scénarios qui l'utilisent), et ouvrir la connexion bancaire directe à tous les utilisateurs gratuits (7 928 € de dépenses sur 24 mois pour un résultat de -1 860 €, contre 3 234 € et +500 € avec les relevés seuls).
+Deux choses rendent le modèle perdant, d'après le masterplan : la publicité payée (résultat négatif dans les 9 scénarios qui l'utilisent), et signer le contrat Enable Banking trop tôt. Ouvrir la banque directe à tous dès le lancement coûte 26 300 € de dépenses sur 24 mois pour un résultat de -19 205 €, contre 3 234 € et +500 € avec les relevés seuls ; la réserver au Premium dès le lancement reste perdant (-21 345 € pour O-P-org), car la licence de 900 € par mois arrive avant les abonnés.
 
 ## 6. Un modèle rentable, et son seuil de rentabilité
 
@@ -239,13 +240,13 @@ Le modèle compte aussi :
 
 | Sur 24 mois | T-R-org (export Takeout) | O-R-org (Outlook pour tous) | R2 central (IA, offre complète) | R3 (même chose sans IA) | **R9 sobre (recommandé)** |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Dépenses (outils, IA, personnel) | 3 234 € | 3 238 € | 3 543 € | 15 008 € | **1 467 €** |
-| Résultat | +500 € | +776 € | +1 068 € | -10 398 € | **+3 143 €** |
-| Trésorerie à avancer | 868 € | 813 € | 732 € | 10 398 € | **23 €** |
-| Remboursé au | mois 23 | mois 22 | mois 21 | non atteint | **mois 7** |
-| Seuil de rentabilité (régime stable) | 193 actifs | 193 actifs | 181 actifs | 1 113 actifs | **47 actifs, 21 inscrits par mois** |
+| Dépenses (outils, IA, personnel) | 3 234 € | 3 238 € | 3 239 € | 14 704 € | **1 163 €** |
+| Résultat | +500 € | +776 € | +1 372 € | -10 094 € | **+3 447 €** |
+| Trésorerie à avancer | 868 € | 813 € | 687 € | 10 094 € | **21 €** |
+| Remboursé au | mois 23 | mois 22 | mois 20 | non atteint | **mois 6** |
+| Seuil de rentabilité (régime stable) | 193 actifs | 193 actifs | 165 actifs | 929 actifs | **43 actifs, 20 inscrits par mois** |
 
-Sous 1 000 € de dépenses : aucun scénario payant une fois le travail et les outils comptés honnêtement ; le plus sobre (R9) reste à 1 467 € sur 24 mois et se rembourse au 7e mois. Le travail pèse plus que les serveurs : sans IA, les heures au-delà des vôtres coûtent environ 11 500 € de plus sur la période (15 008 € de dépenses contre 3 543 €). Il faut **6 abonnés Premium** pour payer Vercel Pro, **17** pour l'audit Gmail et **31** pour l'assistant de code à 100 $. Ce sont des projections sur hypothèses : remplacez-les par les mesures de la bêta (§ 7) dans le masterplan.
+Sous 1 000 € de dépenses : aucun scénario payant une fois le travail et les outils comptés honnêtement ; le plus sobre (R9) reste à 1 163 € sur 24 mois et se rembourse au 6e mois. R2, R3 et R9 ne signent le contrat Enable Banking qu'à 2 500 abonnés, jamais atteints en 24 mois ; le signer dès le lancement (R10) ferait perdre 18 723 € sur la période. Le travail pèse plus que les serveurs : sans IA, les heures au-delà des vôtres coûtent environ 11 500 € de plus sur la période (14 704 € de dépenses contre 3 239 €). Il faut **6 abonnés Premium** pour payer Vercel Pro, **17** pour l'audit Gmail et **31** pour l'assistant de code à 100 $. Ce sont des projections sur hypothèses : remplacez-les par les mesures de la bêta (§ 7) dans le masterplan.
 
 **Fonctionnalités à construire pour ce modèle**, dans l'ordre :
 

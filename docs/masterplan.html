@@ -125,6 +125,7 @@ tr[data-id] { cursor: pointer; }
           <label>Boîte mail<select id="c-mail"></select></label>
           <label>Connexion Gmail pour tous à partir du mois<input id="c-gmailFrom" type="number" min="1" max="24" value="1" style="font:600 13.5px var(--font);background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:5px 7px"></label>
           <label>Banque<select id="c-bank"></select></label>
+          <label>Contrat bancaire<select id="c-bankAt"><option value="trigger">Signé au seuil d'abonnés</option><option value="launch">Signé dès le lancement</option></select></label>
           <label>Acquisition<select id="c-acquisition"></select></label>
           <label>Offre<select id="c-offer"></select></label>
           <label>Personnel<select id="c-staff"></select></label>
@@ -172,7 +173,7 @@ tr[data-id] { cursor: pointer; }
       </section>
 
       <section class="notes">
-        <p>Sources : franchise de TVA 37 500 € et plafond micro 83 600 € pour les services, cotisations 21,2 % (BIC services), impôt sur les sociétés 15 % puis 25 % (confirmé, 2026) ; expert-comptable en ligne 80 à 150 € par mois, Sentry Team 26 $, Turso Scaler 24,92 $, Resend Scale 90 $, Claude Pro 20 $ et Max 100 $, API Claude Sonnet 5 à 2 $ et 10 $ le million de jetons, résolution par un assistant IA de 45 à 76 % selon les sources, coût employeur d'un SMIC environ 1 975 € (partiellement vérifié) ; commissions d'affiliation des comparateurs (modèle confirmé, montants non publics) ; Vercel, Turso, Resend (tarifs, partiellement vérifié) ; Google (plafond de 100 utilisateurs sans validation, vérification des accès restreints, confirmé) ; audit CASA (540 à 1 800 $ par an, sources tierces) ; Enable Banking (tarif sur devis, non public) ; conversion freemium (RevenueCat 2025) ; capacité mesurée sur l'application. Le détail est dans <code>docs/BETA.md</code> et <code>docs/MODELE-ECONOMIQUE.md</code>.</p>
+        <p>Sources : franchise de TVA 37 500 € et plafond micro 83 600 € pour les services, cotisations 21,2 % (BIC services), impôt sur les sociétés 15 % puis 25 % (confirmé, 2026) ; expert-comptable en ligne 80 à 150 € par mois, Sentry Team 26 $, Turso Scaler 24,92 $, Resend Scale 90 $, Claude Pro 20 $ et Max 100 $, API Claude Sonnet 5 à 2 $ et 10 $ le million de jetons, résolution par un assistant IA de 45 à 76 % selon les sources, coût employeur d'un SMIC environ 1 975 € (partiellement vérifié) ; commissions d'affiliation des comparateurs (modèle confirmé, montants non publics) ; Vercel, Turso, Resend (tarifs, partiellement vérifié) ; Google (plafond de 100 utilisateurs sans validation, vérification des accès restreints, confirmé) ; audit CASA (540 à 1 800 $ par an, sources tierces) ; Enable Banking (offre startup écrite de septembre 2026 : 900, 1 200 puis 1 500 € par mois avec 1 800, 2 400 puis 3 000 comptes inclus, confirmé ; prix par tranche au-delà, interprétation à confirmer) ; conversion freemium (RevenueCat 2025) ; capacité mesurée sur l'application. Le détail est dans <code>docs/BETA.md</code> et <code>docs/MODELE-ECONOMIQUE.md</code>.</p>
         <p>Les réglages restent dans ce navigateur.</p>
       </section>
     </main>
@@ -205,6 +206,7 @@ $("c-staff").innerHTML = Object.entries(CHOICES.staff).map(([k, v]) => `<option 
 function syncChoices() {
   $("c-mail").value = scenario.mail; $("c-bank").value = scenario.bank; $("c-acquisition").value = scenario.acquisition;
   $("c-offer").value = scenario.offer ?? "base"; $("c-staff").value = scenario.staff ?? "ia";
+  $("c-bankAt").value = scenario.bankAt === "trigger" ? "trigger" : "launch"; $("c-bankAt").disabled = scenario.bank === "statements";
   const over = Object.entries(scenario.over ?? {});
   $("variant").textContent = scenario.id ? `Chargé : ${scenario.id}. ${over.length ? "Hypothèses propres à ce scénario : " + over.map(([k, v]) => `${PARAMS[k].label.toLowerCase()} ${String(v).replace(".", ",")} ${PARAMS[k].unit}`).join(" ; ") + "." : ""}` : "";
   $("c-monetize").value = scenario.monetize === false ? "0" : "1"; $("c-gmailFrom").value = scenario.gmailFrom ?? 1;
@@ -226,7 +228,7 @@ function renderScenario() {
     kpi("Cotisations et impôts", eur(x.social24)) +
     kpi("Activation une fois tout ouvert", `${Math.round(r.act * 100)} %`);
   renderGoal();
-  $("monthly").innerHTML = `<thead><tr><th>Mois</th><th class="r">Inscrits</th><th class="r">Actifs</th><th class="r">Premium</th><th class="r">Revenus nets</th><th class="r">Dépenses</th><th class="r">dont IA</th><th class="r">dont personnel</th><th class="r">dont audit Gmail</th><th class="r">dont banque</th><th class="r">Cotisations</th><th class="r">Résultat</th><th class="r">Cumul</th></tr></thead><tbody>` +
+  $("monthly").innerHTML = `<thead><tr><th>Mois</th><th class="r">Inscrits</th><th class="r">Actifs</th><th class="r">Premium</th><th class="r">Revenus nets</th><th class="r">Dépenses</th><th class="r">dont IA</th><th class="r">dont personnel</th><th class="r">dont audit Gmail</th><th class="r">dont Enable Banking</th><th class="r">Cotisations</th><th class="r">Résultat</th><th class="r">Cumul</th></tr></thead><tbody>` +
     r.rows.map((m) => `<tr><td>${m.m}${m.beta ? " (bêta)" : ""}</td><td class="r">${fmtInt(m.signups)}</td><td class="r">${fmtInt(m.active)}</td><td class="r">${fmtInt(m.paid)}</td><td class="r">${eur(m.revenue)}</td><td class="r">${eur(m.spend)}</td><td class="r">${eur(m.parts.ai)}</td><td class="r">${eur(m.parts.staff)}</td><td class="r">${eur(m.parts.casa)}</td><td class="r">${eur(m.parts.bank)}</td><td class="r">${eur(m.social)}</td><td class="r">${eur(m.result)}</td><td class="r">${eur(m.cumul)}</td></tr>`).join("") + "</tbody>";
   drawChart(r.rows);
 }
@@ -312,7 +314,8 @@ function renderScale() {
     line("IA", (_, l) => eur(l.parts.ai)) +
     line("Heures (dont payées)", (_, l) => `${fmtInt(l.totalHours)} h (${fmtInt(l.paidHours)} h)`) +
     line("Personnel payé", (_, l) => (l.team.cost ? `${eur(l.team.cost)}<br><span class="muted">${l.team.mode}, ${fte(l)} ETP</span>` : "0 €")) +
-    line("Banque, comptable, assurance", (_, l) => eur(l.parts.bank + l.parts.admin)) +
+    line("Enable Banking", (_, l) => eur(l.parts.bank)) +
+    line("Comptable, assurance", (_, l) => eur(l.parts.admin)) +
     line("Statut", (_, l) => (l.company ? "société, TVA" : l.vatDue ? "micro, TVA" : "micro, sans TVA")) +
     line("Cotisations ou impôt", (_, l) => eur(l.social)) +
     line("Résultat par mois", (x) => `<span class="${x.result >= 0 ? "good" : "bad"}">${eur(x.result)}</span>`, true) +
@@ -327,7 +330,7 @@ function renderMatrix() {
   const rows = allScenarios().map((s) => { const be = breakEven(p, s); return { s, ...project(p, s).summary, id: s.id, name: s.name, be, beActives: be ? (be.signups < 3 ? 0 : be.actives) : null }; });
   const k = sort.key;
   rows.sort((a, b) => { const va = a[k] ?? Infinity, vb = b[k] ?? Infinity; return typeof va === "string" ? sort.dir * va.localeCompare(vb) : sort.dir * (va - vb); });
-  const same = (s) => (scenario.id ? s.id === scenario.id : !s.realistic && !s.offer && (scenario.offer ?? "base") === "base" && (scenario.staff ?? "ia") === "ia" && s.mail === scenario.mail && s.bank === scenario.bank && s.acquisition === scenario.acquisition && (s.monetize !== false) === (scenario.monetize !== false) && (s.gmailFrom ?? 1) === (scenario.gmailFrom ?? 1) && (s.preMail ?? null) === (scenario.preMail ?? null));
+  const same = (s) => (scenario.id ? s.id === scenario.id : !s.realistic && !s.offer && (scenario.offer ?? "base") === "base" && (scenario.staff ?? "ia") === "ia" && s.mail === scenario.mail && s.bank === scenario.bank && s.acquisition === scenario.acquisition && (s.monetize !== false) === (scenario.monetize !== false) && (s.gmailFrom ?? 1) === (scenario.gmailFrom ?? 1) && (s.preMail ?? null) === (scenario.preMail ?? null) && (s.bankAt ?? "launch") === (scenario.bankAt ?? "launch"));
   $("matrix").innerHTML = `<thead><tr>${COLS.map(([key, label, num]) => `<th class="${num ? "r" : ""}"><button type="button" data-sort="${key}" aria-sort="${sort.key === key ? (sort.dir < 0 ? "descending" : "ascending") : "none"}">${label}</button></th>`).join("")}</tr></thead><tbody>` +
     rows.map((r) => `<tr data-id="${r.id}" class="${same(r.s) ? "pick" : ""}" tabindex="0"><td><b>${r.id}</b></td><td>${r.name}</td><td class="r">${eur(r.spend24)}</td><td class="r ${r.result24 >= 0 ? "good" : "bad"}">${eur(r.result24)}</td><td class="r">${eur(r.cashNeed)}</td><td class="r">${r.s.monetize === false ? "" : fmtInt(r.premium)}</td><td class="r">${r.s.monetize === false ? "" : monthTxt(r.firstProfitMonth)}</td><td class="r">${r.s.monetize === false ? "" : monthTxt(r.paybackMonth)}</td><td class="r">${r.s.monetize === false ? "" : r.be ? (r.be.signups < 3 ? "licences seules" : fmtInt(r.be.actives)) : "jamais"}</td><td><span class="pill ${r.under1000 ? "yes" : "no"}">${r.under1000 ? "oui" : "non"}</span></td></tr>`).join("") + "</tbody>";
 }
@@ -344,9 +347,9 @@ function renderThresholds() {
     ["Un salarié à temps plein", p.employeeCost, 0, "Au-delà de " + fmtInt(p.employeeCost / p.freelanceRate) + " heures payées par mois", true],
     ["Turso Developer", usd(p.tursoDev), 0, "Au-delà de " + fmtInt(p.tursoFreeActives) + " actifs"],
     ["Resend Pro", usd(p.resendPro), 0, "Au-delà de " + fmtInt(p.resendFree) + " alertes par mois"],
-    ["Enable Banking, minimum saisi", p.ebMin, p.ebAccount * p.bankShare / 100, "Connexion réservée au Premium"],
-    ["Enable Banking, minimum de 100 €", 100, p.ebAccount * p.bankShare / 100, "Connexion réservée au Premium"],
-    ["Enable Banking, minimum de 300 €", 300, p.ebAccount * p.bankShare / 100, "Connexion réservée au Premium"],
+    ["Licence Enable Banking, 1re année", p.ebFee1, 0, `${fmtInt(p.ebIncl1)} comptes inclus ; payée en réalité par les seuls abonnés en plus grâce à la banque (signature conseillée vers ${fmtInt(p.bankTrigger)} abonnés)`],
+    ["Licence Enable Banking, 2e année", p.ebFee2, 0, `${fmtInt(p.ebIncl2)} comptes inclus`],
+    ["Licence Enable Banking, 3e année et après", p.ebFee3, 0, `${fmtInt(p.ebIncl3)} comptes inclus, puis ${String(p.ebAccount).replace(".", ",")} € par compte`],
   ];
   $("thresholds").innerHTML = `<thead><tr><th>Dépense</th><th class="r">Par mois</th><th class="r">Abonnés pour la couvrir</th><th>Quand</th></tr></thead><tbody>` +
     list.map(([n, c, extra, w, vat]) => { const k = breakEvenSubscribers(p, c, extra, !!vat); return `<tr><td>${n}</td><td class="r">${eur(c)}</td><td class="r">${k === Infinity ? "jamais" : fmtInt(k)}</td><td>${w}</td></tr>`; }).join("") + "</tbody>";
@@ -356,7 +359,7 @@ function renderThresholds() {
     ["Phase 0", `Mois 1 à ${p.betaMonths}`, "Bêta gratuite A-Outlook", "Relevés, export Gmail, Outlook pour tous, 100 places Gmail de test pour mesurer l'effet de la connexion ; vous répondez vous-même. 0 €."],
     ["Phase 1", `Mois ${p.betaMonths + 1} à 9`, "Lancement sobre (R9)", `Premium mensuel et annuel, rapport unique, résiliation assistée, affiliation signalée, un seul assistant IA. Seuil : ${beText(recBe)}.`],
     ["Phase 2", "Dès le 10e mois", "Gmail pour tous", `Validation Google (${p.gmailDelay} mois) et audit à ${eur(p.casa)} par an, si l'effet mesuré dépasse ${fmtInt(breakEvenSubscribers(p, p.casa / 12))} abonnés.`],
-    ["Phase 3", "Au seuil du devis", "Banque directe en Premium", "Contrat Enable Banking quand les abonnés couvrent son minimum."],
+    ["Phase 3", `À ${fmtInt(p.bankTrigger)} abonnés`, "Banque directe en Premium", `Offre startup Enable Banking : ${eur(p.ebFee1)} par mois la 1re année (${fmtInt(p.ebIncl1)} comptes inclus), puis ${eur(p.ebFee2)}, puis ${eur(p.ebFee3)}. Avant, tests gratuits sur vos propres comptes.`],
     ["Phase 4", `Au-delà de ${fmtInt(p.founderHours)} h par mois`, "Premières personnes", `Indépendant pour le support et les contenus (${eur(p.freelanceRate)} de l'heure), puis un salarié au-delà de ${fmtInt(p.employeeCost / p.freelanceRate)} h.`],
     ["Phase 5", "Après 3 oui de professionnels", "Licences professionnelles", `Marque blanche à ${eur(p.b2bPrice)} par mois, ${fmtInt(p.b2bSetupHours)} h d'installation par licence.`],
   ].map(([b, when, t, d]) => `<div><b>${b} · ${when}</b><h3>${t}</h3><p class="muted" style="font-size:13px">${d}</p></div>`).join("") +
@@ -372,9 +375,9 @@ function renderAll() {
 
 $("params").addEventListener("input", (e) => { const k = e.target.dataset.k; if (!k) return; const v = Number(e.target.value); if (Number.isFinite(v)) { p[k] = v; renderAll(); } });
 $("reset").addEventListener("click", () => { p = defaults(); for (const k of Object.keys(p)) { const el = $("p-" + k); if (el) el.value = p[k]; } renderAll(); });
-for (const id of ["c-mail", "c-bank", "c-acquisition", "c-offer", "c-staff", "c-monetize", "c-gmailFrom"]) $(id).addEventListener("input", () => {
+for (const id of ["c-mail", "c-bank", "c-bankAt", "c-acquisition", "c-offer", "c-staff", "c-monetize", "c-gmailFrom"]) $(id).addEventListener("input", () => {
   // Built by hand: keep the loaded scenario's own hypotheses only while its choices stay the same.
-  scenario = { mail: $("c-mail").value, bank: $("c-bank").value, acquisition: $("c-acquisition").value, offer: $("c-offer").value, staff: $("c-staff").value, monetize: $("c-monetize").value === "1", gmailFrom: Math.max(1, Number($("c-gmailFrom").value) || 1), cap: $("c-monetize").value === "0" };
+  scenario = { mail: $("c-mail").value, bank: $("c-bank").value, acquisition: $("c-acquisition").value, offer: $("c-offer").value, staff: $("c-staff").value, bankAt: $("c-bankAt").value, monetize: $("c-monetize").value === "1", gmailFrom: Math.max(1, Number($("c-gmailFrom").value) || 1), cap: $("c-monetize").value === "0" };
   syncChoices(); renderScenario(); renderMatrix();
 });
 $("matrix").addEventListener("click", (e) => {
