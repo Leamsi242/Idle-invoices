@@ -57,6 +57,27 @@ Vérification :
 
 À savoir : le Crédit Mutuel ne partage que les 90 derniers jours par cette voie. L'application le sait et s'appuie sur la boîte mail pour les abonnements annuels.
 
+## 4 bis. Tester Bridge et Powens (pour comparer avec Enable Banking)
+
+L'application sait passer par trois fournisseurs agréés : Enable Banking, Bridge et Powens. Un seul sert à la fois : `BANK_PROVIDER` choisit lequel (`enable-banking`, `bridge` ou `powens`). Les autres réglages ne bougent pas, et `/api/health` affiche le fournisseur utilisé.
+
+**Bridge** (français, groupe BPCE) :
+1. Créez un compte sur le [tableau de bord Bridge](https://dashboard.bridgeapi.io) et une application **sandbox**.
+2. Déclarez l'URL de retour `https://<domaine>/api/bank/callback` dans les réglages de l'application (Bridge Connect).
+3. Dans Vercel : `BRIDGE_CLIENT_ID`, `BRIDGE_CLIENT_SECRET`, `BRIDGE_USER_EMAIL` (votre adresse, que Bridge exige pour chaque connexion) et `BANK_PROVIDER=bridge`, puis redéployez.
+4. Sur l'application, choisissez une banque de test de Bridge (la sandbox propose des banques fictives) et suivez Bridge Connect.
+
+**Powens** (français, ex-Budget Insight) :
+1. Créez un compte sur la [console Powens](https://console.powens.com), un domaine **sandbox** (par exemple `monprojet-sandbox`) et une application cliente.
+2. Autorisez l'URL de retour `https://<domaine>/api/bank/callback` sur l'application cliente (webview).
+3. Dans Vercel : `POWENS_DOMAIN` (le nom du domaine, sans `.biapi.pro`), `POWENS_CLIENT_ID`, `POWENS_CLIENT_SECRET` et `BANK_PROVIDER=powens`, puis redéployez.
+4. Sur l'application, choisissez le connecteur de test de Powens et suivez la webview.
+
+À savoir :
+- Avec Bridge et Powens, l'application crée un utilisateur chez le fournisseur pour chaque connexion et le supprime après la lecture (avec ses données), sauf si vous demandez la surveillance de nuit.
+- Ces deux branchements ont été écrits d'après la documentation publique et testés contre des réponses simulées, pas encore contre leurs sandbox. Au premier essai, si la connexion échoue, la page Sources affiche l'erreur et le journal Vercel la détaille : envoyez-la pour corriger.
+- La vérification des banques pour le propriétaire (`/api/beta/banks`, `npm run bank:check`) ne concerne qu'Enable Banking.
+
 ### Connecter PayPal (sans télécharger de relevé)
 
 PayPal se connecte comme une banque, par Enable Banking : il donne le vrai service derrière chaque paiement « PAYPAL » de la banque.

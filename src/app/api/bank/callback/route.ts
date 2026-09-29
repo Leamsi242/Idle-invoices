@@ -6,6 +6,7 @@ import { BANK_COOKIE, decodePending } from "@/lib/banking/cookie";
 import { getSessionId } from "@/lib/session";
 import { recompute, saveUpload, saveWatch } from "@/lib/store";
 import { getLocale } from "@/lib/locale";
+import { decrypt } from "@/lib/crypto";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,14 +22,18 @@ export async function GET(req: Request) {
     return res;
   };
   const pending = decodePending((await cookies()).get(BANK_COOKIE)?.value);
-  const code = url.searchParams.get("code");
+  const q = url.searchParams;
+  // Enable Banking sends code and state; Bridge item_id, success and context; Powens connection_id and state.
+  const code = q.get("code") ?? q.get("item_id") ?? q.get("connection_id");
   const sessionId = await getSessionId();
-  if (!pending || !sessionId || !same(pending.state, url.searchParams.get("state") ?? "")) return back("bank=expired");
-  if (!code || url.searchParams.get("error")) return back("bank=denied");
+  if (!pending || !sessionId || !same(pending.state, q.get("state") ?? q.get("context") ?? "")) return back("bank=expired");
+  if (!code || q.get("error") || q.get("success") === "false") return back("bank=denied");
   try {
     const psu = psuHeaders(req);
     const today = new Date().toISOString().slice(0, 10);
-    const { accounts, transactions, access, stats } = await finishConnection(pending.institution, code, today, psu, pending.watch);
+    let ctx: string | undefined;
+    try { ctx = pending.ctx ? decrypt(pending.ctx) : undefined; } catch { return back("bank=expired"); }
+    const { accounts, transactions, access, stats } = await finishConnection(pending.institution, code, today, psu, pending.watch, pending.state, ctx);
     const paypal = isPaypal(pending.institution);
     const via = paypal ? "&via=paypal" : "";
     // PayPal's PSD2 lines are little documented: their field names (never values) help adjust the reading.

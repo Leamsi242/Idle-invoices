@@ -5,6 +5,8 @@ import { BANK_COOKIE, encodePending } from "@/lib/banking/cookie";
 import { getOrCreateSessionId } from "@/lib/session";
 import { rateLimit } from "@/lib/rate-limit";
 import { betaCheck } from "@/lib/beta";
+import { encrypt } from "@/lib/crypto";
+import { getLocale } from "@/lib/locale";
 
 /** Starts a read-only bank connection: returns the bank's sign-in page. Body: { name, country, watch? }. */
 export async function POST(req: Request) {
@@ -22,12 +24,13 @@ export async function POST(req: Request) {
     if (refusal) return NextResponse.json({ error: "Beta limit", beta: refusal }, { status: 403 });
   }
   const origin = new URL(req.url).origin;
-  const state = randomBytes(16).toString("base64url");
+  // Hex: Bridge sends it back as its "context", which accepts letters, digits and hyphens only.
+  const state = randomBytes(16).toString("hex");
   const psu = psuHeaders(req);
   try {
-    const { url, days } = await startConnection({ name, country }, `${origin}/api/bank/callback`, state, psu, watch);
+    const { url, days, ctx } = await startConnection({ name, country }, `${origin}/api/bank/callback`, state, psu, watch, await getLocale());
     const res = NextResponse.json({ url });
-    res.cookies.set(BANK_COOKIE, encodePending(state, { name, country }, watch, days), { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/api/bank", maxAge: 900 });
+    res.cookies.set(BANK_COOKIE, encodePending(state, { name, country }, watch, days, ctx ? encrypt(ctx) : undefined), { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/api/bank", maxAge: 900 });
     return res;
   } catch {
     return NextResponse.json({ error: "This bank cannot be reached right now. Please try again." }, { status: 502 });

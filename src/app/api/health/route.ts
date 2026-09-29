@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/crypto";
-import { enableBankingConfigured } from "@/lib/banking/enable-banking";
+import { activeProvider } from "@/lib/banking";
 import { demoEnabled } from "@/lib/banking/demo";
 import { gmailConfigured } from "@/lib/gmail";
 import { outlookConfigured } from "@/lib/outlook";
@@ -32,7 +32,7 @@ export async function GET() {
     databaseRegion,
     functionRegion: process.env.VERCEL_REGION ?? "local",
     encryption,
-    bank: enableBankingConfigured() ? "enable-banking" : demoEnabled() ? "demo only" : "not configured",
+    bank: activeProvider() ?? (demoEnabled() ? "demo only" : "not configured"),
     gmail: gmailConfigured(),
     outlook: outlookConfigured(),
     screenshots: !!process.env.ANTHROPIC_API_KEY,
