@@ -53,6 +53,13 @@ export const PARAMS = {
   ebAccount2: { v: 0.3, unit: "€ par compte et par mois", label: "Compte du 5 001e au 50 000e", verdict: "confirmé (offre écrite)" },
   ebAccount3: { v: 0.2, unit: "€ par compte et par mois", label: "Compte au-delà du 50 000e", verdict: "confirmé (offre écrite)" },
   bankTrigger: { v: 2500, unit: "abonnés Premium", label: "Abonnés Premium à partir desquels signer le contrat (scénarios « au seuil »)", note: "la licence ne se paie que par les abonnés en plus que la banque apporte : licence × conversion ÷ (conversion en plus × marge d'un abonné), soit environ 2 500 pour 1 500 € avec la TVA due", verdict: "calculé, à choisir" },
+  accountsPerUser: { v: 1.3, unit: "comptes par utilisateur", label: "Comptes bancaires reliés par utilisateur (Enable Banking facture les comptes, Powens les utilisateurs)", verdict: "hypothèse à mesurer" },
+  // Powens, as announced orally on 1 October 2026: a flat monthly price for up to 1 000 users,
+  // connections unlimited. The price beyond, the duration and any rise are not known yet.
+  pwFee: { v: 900, unit: "€ par mois", label: "Powens, forfait mensuel", note: "annoncé oralement par Powens le 1er octobre 2026, à faire confirmer par écrit (durée, évolution, prix au-delà)", verdict: "non vérifiable (oral)" },
+  pwIncl: { v: 1000, unit: "utilisateurs", label: "Utilisateurs inclus dans le forfait Powens (connexions illimitées)", verdict: "non vérifiable (oral)" },
+  pwExtra: { v: 0.9, unit: "€ par utilisateur et par mois", label: "Powens, utilisateur au-delà du forfait", note: "non communiqué : le modèle prend le prix moyen du forfait", verdict: "hypothèse" },
+  pwTrigger: { v: 1500, unit: "abonnés Premium", label: "Abonnés Premium à partir desquels signer avec Powens (scénarios « au seuil »)", note: "forfait × conversion ÷ (conversion en plus × marge d'un abonné), soit environ 1 500 pour 900 € avec la TVA due", verdict: "calculé, à choisir" },
   convBank: { v: 1, unit: "points", label: "Conversion en Premium en plus quand la banque directe y est incluse", verdict: "hypothèse à mesurer" },
   bankShare: { v: 60, unit: "%", label: "Part des concernés qui connectent leur banque", verdict: "hypothèse" },
   cac: { v: 1.5, unit: "€ par inscrit", label: "Coût d'acquisition en publicité payée", verdict: "hypothèse" },
@@ -124,6 +131,7 @@ export const CHOICES = {
   bank: { statements: "Relevés seulement", premium: "Banque directe en Premium", all: "Banque directe pour tous" },
   acquisition: { organic: "Bouche-à-oreille", paid: "Publicité payée" },
   offer: { base: "Premium mensuel et rapport unique", annual: "Plus l'abonnement annuel", b2c: "Plus annuel, affiliation et résiliation assistée", full: "Tout, dont les licences professionnelles" },
+  vendor: { enable: "Enable Banking (offre écrite)", powens: "Powens (prix annoncé oralement)" },
   staff: { ia: "IA d'abord, puis indépendants ou salariés", humain: "Sans IA : indépendants ou salariés" },
 };
 const OFFER = {
@@ -145,6 +153,13 @@ export function ebCost(p, accounts, contractMonth) {
   const incl = [p.ebIncl1, p.ebIncl2, p.ebIncl3][year - 1];
   const band = (from, to, price) => Math.max(0, Math.min(accounts, to) - Math.max(incl, from)) * price;
   return fee + band(0, 5000, p.ebAccount) + band(5000, 50000, p.ebAccount2) + band(50000, Infinity, p.ebAccount3);
+}
+
+/** The bank provider's monthly bill for `users` connected users in the given month of the contract. */
+export function bankCost(p, vendor, users, contractMonth) {
+  if (contractMonth < 1) return 0;
+  if (vendor === "powens") return p.pwFee + Math.max(0, users - p.pwIncl) * p.pwExtra;
+  return ebCost(p, users * p.accountsPerUser, contractMonth);
 }
 
 /** What paid work costs: freelancers by the hour, or salaried full-time staff when cheaper. */
@@ -186,7 +201,7 @@ export function project(p0, s) {
     // In a free phase the founder answers and builds alone: no AI subscription, no paid AI support.
     const ai = aiChoice && monetized;
     // Direct bank connection: from launch, or once the payers reach the trigger ("au seuil").
-    if (bankFrom === null && s.bank !== "statements" && monetized && (s.bankAt !== "trigger" || paidM + paidY >= p.bankTrigger)) bankFrom = m;
+    if (bankFrom === null && s.bank !== "statements" && monetized && (s.bankAt !== "trigger" || paidM + paidY >= (s.vendor === "powens" ? p.pwTrigger : p.bankTrigger))) bankFrom = m;
     const bankOn = bankFrom !== null;
     const newPaid = monetized ? activated * (p.conv + (bankOn && s.bank !== "statements" ? p.convBank : 0)) / 100 : 0;
     const newYearly = offer.annual ? newPaid * p.annualShare / 100 : 0;
@@ -241,7 +256,7 @@ export function project(p0, s) {
     const casaMonth = verifyFrom + Math.max(0, p.gmailDelay - 1);
     const casa = s.mail === "gmail" && m >= casaMonth && (m - casaMonth) % 12 === 0 ? p.casa : 0;
     const connected = !bankOn ? 0 : s.bank === "all" ? active * p.bankShare / 100 : paid * p.bankShare / 100;
-    const bank = bankOn ? ebCost(p, connected, m - bankFrom + 1) : 0;
+    const bank = bankOn ? bankCost(p, s.vendor ?? "enable", connected, m - bankFrom + 1) : 0;
     const acquisition = s.acquisition === "paid" && !beta ? signups * p.cac : 0;
     const admin = (company ? p.accountant : 0) + (monetized ? p.rcPro : 0);
 
@@ -336,6 +351,7 @@ export function realistic() {
     { ...o, id: "R7-lent", name: "Central avec une croissance lente, 4 % par mois", offer: "b2c", over: { growth: 4 } },
     { ...o, id: "R9-sobre", name: "Central sobre : un seul assistant IA à 20 $ par mois, sans assurance", offer: "b2c", over: { aiDevTool: 20, aiContentTool: 0, aiDevGain: 20, rcPro: 0 } },
     { ...o, id: "R10-banque-tot", name: "Sobre, mais contrat Enable Banking signé dès le lancement", offer: "b2c", bankAt: "launch", over: { aiDevTool: 20, aiContentTool: 0, aiDevGain: 20, rcPro: 0 } },
+    { ...o, id: "R11-powens-tot", name: "Sobre, mais contrat Powens signé dès le lancement", offer: "b2c", bankAt: "launch", vendor: "powens", over: { aiDevTool: 20, aiContentTool: 0, aiDevGain: 20, rcPro: 0 } },
     { ...o, id: "R8-ambitieux", name: "Ambitieux : tout, Gmail pour tous au 10e mois, croissance 15 % par mois", offer: "full", mail: "gmail", preMail: "outlook", gmailFrom: 10, over: { growth: 15 } },
   ];
 }
@@ -417,7 +433,7 @@ export const GROUPS = [
   ["Hébergement et outils selon l'échelle", ["usdEur", "vercelPro", "hobbyCapacity", "proExtraPerActive", "tursoFreeActives", "tursoDev", "tursoDevActives", "tursoScaler", "domain", "resendFree", "resendPro", "resendScale", "alertsPerPremium", "emailsPerActive", "sentryFreeActives", "sentryTeam", "aiPerActive"]],
   ["Personnel et IA", ["founderHours", "founderPay", "ticketsPer100", "ticketMin", "aiSupportShare", "aiTicketCost", "devHours", "devPer1000", "aiDevGain", "aiDevTool", "mkHours", "aiContentGain", "aiContentTool", "adminHours", "adminPer1000", "aiAdminGain", "b2bSetupHours", "b2bHours", "freelanceRate", "employeeCost", "fteHours"]],
   ["Gmail pour tous", ["casa", "gmailDelay"]],
-  ["Banque directe (Enable Banking)", ["ebFee1", "ebIncl1", "ebFee2", "ebIncl2", "ebFee3", "ebIncl3", "ebAccount", "ebAccount2", "ebAccount3", "bankTrigger", "convBank", "bankShare"]],
+  ["Banque directe (Enable Banking, Powens)", ["ebFee1", "ebIncl1", "ebFee2", "ebIncl2", "ebFee3", "ebIncl3", "ebAccount", "ebAccount2", "ebAccount3", "bankTrigger", "accountsPerUser", "pwFee", "pwIncl", "pwExtra", "pwTrigger", "convBank", "bankShare"]],
   ["Publicité", ["cac", "paidBoost"]],
 ];
 

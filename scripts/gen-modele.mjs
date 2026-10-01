@@ -1,7 +1,7 @@
 // Writes docs/MODELE-ECONOMIQUE.md from docs/model.mjs, the model the masterplan page uses too.
 // Run: npm run modele (after changing a parameter in docs/model.mjs).
 import fs from "node:fs";
-import { PARAMS, GROUPS, CHOICES, defaults, allScenarios, project, breakEven, reachBy, atScale, breakEvenSubscribers, ebCost, fmtEur, fmtInt } from "../docs/model.mjs";
+import { PARAMS, GROUPS, CHOICES, defaults, allScenarios, project, breakEven, reachBy, atScale, breakEvenSubscribers, ebCost, bankCost, fmtEur, fmtInt } from "../docs/model.mjs";
 
 const p = defaults();
 const scenarios = allScenarios().map((s) => ({ s, r: project(p, s) }));
@@ -237,26 +237,30 @@ Offre écrite reçue d'Enable Banking (« Startup Offer 2026 », septembre 2026,
 | Comptes actifs inclus | ${fmtInt(p.ebIncl1)} | ${fmtInt(p.ebIncl2)} | ${fmtInt(p.ebIncl3)} |
 | Compte en plus | ${fmtEur(p.ebAccount, 2)} jusqu'au 5 000e, ${fmtEur(p.ebAccount2, 2)} jusqu'au 50 000e, ${fmtEur(p.ebAccount3, 2)} au-delà (le modèle facture chaque compte au prix de sa tranche ; à confirmer si toute la facture passe au prix de la tranche atteinte) | | |
 
-Coût mensuel selon le nombre de comptes connectés :
+**Powens** (prix annoncé oralement le 1er octobre 2026, verdict : non vérifiable tant qu'il n'est pas écrit) : **${eur(p.pwFee)} par mois pour ${fmtInt(p.pwIncl)} utilisateurs, connexions illimitées**. Le prix au-delà, la durée et l'évolution n'ont pas été donnés : le modèle prend ${fmtEur(p.pwExtra, 2)} par utilisateur en plus (prix moyen du forfait, hypothèse). Powens annonce aussi jusqu'à 24 mois d'historique (3 mois au minimum), 4 rafraîchissements par jour et un travail sous son agrément (documents commerciaux de Powens, partiellement vérifié).
+
+Enable Banking facture des **comptes**, Powens des **utilisateurs** : avec ${dec(p.accountsPerUser)} compte par utilisateur (hypothèse), coût mensuel selon le nombre d'utilisateurs connectés :
 `);
-out.push(row(["Comptes connectés", "1re année", "2e année", "3e année et après"]));
-out.push(row(["---:", "---:", "---:", "---:"]));
-for (const n of accountsList) out.push(row([fmtInt(n), eur(ebCost(p, n, 1)), eur(ebCost(p, n, 13)), eur(ebCost(p, n, 25))]));
-const withBank = (n) => atScale(p, { ...ebScen, bankAt: "launch" }, n), noBank = (n) => atScale(p, { ...ebScen, bank: "statements" }, n);
+out.push(row(["Utilisateurs connectés", "Enable Banking, 1re année", "Enable Banking, 2e année", "Enable Banking, 3e année et après", "Powens"]));
+out.push(row(["---:", "---:", "---:", "---:", "---:"]));
+for (const n of [50, 500, 1000, 1500, 3000, 10000]) out.push(row([fmtInt(n), eur(bankCost(p, "enable", n, 1)), eur(bankCost(p, "enable", n, 13)), eur(bankCost(p, "enable", n, 25)), eur(bankCost(p, "powens", n, 1))]));
+const withBank = (n, vendor) => atScale(p, { ...ebScen, bankAt: "launch", vendor }, n), noBank = (n) => atScale(p, { ...ebScen, bank: "statements" }, n);
 const sizes = [2000, 5000, 10000, 20000, 50000];
 out.push(`
-**Quand signer.** La licence est un coût fixe, mais elle ne se paie pas par tous les abonnés : ils paieraient de toute façon avec les relevés importés. Elle se paie par les abonnés **en plus** que la connexion directe apporte (hypothèse : +${dec(p.convBank)} point de conversion, à mesurer). Il faut donc environ licence × ${dec(p.conv)} ÷ (${dec(p.convBank)} × marge d'un abonné) abonnés Premium, soit environ ${fmtInt(p.ebFee3 * p.conv / (p.convBank * 2.95))} pour la licence de ${eur(p.ebFee3)} avec la TVA due ; le tableau ci-dessous place l'équilibre entre 10 000 et 20 000 actifs. Le modèle signe donc à **${fmtInt(p.bankTrigger)} abonnés** (réglable). Un mois type à chaque taille, plan ${ebScen.id}, en régime stable (contrat de plus de 2 ans) :
+**Quand signer.** La licence est un coût fixe, mais elle ne se paie pas par tous les abonnés : ils paieraient de toute façon avec les relevés importés. Elle se paie par les abonnés **en plus** que la connexion directe apporte (hypothèse : +${dec(p.convBank)} point de conversion, à mesurer). Il faut donc environ licence × ${dec(p.conv)} ÷ (${dec(p.convBank)} × marge d'un abonné) abonnés Premium : environ ${fmtInt(p.pwFee * p.conv / (p.convBank * 2.95))} pour les ${eur(p.pwFee)} de Powens, ${fmtInt(p.ebFee3 * p.conv / (p.convBank * 2.95))} pour la licence de ${eur(p.ebFee3)} d'Enable Banking (TVA due). Le modèle signe à **${fmtInt(p.pwTrigger)} abonnés avec Powens** et **${fmtInt(p.bankTrigger)} avec Enable Banking** (réglables). Écart de résultat d'un mois type par rapport à « sans banque directe », plan ${ebScen.id}, en régime stable :
 `);
 out.push(row(["Actifs", ...sizes.map(fmtInt)]));
 out.push(row(["---", ...sizes.map(() => "---:")]));
-const W = sizes.map(withBank), N = sizes.map(noBank);
+const N = sizes.map(noBank), E = sizes.map((n) => withBank(n, "enable")), P = sizes.map((n) => withBank(n, "powens"));
 out.push(row(["Résultat sans banque directe", ...N.map((x) => eur(x.result))]));
-out.push(row(["Résultat avec banque directe", ...W.map((x) => eur(x.result))]));
-out.push(row(["dont Enable Banking", ...W.map((x) => eur(x.last.parts.bank))]));
-out.push(row(["**Différence**", ...W.map((x, i) => `**${eur(x.result - N[i].result)}**`)]));
+out.push(row(["Utilisateurs connectés", ...E.map((x) => fmtInt(x.premium * p.bankShare / 100))]));
+out.push(row(["Écart avec Enable Banking", ...E.map((x, i) => `**${eur(x.result - N[i].result)}**`)]));
+out.push(row(["Écart avec Powens", ...P.map((x, i) => `**${eur(x.result - N[i].result)}**`)]));
 out.push(`
-Signer dès le lancement (R10) coûte ${eur(-byId("R10-banque-tot").r.summary.result24 + byId(REC).r.summary.result24)} de résultat sur 24 mois par rapport au plan sobre. Tant que le seuil n'est pas atteint, la banque directe reste en test gratuit sur vos propres comptes, et les utilisateurs importent leurs relevés.
-`);
+**Lecture** : Powens coûte moins cher tant que les utilisateurs connectés restent sous ${fmtInt(p.pwIncl)} (forfait fixe, sans hausse annoncée, quand Enable Banking passe à ${eur(p.ebFee2)} puis ${eur(p.ebFee3)}). Au-delà, tout dépend de son prix par utilisateur en plus, **la question à poser par écrit** : à ${fmtEur(p.pwExtra, 2)}, Enable Banking redevient moins cher au-delà d'environ 1 000 utilisateurs connectés la 1re année de son contrat, 1 700 à partir de la 3e. Signer dès le lancement coûte ${eur(-byId("R10-banque-tot").r.summary.result24 + byId(REC).r.summary.result24)} sur 24 mois avec Enable Banking (R10) et ${eur(-byId("R11-powens-tot").r.summary.result24 + byId(REC).r.summary.result24)} avec Powens (R11), par rapport au plan sobre. Tant que le seuil n'est pas atteint, la banque directe reste en test gratuit (comptes du propriétaire chez Enable Banking, sandbox chez Powens) et les utilisateurs importent leurs relevés.
+
+`
+);
 
 // Recommended plan.
 const rec = byId(REC);
@@ -268,7 +272,7 @@ out.push(`## 11. Le masterplan recommandé
 | 0. Bêta gratuite | 1 à ${p.betaMonths} | A-Outlook : relevés, export Gmail, Outlook pour tous, 100 places Gmail de test pour mesurer l'effet de la connexion ; vous répondez vous-même | Taux d'analyse terminée, intention de payer, 5 entretiens avec des professionnels | 0 € |
 | 1. Lancement sobre | ${p.betaMonths + 1} à 9 | ${rec.s.id} : Premium mensuel et annuel, rapport unique, résiliation assistée, affiliation signalée ; un seul assistant IA ; Stripe, Vercel Pro | Seuil de rentabilité atteint (${beText(recBe)}) | environ ${eur(rec.r.rows[p.betaMonths + 1].spend)} par mois |
 | 2. Gmail pour tous | à partir du 10e mois, si l'effet mesuré dépasse ${fmtInt(breakEvenSubscribers(p, casaMonthly))} abonnés | Validation Google, audit CASA | Heures au-delà des vôtres | + ${eur(p.casa)} par an |
-| 3. Banque directe en Premium | à ${fmtInt(p.bankTrigger)} abonnés Premium (10 000 à 15 000 actifs) | Contrat Enable Banking, offre startup, connexion réservée aux abonnés | | ${eur(p.ebFee1)} par mois la 1re année (${fmtInt(p.ebIncl1)} comptes inclus), puis ${eur(p.ebFee2)}, puis ${eur(p.ebFee3)} |
+| 3. Banque directe en Premium | à ${fmtInt(p.pwTrigger)} abonnés avec Powens, ${fmtInt(p.bankTrigger)} avec Enable Banking | Le moins cher des deux au volume prévu : Powens sous ${fmtInt(p.pwIncl)} utilisateurs connectés, Enable Banking au-delà (selon le prix Powens au-delà du forfait, à obtenir par écrit) | | ${eur(p.pwFee)} par mois chez Powens ; ${eur(p.ebFee1)}, ${eur(p.ebFee2)} puis ${eur(p.ebFee3)} chez Enable Banking |
 | 4. Premières personnes | quand les heures dépassent ${fmtInt(p.founderHours)} h par mois | Indépendant pour le support et les contenus, puis un salarié au-delà de ${fmtInt(p.employeeCost / p.freelanceRate)} h | Licences professionnelles validées par des entretiens | ${eur(p.freelanceRate)} de l'heure, puis ${eur(p.employeeCost)} par mois |
 | 5. Licences professionnelles | quand 3 professionnels ont dit oui | Marque blanche, ${eur(p.b2bPrice)} par mois | | ${fmtInt(p.b2bSetupHours)} h par licence |
 

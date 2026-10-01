@@ -63,6 +63,7 @@ Limites communes à toutes les banques (partiellement vérifié) :
 | Resend | 0 € | 3 000 e-mails par mois, 100 par jour, 1 domaine | Partiellement vérifié : [tarifs Resend](https://resend.com/pricing) |
 | Enable Banking restreint | 0 € | Vos comptes reliés seulement | Partiellement vérifié |
 | Enable Banking en production (offre startup) | 900 € par mois la 1re année, 1 200 € la 2e, 1 500 € ensuite | 1 800, 2 400 puis 3 000 comptes inclus, 0,50 € par compte au-delà | Confirmé (offre écrite, septembre 2026) |
+| Powens en production | 900 € par mois | 1 000 utilisateurs inclus, connexions illimitées ; prix au-delà, durée et évolution non communiqués | Non vérifiable (annoncé oralement le 1er octobre 2026) |
 
 Deux précisions :
 

@@ -130,7 +130,7 @@ Projection sur 24 mois, dont 2 mois de bêta gratuite. Montants en euros. Chaque
 | Audit de sécurité CASA pour Gmail (niveau 2, puis chaque année) | 700 € par an | partiellement vérifié (sources tierces) | TAC Security : 540 $ (Basic), 720 $ (Premium, nouveaux passages illimités), 1 800 $ (Enterprise) ; Leviathan 800 à 1 200 $. Pas de voie gratuite depuis la fin de l'auto-analyse |
 | Délai de validation Google avant d'ouvrir Gmail à tous | 2 mois | partiellement vérifié | vérification de la marque en quelques jours, accès restreint « plusieurs semaines » selon Google, 2 à 8 semaines d'après des retours d'expérience |
 
-### Banque directe (Enable Banking)
+### Banque directe (Enable Banking, Powens)
 
 | Paramètre | Valeur | Verdict | Source ou remarque |
 | --- | --- | --- | --- |
@@ -144,6 +144,11 @@ Projection sur 24 mois, dont 2 mois de bêta gratuite. Montants en euros. Chaque
 | Compte du 5 001e au 50 000e | 0,3 € par compte et par mois | confirmé (offre écrite) |  |
 | Compte au-delà du 50 000e | 0,2 € par compte et par mois | confirmé (offre écrite) |  |
 | Abonnés Premium à partir desquels signer le contrat (scénarios « au seuil ») | 2500 abonnés Premium | calculé, à choisir | la licence ne se paie que par les abonnés en plus que la banque apporte : licence × conversion ÷ (conversion en plus × marge d'un abonné), soit environ 2 500 pour 1 500 € avec la TVA due |
+| Comptes bancaires reliés par utilisateur (Enable Banking facture les comptes, Powens les utilisateurs) | 1,3 comptes par utilisateur | hypothèse à mesurer |  |
+| Powens, forfait mensuel | 900 € par mois | non vérifiable (oral) | annoncé oralement par Powens le 1er octobre 2026, à faire confirmer par écrit (durée, évolution, prix au-delà) |
+| Utilisateurs inclus dans le forfait Powens (connexions illimitées) | 1000 utilisateurs | non vérifiable (oral) |  |
+| Powens, utilisateur au-delà du forfait | 0,9 € par utilisateur et par mois | hypothèse | non communiqué : le modèle prend le prix moyen du forfait |
+| Abonnés Premium à partir desquels signer avec Powens (scénarios « au seuil ») | 1500 abonnés Premium | calculé, à choisir | forfait × conversion ÷ (conversion en plus × marge d'un abonné), soit environ 1 500 pour 900 € avec la TVA due |
 | Conversion en Premium en plus quand la banque directe y est incluse | 1 points | hypothèse à mesurer |  |
 | Part des concernés qui connectent leur banque | 60 % | hypothèse |  |
 
@@ -169,6 +174,7 @@ Tous en bouche-à-oreille, Outlook ouvert à tous (export pour Gmail), banque di
 | R1-prudent | Prudent (test de résistance) : Premium mensuel et annuel, conversion 3 %, croissance 6 % par mois | 3 216 € | **-1 518 €** | 1 539 € | 43 | non atteint | 132 inscrits par mois, 266 actifs, 45 Premium |
 | R4-gratuit-affil | Gratuit pour tous, payé par l'affiliation (aucun Premium) | 3 235 € | **-2 310 €** | 2 310 € | 0 | non atteint | 40 462 inscrits par mois, 69 594 actifs, 0 Premium |
 | R3-sans-IA | Central sans IA : même offre, tout le travail fait par des personnes | 14 704 € | **-10 094 €** | 10 094 € | 123 | non atteint | 423 inscrits par mois, 929 actifs, 238 Premium |
+| R11-powens-tot | Sobre, mais contrat Powens signé dès le lancement | 20 977 € | **-15 723 €** | 15 723 € | 147 | non atteint | 457 inscrits par mois, 1 048 actifs, 309 Premium |
 | R10-banque-tot | Sobre, mais contrat Enable Banking signé dès le lancement | 23 977 € | **-18 723 €** | 18 723 € | 147 | non atteint | 785 inscrits par mois, 1 799 actifs, 531 Premium |
 
 **Lecture** :
@@ -227,11 +233,11 @@ La part de Premium parmi les actifs y est élevée (environ un quart) parce que 
 | IA (support, assistants, produit) | 21 € | 28 € | 67 € | 271 € | 1 032 € |
 | Heures de travail (dont payées) | 39 h (0 h) | 48 h (8 h) | 91 h (51 h) | 316 h (276 h) | 1 156 h (1 116 h) |
 | Personnel payé | 0 € | 263 €, indépendants (moins de 0,1 ETP) | 1 776 €, indépendants (0,3 ETP) | 5 200 €, salariés (2 ETP) | 20 800 €, salariés (8 ETP) |
-| Banque, comptable, assurance | 0 € | 0 € | 1 020 € | 3 988 € | 12 651 € |
+| Banque, comptable, assurance | 0 € | 0 € | 1 217 € | 4 849 € | 16 110 € |
 | Statut | micro, sans TVA | micro, sans TVA | société, TVA | société, TVA | société, TVA |
-| Cotisations ou impôt | 130 € | 520 € | 1 833 € | 11 924 € | 48 826 € |
-| **Résultat par mois** | **401 €** | **1 435 €** | **5 283 €** | **34 341 €** | **140 848 €** |
-| Marge | 71 % | 63 % | 55 % | 62 % | 63 % |
+| Cotisations ou impôt | 130 € | 520 € | 1 783 € | 11 709 € | 47 961 € |
+| **Résultat par mois** | **401 €** | **1 435 €** | **5 209 €** | **33 723 €** | **138 363 €** |
+| Marge | 71 % | 63 % | 54 % | 61 % | 62 % |
 
 ### Scénario central (R2), IA d'abord
 
@@ -244,11 +250,11 @@ La part de Premium parmi les actifs y est élevée (environ un quart) parce que 
 | IA (support, assistants, produit) | 113 € | 120 € | 159 € | 363 € | 1 124 € |
 | Heures de travail (dont payées) | 36 h (0 h) | 44 h (4 h) | 86 h (46 h) | 303 h (263 h) | 1 111 h (1 071 h) |
 | Personnel payé | 0 € | 144 €, indépendants (moins de 0,1 ETP) | 1 600 €, indépendants (0,3 ETP) | 5 200 €, salariés (2 ETP) | 20 800 €, salariés (8 ETP) |
-| Banque, comptable, assurance | 15 € | 15 € | 1 035 € | 4 003 € | 12 666 € |
+| Banque, comptable, assurance | 15 € | 15 € | 1 232 € | 4 864 € | 16 125 € |
 | Statut | micro, sans TVA | micro, sans TVA | société, TVA | société, TVA | société, TVA |
-| Cotisations ou impôt | 130 € | 520 € | 1 850 € | 11 897 € | 48 799 € |
-| **Résultat par mois** | **294 €** | **1 447 €** | **5 334 €** | **34 260 €** | **142 068 €** |
-| Marge | 52 % | 64 % | 55 % | 62 % | 64 % |
+| Cotisations ou impôt | 130 € | 520 € | 1 801 € | 11 682 € | 47 934 € |
+| **Résultat par mois** | **294 €** | **1 447 €** | **5 260 €** | **33 643 €** | **139 583 €** |
+| Marge | 52 % | 64 % | 54 % | 61 % | 63 % |
 
 ### Même scénario sans IA (R3)
 
@@ -261,11 +267,11 @@ La part de Premium parmi les actifs y est élevée (environ un quart) parce que 
 | IA (support, assistants, produit) | 2 € | 6 € | 31 € | 158 € | 634 € |
 | Heures de travail (dont payées) | 59 h (19 h) | 72 h (32 h) | 146 h (106 h) | 529 h (489 h) | 1 955 h (1 915 h) |
 | Personnel payé | 649 €, indépendants (0,1 ETP) | 1 127 €, indépendants (0,2 ETP) | 2 600 €, salariés (1 ETP) | 10 400 €, salariés (4 ETP) | 33 800 €, salariés (13 ETP) |
-| Banque, comptable, assurance | 15 € | 15 € | 1 035 € | 4 003 € | 12 666 € |
+| Banque, comptable, assurance | 15 € | 15 € | 1 232 € | 4 864 € | 16 125 € |
 | Statut | micro, sans TVA | micro, sans TVA | société, TVA | société, TVA | société, TVA |
-| Cotisations ou impôt | 130 € | 520 € | 1 632 € | 10 649 € | 45 672 € |
-| **Résultat par mois** | **-242 €** | **581 €** | **4 659 €** | **30 513 €** | **131 382 €** |
-| Marge | -43 % | 26 % | 48 % | 55 % | 59 % |
+| Cotisations ou impôt | 130 € | 520 € | 1 583 € | 10 434 € | 44 807 € |
+| **Résultat par mois** | **-242 €** | **581 €** | **4 585 €** | **29 896 €** | **128 897 €** |
+| Marge | -43 % | 26 % | 47 % | 54 % | 58 % |
 
 **Ce que l'IA remplace, et ce qu'elle ne remplace pas** :
 
@@ -314,6 +320,7 @@ Chaque scénario combine **la boîte mail** (Export Gmail (Takeout) ; Connexion 
 | R1-prudent | Prudent (test de résistance) : Premium mensuel et annuel, conversion 3 %, croissance 6 % par mois | 3 216 € | 487 € | 2 186 € | **-1 518 €** | 1 539 € | 43 | mois 23 | non atteint |
 | R4-gratuit-affil | Gratuit pour tous, payé par l'affiliation (aucun Premium) | 3 235 € | 249 € | 1 174 € | **-2 310 €** | 2 310 € | 0 | non atteint | non atteint |
 | R3-sans-IA | Central sans IA : même offre, tout le travail fait par des personnes | 14 704 € | 1 313 € | 5 924 € | **-10 094 €** | 10 094 € | 123 | non atteint | non atteint |
+| R11-powens-tot | Sobre, mais contrat Powens signé dès le lancement | 20 977 € | 1 498 € | 6 752 € | **-15 723 €** | 15 723 € | 147 | non atteint | non atteint |
 | G-R-pub | Connexion Gmail pour tous, relevés seulement, publicité payée | 27 770 € | 3 270 € | 14 473 € | **-16 568 €** | 16 568 € | 313 | non atteint | non atteint |
 | O-R-pub | Outlook pour tous, export pour Gmail, relevés seulement, publicité payée | 25 371 € | 2 344 € | 10 372 € | **-17 342 €** | 17 342 € | 224 | non atteint | non atteint |
 | T-R-pub | Export Gmail (Takeout), relevés seulement, publicité payée | 25 212 € | 2 180 € | 9 648 € | **-17 744 €** | 17 744 € | 208 | non atteint | non atteint |
@@ -325,9 +332,9 @@ Chaque scénario combine **la boîte mail** (Export Gmail (Takeout) ; Connexion 
 | O-P-org | Outlook pour tous, export pour Gmail, banque directe en premium, bouche-à-oreille | 26 039 € | 1 371 € | 6 065 € | **-21 345 €** | 21 345 € | 134 | non atteint | non atteint |
 | T-P-org | Export Gmail (Takeout), banque directe en premium, bouche-à-oreille | 26 035 € | 1 275 € | 5 641 € | **-21 669 €** | 21 669 € | 125 | non atteint | non atteint |
 | O>G-P-org | Outlook pour tous et export Gmail, puis connexion Gmail pour tous au 10e mois, banque directe en premium, bouche-à-oreille | 27 598 € | 1 728 € | 7 645 € | **-21 681 €** | 21 681 € | 182 | non atteint | non atteint |
-| G-T-pub | Connexion Gmail pour tous, banque directe pour tous, publicité payée | 52 476 € | 5 420 € | 23 976 € | **-33 920 €** | 33 920 € | 532 | non atteint | non atteint |
-| O-T-pub | Outlook pour tous, export pour Gmail, banque directe pour tous, publicité payée | 49 771 € | 4 336 € | 19 181 € | **-34 926 €** | 34 926 € | 425 | non atteint | non atteint |
-| T-T-pub | Export Gmail (Takeout), banque directe pour tous, publicité payée | 49 548 € | 4 145 € | 18 335 € | **-35 359 €** | 35 359 € | 406 | non atteint | non atteint |
+| G-T-pub | Connexion Gmail pour tous, banque directe pour tous, publicité payée | 53 369 € | 5 420 € | 23 976 € | **-34 813 €** | 34 813 € | 532 | non atteint | non atteint |
+| O-T-pub | Outlook pour tous, export pour Gmail, banque directe pour tous, publicité payée | 49 899 € | 4 336 € | 19 181 € | **-35 055 €** | 35 055 € | 425 | non atteint | non atteint |
+| T-T-pub | Export Gmail (Takeout), banque directe pour tous, publicité payée | 49 615 € | 4 145 € | 18 335 € | **-35 425 €** | 35 425 € | 406 | non atteint | non atteint |
 | G-P-pub | Connexion Gmail pour tous, banque directe en premium, publicité payée | 50 630 € | 3 826 € | 16 924 € | **-37 532 €** | 37 532 € | 375 | non atteint | non atteint |
 | O-P-pub | Outlook pour tous, export pour Gmail, banque directe en premium, publicité payée | 48 192 € | 2 742 € | 12 129 € | **-38 805 €** | 38 805 € | 269 | non atteint | non atteint |
 | T-P-pub | Export Gmail (Takeout), banque directe en premium, publicité payée | 48 051 € | 2 551 € | 11 283 € | **-39 319 €** | 39 319 € | 250 | non atteint | non atteint |
@@ -391,27 +398,30 @@ Offre écrite reçue d'Enable Banking (« Startup Offer 2026 », septembre 2026,
 | Comptes actifs inclus | 1 800 | 2 400 | 3 000 |
 | Compte en plus | 0,50 € jusqu'au 5 000e, 0,30 € jusqu'au 50 000e, 0,20 € au-delà (le modèle facture chaque compte au prix de sa tranche ; à confirmer si toute la facture passe au prix de la tranche atteinte) | | |
 
-Coût mensuel selon le nombre de comptes connectés :
+**Powens** (prix annoncé oralement le 1er octobre 2026, verdict : non vérifiable tant qu'il n'est pas écrit) : **900 € par mois pour 1 000 utilisateurs, connexions illimitées**. Le prix au-delà, la durée et l'évolution n'ont pas été donnés : le modèle prend 0,90 € par utilisateur en plus (prix moyen du forfait, hypothèse). Powens annonce aussi jusqu'à 24 mois d'historique (3 mois au minimum), 4 rafraîchissements par jour et un travail sous son agrément (documents commerciaux de Powens, partiellement vérifié).
 
-| Comptes connectés | 1re année | 2e année | 3e année et après |
-| ---: | ---: | ---: | ---: |
-| 50 | 900 € | 1 200 € | 1 500 € |
-| 500 | 900 € | 1 200 € | 1 500 € |
-| 1 500 | 900 € | 1 200 € | 1 500 € |
-| 3 000 | 1 500 € | 1 500 € | 1 500 € |
-| 10 000 | 4 000 € | 4 000 € | 4 000 € |
-| 60 000 | 18 000 € | 18 000 € | 18 000 € |
+Enable Banking facture des **comptes**, Powens des **utilisateurs** : avec 1,3 compte par utilisateur (hypothèse), coût mensuel selon le nombre d'utilisateurs connectés :
 
-**Quand signer.** La licence est un coût fixe, mais elle ne se paie pas par tous les abonnés : ils paieraient de toute façon avec les relevés importés. Elle se paie par les abonnés **en plus** que la connexion directe apporte (hypothèse : +1 point de conversion, à mesurer). Il faut donc environ licence × 5 ÷ (1 × marge d'un abonné) abonnés Premium, soit environ 2 542 pour la licence de 1 500 € avec la TVA due ; le tableau ci-dessous place l'équilibre entre 10 000 et 20 000 actifs. Le modèle signe donc à **2 500 abonnés** (réglable). Un mois type à chaque taille, plan R9-sobre, en régime stable (contrat de plus de 2 ans) :
+| Utilisateurs connectés | Enable Banking, 1re année | Enable Banking, 2e année | Enable Banking, 3e année et après | Powens |
+| ---: | ---: | ---: | ---: | ---: |
+| 50 | 900 € | 1 200 € | 1 500 € | 900 € |
+| 500 | 900 € | 1 200 € | 1 500 € | 900 € |
+| 1 000 | 900 € | 1 200 € | 1 500 € | 900 € |
+| 1 500 | 975 € | 1 200 € | 1 500 € | 1 350 € |
+| 3 000 | 1 950 € | 1 950 € | 1 950 € | 2 700 € |
+| 10 000 | 4 900 € | 4 900 € | 4 900 € | 9 000 € |
+
+**Quand signer.** La licence est un coût fixe, mais elle ne se paie pas par tous les abonnés : ils paieraient de toute façon avec les relevés importés. Elle se paie par les abonnés **en plus** que la connexion directe apporte (hypothèse : +1 point de conversion, à mesurer). Il faut donc environ licence × 5 ÷ (1 × marge d'un abonné) abonnés Premium : environ 1 525 pour les 900 € de Powens, 2 542 pour la licence de 1 500 € d'Enable Banking (TVA due). Le modèle signe à **1 500 abonnés avec Powens** et **2 500 avec Enable Banking** (réglables). Écart de résultat d'un mois type par rapport à « sans banque directe », plan R9-sobre, en régime stable :
 
 | Actifs | 2 000 | 5 000 | 10 000 | 20 000 | 50 000 |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Résultat sans banque directe | 1 435 € | 2 768 € | 5 598 € | 11 980 € | 31 215 € |
-| Résultat avec banque directe | 162 € | 1 735 € | 5 376 € | 12 458 € | 32 983 € |
-| dont Enable Banking | 1 500 € | 1 500 € | 1 500 € | 1 846 € | 3 769 € |
-| **Différence** | **-1 273 €** | **-1 033 €** | **-222 €** | **479 €** | **1 768 €** |
+| Utilisateurs connectés | 354 | 885 | 1 769 | 3 538 | 8 846 |
+| Écart avec Enable Banking | **-1 273 €** | **-1 033 €** | **-222 €** | **80 €** | **1 171 €** |
+| Écart avec Powens | **-673 €** | **-433 €** | **-291 €** | **-583 €** | **-1 462 €** |
 
-Signer dès le lancement (R10) coûte 22 170 € de résultat sur 24 mois par rapport au plan sobre. Tant que le seuil n'est pas atteint, la banque directe reste en test gratuit sur vos propres comptes, et les utilisateurs importent leurs relevés.
+**Lecture** : Powens coûte moins cher tant que les utilisateurs connectés restent sous 1 000 (forfait fixe, sans hausse annoncée, quand Enable Banking passe à 1 200 € puis 1 500 €). Au-delà, tout dépend de son prix par utilisateur en plus, **la question à poser par écrit** : à 0,90 €, Enable Banking redevient moins cher au-delà d'environ 1 000 utilisateurs connectés la 1re année de son contrat, 1 700 à partir de la 3e. Signer dès le lancement coûte 22 170 € sur 24 mois avec Enable Banking (R10) et 19 170 € avec Powens (R11), par rapport au plan sobre. Tant que le seuil n'est pas atteint, la banque directe reste en test gratuit (comptes du propriétaire chez Enable Banking, sandbox chez Powens) et les utilisateurs importent leurs relevés.
+
 
 ## 11. Le masterplan recommandé
 
@@ -420,7 +430,7 @@ Signer dès le lancement (R10) coûte 22 170 € de résultat sur 24 mois par
 | 0. Bêta gratuite | 1 à 2 | A-Outlook : relevés, export Gmail, Outlook pour tous, 100 places Gmail de test pour mesurer l'effet de la connexion ; vous répondez vous-même | Taux d'analyse terminée, intention de payer, 5 entretiens avec des professionnels | 0 € |
 | 1. Lancement sobre | 3 à 9 | R9-sobre : Premium mensuel et annuel, rapport unique, résiliation assistée, affiliation signalée ; un seul assistant IA ; Stripe, Vercel Pro | Seuil de rentabilité atteint (20 inscrits par mois, 43 actifs, 11 Premium) | environ 38 € par mois |
 | 2. Gmail pour tous | à partir du 10e mois, si l'effet mesuré dépasse 17 abonnés | Validation Google, audit CASA | Heures au-delà des vôtres | + 700 € par an |
-| 3. Banque directe en Premium | à 2 500 abonnés Premium (10 000 à 15 000 actifs) | Contrat Enable Banking, offre startup, connexion réservée aux abonnés | | 900 € par mois la 1re année (1 800 comptes inclus), puis 1 200 €, puis 1 500 € |
+| 3. Banque directe en Premium | à 1 500 abonnés avec Powens, 2 500 avec Enable Banking | Le moins cher des deux au volume prévu : Powens sous 1 000 utilisateurs connectés, Enable Banking au-delà (selon le prix Powens au-delà du forfait, à obtenir par écrit) | | 900 € par mois chez Powens ; 900 €, 1 200 € puis 1 500 € chez Enable Banking |
 | 4. Premières personnes | quand les heures dépassent 40 h par mois | Indépendant pour le support et les contenus, puis un salarié au-delà de 74 h | Licences professionnelles validées par des entretiens | 35 € de l'heure, puis 2 600 € par mois |
 | 5. Licences professionnelles | quand 3 professionnels ont dit oui | Marque blanche, 149 € par mois | | 12 h par licence |
 
@@ -458,4 +468,4 @@ Avec les paramètres actuels, le plan R9-sobre donne sur 24 mois : dépenses 1�
 | 24 | 740 | 1 073 | 123 | 687 € | 131 € | 24 € | 87 € | 152 € | 404 € | 3 447 € |
 
 ---
-Généré le 2026-09-29 par `scripts/gen-modele.mjs`. Ne pas modifier à la main : modifiez `docs/model.mjs`.
+Généré le 2026-10-01 par `scripts/gen-modele.mjs`. Ne pas modifier à la main : modifiez `docs/model.mjs`.
