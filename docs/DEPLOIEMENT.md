@@ -73,6 +73,8 @@ L'application sait passer par trois fournisseurs agréés : Enable Banking, Brid
 3. Dans Vercel : `POWENS_DOMAIN` (le nom du domaine, sans `.biapi.pro`), `POWENS_CLIENT_ID`, `POWENS_CLIENT_SECRET` et `BANK_PROVIDER=powens`, puis redéployez.
 4. Sur l'application, choisissez le connecteur de test de Powens et suivez la webview.
 
+Avant ou sans Vercel, depuis votre ordinateur, le script `npm run powens:check -- https://<domaine>/api/bank/callback` teste la sandbox de bout en bout (avec `POWENS_DOMAIN`, `POWENS_CLIENT_ID` et `POWENS_CLIENT_SECRET` dans `.env`) : il vérifie les clés, liste les connecteurs de test, affiche le lien de la webview à ouvrir, puis, après la connexion, montre les comptes, la période d'historique obtenue, quelques libellés et les champs reçus, et supprime l'utilisateur de test. Ajoutez un nom de banque en second argument pour chercher un connecteur précis (par défaut « test »).
+
 À savoir :
 - Avec Bridge et Powens, l'application crée un utilisateur chez le fournisseur pour chaque connexion et le supprime après la lecture (avec ses données), sauf si vous demandez la surveillance de nuit.
 - Ces deux branchements ont été écrits d'après la documentation publique et testés contre des réponses simulées, pas encore contre leurs sandbox. Au premier essai, si la connexion échoue, la page Sources affiche l'erreur et le journal Vercel la détaille : envoyez-la pour corriger.
