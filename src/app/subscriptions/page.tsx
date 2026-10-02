@@ -8,6 +8,7 @@ import { formatDate, money, translateReason, type Locale, type Messages } from "
 import { monthly, refOf, statusOf, typeOf } from "@/lib/engagements";
 import { cancellationSteps } from "@/lib/cancel-guide";
 import { renewalReminder } from "@/lib/ics";
+import { CancelAssistant } from "@/components/CancelAssistant";
 import { projectedNext } from "@/lib/upcoming";
 import { ServiceIcon } from "@/components/ServiceIcon";
 import { SubsTable, type SubRow } from "@/components/SubsTable";
@@ -107,6 +108,7 @@ function Detail({ s, m, w, locale, today }: { s: StoredSubscription; m: Messages
                 {t.accountPage(s.serviceName)} <Icon name="arrow" className="h-4 w-4 -rotate-45" />
               </a>
             )}
+            <CancelAssistant serviceName={s.serviceName} channel={s.channel} locale={locale} today={today} currency={s.currency} charges={s.charges} cancellationUrl={s.cancellationUrl} nextCharge={next} />
           </details>
         )}
         {!ended && s.usage !== "stopped" && s.usage !== "notsub" && (

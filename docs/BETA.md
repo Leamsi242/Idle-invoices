@@ -255,7 +255,7 @@ Sous 1 000 € de dépenses : aucun scénario payant une fois le travail et les 
 2. paiement Stripe (abonnement, rapport unique, portail client, factures avec TVA) ;
 3. limite gratuit / Premium, avec la connexion bancaire directe réservée au Premium ;
 4. parrainage (un mois offert par ami inscrit), pour remplacer la publicité ;
-5. assistant de résiliation (lettre ou e-mail prêt, rappel), qui fait la valeur du Premium.
+5. assistant de résiliation (lettre ou e-mail prêt, rappel), qui fait la valeur du Premium : **fait** (fiche d'un abonnement, « Comment résilier », « Préparer ma résiliation »).
 
 ## 7. Le déroulé : 8 semaines
 
