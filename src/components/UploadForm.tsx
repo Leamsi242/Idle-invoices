@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ColumnMapping } from "@/lib/parsers/bank-csv";
 import { useI18n } from "./I18n";
+import { formatDate } from "@/lib/i18n";
 import { filterMboxStream } from "@/lib/mbox";
 
 interface NeedsMapping { fileName: string; headers: string[]; preview: string[][] }
@@ -18,7 +19,7 @@ type Hint = "apple" | "google" | "email";
 const needsHint = (f: File) => f.type.startsWith("image/") || f.name.toLowerCase().endsWith(".txt");
 
 export default function UploadForm() {
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
   const u = m.upload;
   const router = useRouter();
   const [files, setFiles] = useState<File[]>([]);
@@ -52,11 +53,26 @@ export default function UploadForm() {
     return new File([r.mbox], file.name.replace(/\.mbox$/i, "") + "-recus.mbox", { type: "application/mbox" });
   }
 
+  /**
+   * PayPal's personal data download (.xlsx) holds every movement of the account, with balances,
+   * IP addresses and account numbers: only the payments sent leave the browser, as a small CSV.
+   */
+  async function paypalPaymentsOnly(file: File): Promise<File> {
+    setMboxNote(u.xlsxReading(file.name));
+    const [{ readXlsxRows }, { looksLikePaypalLog, paypalLogToCsv }] = await Promise.all([import("@/lib/xlsx"), import("@/lib/paypal-log")]);
+    const rows = await readXlsxRows(new Uint8Array(await file.arrayBuffer()));
+    if (!rows.length || !looksLikePaypalLog(rows[0])) throw new Error(u.xlsxUnknown(file.name));
+    const r = paypalLogToCsv(rows);
+    const day = (d?: string) => (d ? formatDate(d, locale) : "");
+    setMboxNote(u.xlsxDone(r.kept, r.scanned, day(r.from), day(r.to)));
+    return new File([r.csv], file.name.replace(/\.xlsx$/i, "") + "-paiements.csv", { type: "text/csv" });
+  }
+
   async function send(selected: File[], mappings: Record<string, ColumnMapping> = {}, text?: string) {
     setBusy(true);
     setError(null);
     try {
-      selected = await Promise.all(selected.map((f) => (/\.mbox$/i.test(f.name) ? receiptsOnly(f) : f)));
+      selected = await Promise.all(selected.map((f) => (/\.mbox$/i.test(f.name) ? receiptsOnly(f) : /\.xlsx$/i.test(f.name) ? paypalPaymentsOnly(f) : f)));
       const body = new FormData();
       selected.forEach((f) => body.append("files", f));
       body.append("hints", JSON.stringify(hints));
@@ -106,7 +122,7 @@ export default function UploadForm() {
           <input
             type="file"
             multiple
-            accept=".csv,.pdf,.eml,.mbox,.txt,image/png,image/jpeg,image/webp"
+            accept=".csv,.xlsx,.pdf,.eml,.mbox,.txt,image/png,image/jpeg,image/webp"
             className="sr-only"
             onChange={(e) => addFiles(e.target.files)}
           />

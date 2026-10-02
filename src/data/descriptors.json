@@ -180,7 +180,7 @@
   },
   {
     "pattern": "ADOBE",
-    "serviceName": "Adobe Creative Cloud",
+    "serviceName": "Adobe",
     "category": "productivity",
     "cancellationUrl": "https://account.adobe.com/plans"
   },

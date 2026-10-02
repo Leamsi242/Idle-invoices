@@ -6,6 +6,8 @@ import { parseEml, parseReceiptText } from "./email";
 import { MBOX_MAX_MESSAGES, splitMbox } from "../mbox";
 import { appStoreEntriesToTransactions, parseAppStoreList } from "./app-store";
 import { isSupportedImage, screenshotToText } from "./screenshot";
+import { looksLikeXlsx, readXlsxRows } from "../xlsx";
+import { looksLikePaypalLog, paypalLogToCsv } from "../paypal-log";
 
 export { NeedsMappingError, type ColumnMapping };
 
@@ -40,6 +42,12 @@ export async function parseFile(name: string, type: string, data: Buffer, opts: 
     const text = await screenshotToText(data, type);
     const source = opts.hint === "google" ? "google" : "apple";
     return { source, transactions: appStoreEntriesToTransactions(parseAppStoreList(text), source, opts.today) };
+  }
+  if (ext === "xlsx" && looksLikeXlsx(new Uint8Array(data))) {
+    // Normally filtered in the browser (UploadForm); read here too when sent as is.
+    const rows = await readXlsxRows(new Uint8Array(data));
+    if (!rows.length || !looksLikePaypalLog(rows[0])) throw new Error("Unknown spreadsheet: save it as CSV");
+    return { source: "paypal", transactions: parsePaypalCsv(paypalLogToCsv(rows).csv) };
   }
   const text = data.toString("utf8");
   if (ext === "csv" || type === "text/csv") {
