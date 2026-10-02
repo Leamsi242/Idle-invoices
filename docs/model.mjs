@@ -82,7 +82,7 @@ export const PARAMS = {
   cac: { v: 1.5, unit: "€ par inscrit", label: "Coût d'acquisition en publicité payée", verdict: "hypothèse" },
   paidBoost: { v: 2, unit: "×", label: "Inscriptions multipliées par la publicité", verdict: "hypothèse" },
   // Monetization beyond the monthly Premium (hypotheses to test, one at a time, after launch).
-  annualPrice: { v: 39.99, unit: "€ TTC par an", label: "Premium annuel", note: "environ 2 mois offerts par rapport au mensuel", verdict: "hypothèse" },
+  annualPrice: { v: 39.99, unit: "€ TTC par an", label: "Premium annuel", note: "4 mois offerts (remise de 33 %) par rapport à 12 × 4,99 € = 59,88 € ; 49,99 € ferait 2 mois offerts (16,5 %)", verdict: "hypothèse, remise à choisir" },
   annualShare: { v: 40, unit: "% des nouveaux abonnés", label: "Nouveaux abonnés qui choisissent l'annuel", verdict: "hypothèse" },
   annualChurn: { v: 1.5, unit: "% par mois", label: "Départs des abonnés annuels (non-renouvellement lissé)", verdict: "hypothèse" },
   affRate: { v: 0.3, unit: "% des actifs par mois", label: "Actifs qui changent d'offre (énergie, box, assurance) par l'application", verdict: "hypothèse" },

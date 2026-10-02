@@ -97,7 +97,7 @@ Ne sont pas comptés : votre propre impôt sur le revenu hors versement libérat
 
 | Paramètre | Valeur | Verdict | Source ou remarque |
 | --- | --- | --- | --- |
-| Premium annuel | 39,99 € TTC par an | hypothèse | environ 2 mois offerts par rapport au mensuel |
+| Premium annuel | 39,99 € TTC par an | hypothèse, remise à choisir | 4 mois offerts (remise de 33 %) par rapport à 12 × 4,99 € = 59,88 € ; 49,99 € ferait 2 mois offerts (16,5 %) |
 | Nouveaux abonnés qui choisissent l'annuel | 40 % des nouveaux abonnés | hypothèse |  |
 | Départs des abonnés annuels (non-renouvellement lissé) | 1,5 % par mois | hypothèse |  |
 | Actifs qui changent d'offre (énergie, box, assurance) par l'application | 0,3 % des actifs par mois | hypothèse |  |
