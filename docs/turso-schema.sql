@@ -113,6 +113,28 @@ CREATE TABLE "Alert" (
     "seenAt" DATETIME
 );
 
+-- CreateTable
+CREATE TABLE "Account" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "emailHash" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "sessionId" TEXT NOT NULL,
+    "plan" TEXT NOT NULL DEFAULT 'free',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastLoginAt" DATETIME
+);
+
+-- CreateTable
+CREATE TABLE "LoginToken" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "tokenHash" TEXT NOT NULL,
+    "emailHash" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "expiresAt" DATETIME NOT NULL,
+    "usedAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- CreateIndex
 CREATE INDEX "Upload_sessionId_idx" ON "Upload"("sessionId");
 
@@ -136,4 +158,16 @@ CREATE INDEX "BankLink_sessionId_idx" ON "BankLink"("sessionId");
 
 -- CreateIndex
 CREATE INDEX "Alert_sessionId_idx" ON "Alert"("sessionId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Account_emailHash_key" ON "Account"("emailHash");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Account_sessionId_key" ON "Account"("sessionId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "LoginToken_tokenHash_key" ON "LoginToken"("tokenHash");
+
+-- CreateIndex
+CREATE INDEX "LoginToken_emailHash_idx" ON "LoginToken"("emailHash");
 

@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from "node:crypto";
 
 /**
  * Field-level encryption at rest (AES-256-GCM) for labels, merchants and plans.
@@ -40,3 +40,9 @@ export function decrypt(stored: string): string {
 
 export const encryptOptional = (s?: string | null) => (s ? encrypt(s) : null);
 export const decryptOptional = (s?: string | null) => (s ? decrypt(s) : undefined);
+
+/**
+ * A stable, keyed hash to look a value up without storing it in clear (an e-mail address, a
+ * sign-in token). Keyed with the encryption key, so the database alone does not reveal it.
+ */
+export const lookupHash = (value: string) => createHmac("sha256", key()).update(`lookup:${value}`).digest("hex");

@@ -142,3 +142,29 @@ model Alert {
 
   @@index([sessionId])
 }
+
+// An account, opened by a sign-in link sent by e-mail (no password). It ties one e-mail to one
+// session id, so the same data opens on another device. The e-mail is stored encrypted; emailHash
+// (an HMAC of the lower-cased address) finds the account without decrypting every row.
+model Account {
+  id          String    @id @default(cuid())
+  emailHash   String    @unique
+  email       String // encrypted
+  sessionId   String    @unique
+  plan        String    @default("free") // free, premium
+  createdAt   DateTime  @default(now())
+  lastLoginAt DateTime?
+}
+
+// A sign-in link waiting to be opened: only the hash of its token is kept, it works once, for 15 minutes.
+model LoginToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  emailHash String
+  email     String // encrypted
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([emailHash])
+}

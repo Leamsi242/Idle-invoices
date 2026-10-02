@@ -2,8 +2,8 @@ import { cookies } from "next/headers";
 import { randomUUID } from "node:crypto";
 
 /**
- * No accounts in version 1: each browser gets an anonymous random session id in an
- * httpOnly cookie, and every stored row carries it.
+ * Each browser gets an anonymous random session id in an httpOnly cookie, and every stored row
+ * carries it. Signing in to an account (src/lib/accounts.ts) puts the account's session id here.
  */
 export const SESSION_COOKIE = "sd_session";
 const VALID = /^[0-9a-f-]{36}$/;
@@ -17,6 +17,11 @@ export async function getOrCreateSessionId(): Promise<string> {
   const existing = await getSessionId();
   if (existing) return existing;
   const id = randomUUID();
+  await setSessionId(id);
+  return id;
+}
+
+export async function setSessionId(id: string) {
   (await cookies()).set(SESSION_COOKIE, id, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -26,7 +31,6 @@ export async function getOrCreateSessionId(): Promise<string> {
     path: "/",
     maxAge: 30 * 86_400,
   });
-  return id;
 }
 
 export async function clearSession() {

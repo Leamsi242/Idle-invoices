@@ -20,6 +20,7 @@ export default async function Privacy() {
           <li>Free trials you asked us to track (name, end date, price). Calendar reminders are created on your phone, not by us.</li>
           <li>The names of the files you uploaded and of the banks and mailboxes you connected, so you know what was read.</li>
           <li>Your answers to &quot;How do you pay?&quot; (which banks, cards, payment apps, stores and mailboxes you use, never any number or password), encrypted, to build your checklist.</li>
+          <li>If you open an account: your e-mail address, encrypted, to send you sign-in links. There is no password. The account and its address are deleted when you delete them, or after a year without signing in.</li>
         </ul>
       </section>
 
@@ -111,6 +112,7 @@ function PrivacyFr() {
           <li>Les essais gratuits que vous nous demandez de suivre (nom, date de fin, prix). Les rappels sont créés dans l&apos;agenda de votre téléphone, pas chez nous.</li>
           <li>Les noms des fichiers envoyés et des banques et boîtes mail connectées, pour que vous sachiez ce qui a été lu.</li>
           <li>Vos réponses à « Comment payez-vous ? » (quelles banques, cartes, applications de paiement, magasins et boîtes mail, jamais un numéro ni un mot de passe), chiffrées, pour construire votre liste.</li>
+          <li>Si vous ouvrez un compte : votre adresse e-mail, chiffrée, pour vous envoyer les liens de connexion. Il n&apos;y a pas de mot de passe. Le compte et l&apos;adresse sont supprimés quand vous les supprimez, ou après un an sans connexion.</li>
         </ul>
       </section>
 

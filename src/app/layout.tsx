@@ -1,3 +1,4 @@
+import { ACCOUNT_DICTS } from "@/lib/i18n-account";
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import "./globals.css";
@@ -70,6 +71,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <p className="mt-1 text-muted">{w.privacyText}</p>
                 </div>
                 <p className="flex flex-wrap gap-x-3 gap-y-1 px-2 text-xs text-muted">
+                  <Link href="/account" className="hover:text-ink">{ACCOUNT_DICTS[locale].nav}</Link>
                   <Link href="/privacy" className="hover:text-ink">{m.nav.privacy}</Link>
                   <Link href="/advanced" className="hover:text-ink">{m.footer.advanced}</Link>
                   <LangSwitch />
@@ -97,6 +99,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <footer className="mx-auto max-w-6xl px-4 pb-28 text-xs text-muted sm:px-8 lg:hidden">
                 <p className="flex flex-wrap gap-x-3 gap-y-1">
                   <span>{m.ui.footerMade}</span>
+                  <Link href="/account" className="underline decoration-line underline-offset-4">{ACCOUNT_DICTS[locale].nav}</Link>
                   <Link href="/privacy" className="underline decoration-line underline-offset-4">{m.footer.how}</Link>
                   <Link href="/advanced" className="underline decoration-line underline-offset-4">{m.footer.advanced}</Link>
                 </p>

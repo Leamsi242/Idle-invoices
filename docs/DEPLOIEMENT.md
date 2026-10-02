@@ -23,7 +23,9 @@ Gardez-les dans un gestionnaire de mots de passe. Perdre `DATA_ENCRYPTION_KEY` r
 2. Récupérez son adresse (`libsql://...`) et créez un jeton d'accès (« Create token »).
 3. Créez les tables. Le fichier prêt à coller est [`docs/turso-schema.sql`](turso-schema.sql) : ouvrez-le sur GitHub, cliquez sur l'icône « Copy raw file », puis collez tout dans la console SQL du tableau de bord Turso (« Edit Data » ou « SQL Console ») et exécutez. Si le schéma change, régénérez ce fichier avec `npm run db:sql` puis `cp prisma/schema.sql docs/turso-schema.sql`.
 
-Vérification : la console Turso liste les tables `Upload`, `Transaction`, `Subscription`, `Match`, `Descriptor`, `TrackedTrial`, `Profile`, `BankLink` et `Alert`.
+Vérification : la console Turso liste les tables `Upload`, `Transaction`, `Subscription`, `Match`, `Descriptor`, `TrackedTrial`, `Profile`, `BankLink`, `Alert`, `Account` et `LoginToken`.
+
+Base déjà créée avant l'arrivée des comptes : exécutez seulement [`docs/migrations/2026-10-accounts.sql`](migrations/2026-10-accounts.sql) dans la même console (deux tables et quatre index, rien n'est modifié ailleurs).
 
 ## 3. Déployer sur Vercel
 
@@ -113,6 +115,7 @@ Vérification : `/api/health` affiche `"gmail": true`, et le bouton Gmail appara
 - **Outlook / Hotmail** : application Microsoft Entra (comptes personnels et professionnels), permission déléguée `Mail.Read`, secret client, URI de redirection `https://<domaine>/api/outlook/callback`, puis `MICROSOFT_CLIENT_ID` et `MICROSOFT_CLIENT_SECRET`.
 - **Lecture des captures d'écran** : `ANTHROPIC_API_KEY`.
 - **Alertes par e-mail** (surveillance) : créez un compte sur [resend.com](https://resend.com), vérifiez votre domaine d'envoi, puis ajoutez `RESEND_API_KEY`, `ALERT_FROM` (par exemple `Subscription Detective <alertes@votre-domaine.fr>`) et `APP_URL` (`https://<domaine>`). Sans cela, les alertes apparaissent seulement en haut du rapport.
+- **Comptes** (connexion par lien e-mail, page `/account`) : mêmes réglages `RESEND_API_KEY`, `ALERT_FROM` et `APP_URL`. En production, `APP_URL` est obligatoire : le lien envoyé pointe toujours vers cette adresse, jamais vers celle de la requête. Sans ces réglages, la page indique que la connexion n'est pas encore disponible ; l'application reste utilisable sans compte.
 - **Banque de démonstration en ligne** : `BANK_DEMO=1` affiche « Demo bank (test data) » dans la liste des banques. Laissez-la vide pour vos testeurs.
 
 ## 7. Premier test réel
