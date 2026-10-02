@@ -280,9 +280,9 @@ La part de Premium parmi les actifs y est élevée (environ un quart) parce que 
 | Personnel payé | 0 € | 263 €, indépendants (moins de 0,1 ETP) | 1 764 €, indépendants (0,3 ETP) | 5 200 €, salariés (2 ETP) | 20 800 €, salariés (8 ETP) |
 | Banque, comptable, assurance | 0 € | 0 € | 135 € | 4 859 € | 16 125 € |
 | Statut | micro, sans TVA | micro, sans TVA | société, TVA | société, TVA | société, TVA |
-| Cotisations ou impôt | 142 € | 566 € | 1 807 € | 10 962 € | 45 094 € |
-| **Résultat par mois** | **334 €** | **1 253 €** | **5 200 €** | **31 542 €** | **130 030 €** |
-| Marge | 61 % | 57 % | 57 % | 59 % | 61 % |
+| Cotisations ou impôt | 142 € | 566 € | 1 453 € | 10 608 € | 44 740 € |
+| **Résultat par mois** | **334 €** | **1 253 €** | **5 554 €** | **31 897 €** | **130 384 €** |
+| Marge | 61 % | 57 % | 61 % | 60 % | 61 % |
 
 ### Scénario central (R2), IA d'abord
 
@@ -297,9 +297,9 @@ La part de Premium parmi les actifs y est élevée (environ un quart) parce que 
 | Personnel payé | 0 € | 144 €, indépendants (moins de 0,1 ETP) | 1 588 €, indépendants (0,3 ETP) | 5 200 €, salariés (2 ETP) | 20 800 €, salariés (8 ETP) |
 | Banque, comptable, assurance | 15 € | 15 € | 150 € | 4 874 € | 16 140 € |
 | Statut | micro, sans TVA | micro, sans TVA | société, TVA | société, TVA | société, TVA |
-| Cotisations ou impôt | 142 € | 566 € | 1 825 € | 10 933 € | 45 066 € |
-| **Résultat par mois** | **200 €** | **1 245 €** | **5 252 €** | **31 457 €** | **131 309 €** |
-| Marge | 37 % | 57 % | 58 % | 59 % | 61 % |
+| Cotisations ou impôt | 142 € | 566 € | 1 471 € | 10 579 € | 44 712 € |
+| **Résultat par mois** | **200 €** | **1 245 €** | **5 606 €** | **31 811 €** | **131 663 €** |
+| Marge | 37 % | 57 % | 62 % | 60 % | 62 % |
 
 ### Même scénario sans IA (R3)
 
@@ -314,9 +314,9 @@ La part de Premium parmi les actifs y est élevée (environ un quart) parce que 
 | Personnel payé | 649 €, indépendants (0,1 ETP) | 1 127 €, indépendants (0,2 ETP) | 2 600 €, salariés (1 ETP) | 10 400 €, salariés (4 ETP) | 33 800 €, salariés (13 ETP) |
 | Banque, comptable, assurance | 15 € | 15 € | 150 € | 4 874 € | 16 140 € |
 | Statut | micro, sans TVA | micro, sans TVA | société, TVA | société, TVA | société, TVA |
-| Cotisations ou impôt | 142 € | 566 € | 1 594 € | 9 623 € | 41 785 € |
-| **Résultat par mois** | **-337 €** | **362 €** | **4 543 €** | **27 526 €** | **120 097 €** |
-| Marge | -62 % | 16 % | 50 % | 52 % | 56 % |
+| Cotisations ou impôt | 142 € | 566 € | 1 240 € | 9 269 € | 41 430 € |
+| **Résultat par mois** | **-337 €** | **362 €** | **4 897 €** | **27 880 €** | **120 451 €** |
+| Marge | -62 % | 16 % | 54 % | 53 % | 56 % |
 
 **Ce que l'IA remplace, et ce qu'elle ne remplace pas** :
 
@@ -460,7 +460,7 @@ Enable Banking facture des **comptes**, Powens des **utilisateurs** : avec 1,3 c
 
 | Actifs | 2 000 | 5 000 | 10 000 | 20 000 | 50 000 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Résultat sans banque directe | 1 253 € | 2 407 € | 5 200 € | 11 254 € | 29 515 € |
+| Résultat sans banque directe | 1 253 € | 2 407 € | 5 554 € | 11 608 € | 29 869 € |
 | Utilisateurs connectés | 354 | 885 | 1 769 | 3 538 | 8 846 |
 | Écart avec Enable Banking | **-1 680 €** | **-1 147 €** | **-319 €** | **-86 €** | **803 €** |
 | Écart avec Powens | **-924 €** | **-517 €** | **-391 €** | **-783 €** | **-1 962 €** |

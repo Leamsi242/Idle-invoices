@@ -312,10 +312,12 @@ export function project(p0, s) {
     const outgoings = hosting + db + mailing + monitoring + domain + casa + bank + acquisition + admin + team.cost + aiCost + founder + oneOff + cfe + toolTaxes;
     const reserve = monetized ? outgoings * p.contingency / 100 : 0;
     const spend = outgoings + reserve;
-    // Micro-entreprise: contributions on turnover. Company: corporate tax on the profit.
+    // Micro-entreprise: contributions on turnover. Company: corporate tax on the profit, by slice:
+    // the reduced rate on the first 42 500 € of the year, the normal rate on the rest.
     const beforeTax = revenue - spend;
+    const yearly = Math.max(0, beforeTax) * 12;
     const social = company
-      ? Math.max(0, beforeTax) * (beforeTax * 12 <= 42500 ? p.isRate : p.isRate2) / 100
+      ? (Math.min(yearly, 42500) * p.isRate + Math.max(0, yearly - 42500) * p.isRate2) / 100 / 12
       : turnover * (p.socialRate + p.cfpRate + p.irRate) / 100;
     const costs = spend + social;
     const result = revenue - costs;
