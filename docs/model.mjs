@@ -28,6 +28,23 @@ export const PARAMS = {
   vat: { v: 20, unit: "%", label: "TVA", verdict: "confirmé (taux normal français)" },
   stripePct: { v: 1.5, unit: "%", label: "Stripe, part variable (cartes EEE standard)", verdict: "partiellement vérifié" },
   stripeFix: { v: 0.25, unit: "€", label: "Stripe, part fixe par paiement", verdict: "partiellement vérifié" },
+  // Costs that are easy to forget: each one has its source and verdict.
+  stripeBilling: { v: 0.7, unit: "% des abonnements", label: "Stripe Billing (gestion des abonnements, relances)", note: "sur les paiements d'abonnement, en plus des frais de carte", verdict: "partiellement vérifié" },
+  premiumCards: { v: 10, unit: "% des paiements", label: "Paiements par carte premium ou hors d'Europe", verdict: "hypothèse" },
+  premiumCardPct: { v: 2.8, unit: "%", label: "Stripe, cartes premium (2,9 à 3,15 % hors d'Europe)", verdict: "partiellement vérifié" },
+  refundRate: { v: 2, unit: "% des encaissements", label: "Remboursements accordés (Stripe garde ses frais)", verdict: "hypothèse" },
+  disputeRate: { v: 0.2, unit: "% des paiements", label: "Paiements contestés par la banque du client", verdict: "hypothèse" },
+  disputeFee: { v: 20, unit: "€ par litige", label: "Frais Stripe par litige (montant perdu en plus)", note: "20 € par litige, 20 € de plus pour le contester, rendus si gagné", verdict: "partiellement vérifié" },
+  foreignVat: { v: 20, unit: "%", label: "TVA payée sur les outils étrangers tant que vous ne facturez pas de TVA", note: "en franchise, la TVA des fournisseurs n'est pas récupérable : OpenAI facture par exemple 23 % sans numéro de TVA", verdict: "partiellement vérifié, taux selon le fournisseur" },
+  fxFee: { v: 2, unit: "% des factures en dollars", label: "Frais de change de la banque sur les factures en dollars", verdict: "hypothèse, selon votre banque" },
+  cfpRate: { v: 0.2, unit: "% du chiffre d'affaires", label: "Contribution à la formation professionnelle (micro-entreprise)", note: "0,1 à 0,3 % selon l'activité, les sources varient pour les services", verdict: "partiellement vérifié" },
+  irRate: { v: 1.7, unit: "% du chiffre d'affaires", label: "Impôt sur le revenu, versement libératoire (prestations de services commerciales)", note: "si vous le choisissez et y avez droit ; sinon l'impôt dépend de votre foyer. 0 pour l'ignorer", verdict: "à choisir" },
+  cfe: { v: 300, unit: "€ par an", label: "Cotisation foncière des entreprises (CFE)", note: "exonérée l'année du premier chiffre d'affaires, puis sous 5 000 € de chiffre d'affaires ; sinon base de 250 à 1 194 € selon la commune, avant son taux", verdict: "partiellement vérifié, montant selon la commune" },
+  bankFeeMicro: { v: 0, unit: "€ par mois", label: "Compte bancaire dédié (micro-entreprise)", note: "obligatoire après deux années à plus de 10 000 € ; des offres en ligne gratuites existent", verdict: "hypothèse" },
+  bankFeeCompany: { v: 15, unit: "€ par mois", label: "Compte bancaire professionnel (société)", verdict: "hypothèse" },
+  trademark: { v: 190, unit: "€ une fois", label: "Dépôt de la marque à l'INPI (une classe, 10 ans)", verdict: "partiellement vérifié" },
+  companySetup: { v: 195, unit: "€ une fois", label: "Création de la société (annonce légale, greffe, bénéficiaires)", verdict: "partiellement vérifié" },
+  contingency: { v: 5, unit: "% des dépenses", label: "Réserve pour imprévus", note: "hausses de tarifs, oublis, frais bancaires ; 0 pour l'ignorer", verdict: "à choisir" },
   socialRate: { v: 21.2, unit: "% du chiffre d'affaires", label: "Cotisations micro-entreprise (prestations de services)", note: "21,2 % pour les prestations commerciales (BIC) ; 25,6 % si l'activité est déclarée en profession libérale (BNC)", verdict: "confirmé (2026)" },
   usdEur: { v: 0.92, unit: "€ pour 1 $", label: "Conversion dollar vers euro", verdict: "hypothèse, à ajuster" },
   vercelPro: { v: 20, unit: "$ par mois", label: "Vercel Pro (obligatoire dès un revenu)", verdict: "partiellement vérifié" },
@@ -52,14 +69,14 @@ export const PARAMS = {
   ebAccount: { v: 0.5, unit: "€ par compte et par mois", label: "Compte au-delà du quota, jusqu'au 5 000e", note: "un compte = un IBAN unique avec un consentement valide, interrogé dans le mois ; reconnexions non recomptées ; le modèle applique les prix par tranche (chaque compte au prix de son rang), lecture de l'offre à confirmer", verdict: "confirmé (offre écrite), tranches à confirmer" },
   ebAccount2: { v: 0.3, unit: "€ par compte et par mois", label: "Compte du 5 001e au 50 000e", verdict: "confirmé (offre écrite)" },
   ebAccount3: { v: 0.2, unit: "€ par compte et par mois", label: "Compte au-delà du 50 000e", verdict: "confirmé (offre écrite)" },
-  bankTrigger: { v: 2500, unit: "abonnés Premium", label: "Abonnés Premium à partir desquels signer le contrat (scénarios « au seuil »)", note: "la licence ne se paie que par les abonnés en plus que la banque apporte : licence × conversion ÷ (conversion en plus × marge d'un abonné), soit environ 2 500 pour 1 500 € avec la TVA due", verdict: "calculé, à choisir" },
+  bankTrigger: { v: 2800, unit: "abonnés Premium", label: "Abonnés Premium à partir desquels signer le contrat (scénarios « au seuil »)", note: "la licence ne se paie que par les abonnés en plus que la banque apporte : licence × conversion ÷ (conversion en plus × marge d'un abonné), soit environ 2 800 pour 1 500 € avec la TVA due", verdict: "calculé, à choisir" },
   accountsPerUser: { v: 1.3, unit: "comptes par utilisateur", label: "Comptes bancaires reliés par utilisateur (Enable Banking facture les comptes, Powens les utilisateurs)", verdict: "hypothèse à mesurer" },
   // Powens, as announced orally on 1 October 2026: a flat monthly price for up to 1 000 users,
   // connections unlimited. The price beyond, the duration and any rise are not known yet.
   pwFee: { v: 900, unit: "€ par mois", label: "Powens, forfait mensuel", note: "annoncé oralement par Powens le 1er octobre 2026, à faire confirmer par écrit (durée, évolution, prix au-delà)", verdict: "non vérifiable (oral)" },
   pwIncl: { v: 1000, unit: "utilisateurs", label: "Utilisateurs inclus dans le forfait Powens (connexions illimitées)", verdict: "non vérifiable (oral)" },
   pwExtra: { v: 0.9, unit: "€ par utilisateur et par mois", label: "Powens, utilisateur au-delà du forfait", note: "non communiqué : le modèle prend le prix moyen du forfait", verdict: "hypothèse" },
-  pwTrigger: { v: 1500, unit: "abonnés Premium", label: "Abonnés Premium à partir desquels signer avec Powens (scénarios « au seuil »)", note: "forfait × conversion ÷ (conversion en plus × marge d'un abonné), soit environ 1 500 pour 900 € avec la TVA due", verdict: "calculé, à choisir" },
+  pwTrigger: { v: 1700, unit: "abonnés Premium", label: "Abonnés Premium à partir desquels signer avec Powens (scénarios « au seuil »)", note: "forfait × conversion ÷ (conversion en plus × marge d'un abonné), soit environ 1 700 pour 900 € avec la TVA due", verdict: "calculé, à choisir" },
   convBank: { v: 1, unit: "points", label: "Conversion en Premium en plus quand la banque directe y est incluse", verdict: "hypothèse à mesurer" },
   bankShare: { v: 60, unit: "%", label: "Part des concernés qui connectent leur banque", verdict: "hypothèse" },
   cac: { v: 1.5, unit: "€ par inscrit", label: "Coût d'acquisition en publicité payée", verdict: "hypothèse" },
@@ -179,11 +196,13 @@ export function project(p0, s) {
   const eur$ = (usd) => usd * p.usdEur;
   // Activation once everything is open (the monthly loop lowers it while Gmail waits for Google).
   const act = Math.min(0.9, (p.actStatements + (s.mail === "gmail" ? p.actGmail : p.actTakeout) + (s.bank === "all" ? p.actBankAll : 0)) / 100);
-  const stripe = (ttc) => (ttc > 0 ? ttc * p.stripePct / 100 + p.stripeFix : 0);
+  // Card fees with the share of premium and foreign cards; subscriptions also pay Stripe Billing.
+  const cardPct = p.stripePct + p.premiumCards / 100 * (p.premiumCardPct - p.stripePct);
+  const stripe = (ttc, sub = false) => (ttc > 0 ? ttc * (cardPct + (sub ? p.stripeBilling : 0)) / 100 + p.stripeFix : 0);
   const rows = [];
   const turnoverHistory = [];
   let free = 0, paidM = 0, paidY = 0, licences = 0, cumul = 0, costCumul = 0, spendCumul = 0, socialCumul = 0, revCumul = 0, minCumul = 0;
-  let vatFrom = null, companyFrom = null, bankFrom = null;
+  let vatFrom = null, companyFrom = null, bankFrom = null, revenueFrom = null;
   for (let m = 1; m <= p.months; m++) {
     const beta = m <= p.betaMonths;
     // Google's verification starts in month gmailFrom (1 by default) and takes gmailDelay months:
@@ -227,20 +246,27 @@ export function project(p0, s) {
     // Revenue: what customers pay, without VAT, then what Stripe keeps.
     const r = { premium: 0, annual: 0, oneOff: 0, aff: 0, concierge: 0, b2b: 0 };
     if (monetized) {
-      r.premium = paidM * (ht(p.price) - stripe(p.price));
-      r.annual = paidY * (ht(p.annualPrice) - stripe(p.annualPrice)) / 12;
+      r.premium = paidM * (ht(p.price) - stripe(p.price, true));
+      r.annual = paidY * (ht(p.annualPrice) - stripe(p.annualPrice, true)) / 12;
       const buyers = activated * p.oneOffShare / 100;
       r.oneOff = buyers * (ht(p.oneOff) - stripe(p.oneOff));
       if (offer.aff) r.aff = active * p.affRate / 100 * p.affCommission;
       if (offer.concierge) r.concierge = activated * p.conciergeShare / 100 * (ht(p.conciergePrice) - stripe(p.conciergePrice));
-      if (offer.b2b) r.b2b = licences * p.b2bPrice * (1 - p.stripePct / 100);
+      if (offer.b2b) r.b2b = licences * p.b2bPrice * (1 - (cardPct + p.stripeBilling) / 100);
     }
+    // Refunds give the money back but not Stripe's fees; disputes cost a fee plus the amount.
+    const cashed = monetized ? paidM * p.price + paidY * p.annualPrice / 12 + activated * p.oneOffShare / 100 * p.oneOff + (offer.concierge ? activated * p.conciergeShare / 100 * p.conciergePrice : 0) : 0;
+    const payments = monetized ? paidM + paidY / 12 + activated * p.oneOffShare / 100 + (offer.concierge ? activated * p.conciergeShare / 100 : 0) : 0;
+    const refunds = cashed * p.refundRate / 100;
+    const disputes = payments * p.disputeRate / 100 * p.disputeFee + cashed * p.disputeRate / 100;
+    r.refunds = -(refunds + disputes);
     const revenue = Object.values(r).reduce((t, x) => t + x, 0);
     const turnover = monetized
       ? paidM * ht(p.price) + paidY * ht(p.annualPrice) / 12 + activated * p.oneOffShare / 100 * ht(p.oneOff) + r.aff
         + (offer.concierge ? activated * p.conciergeShare / 100 * ht(p.conciergePrice) : 0) + licences * p.b2bPrice
       : 0;
     turnoverHistory.push(turnover);
+    if (revenueFrom === null && turnover > 0) revenueFrom = m;
 
     // Running costs, by tier of scale.
     const onPro = monetized || active > p.hobbyCapacity;
@@ -258,7 +284,11 @@ export function project(p0, s) {
     const connected = !bankOn ? 0 : s.bank === "all" ? active * p.bankShare / 100 : paid * p.bankShare / 100;
     const bank = bankOn ? bankCost(p, s.vendor ?? "enable", connected, m - bankFrom + 1) : 0;
     const acquisition = s.acquisition === "paid" && !beta ? signups * p.cac : 0;
-    const admin = (company ? p.accountant : 0) + (monetized ? p.rcPro : 0);
+    const admin = (company ? p.accountant + p.bankFeeCompany : monetized ? p.bankFeeMicro : 0) + (monetized ? p.rcPro : 0);
+    // One-off costs: the trademark at launch, the company's creation when the micro-entreprise ends.
+    const oneOff = (monetized && m === p.betaMonths + 1 ? p.trademark : 0) + (company && m === companyFrom ? p.companySetup : 0);
+    // CFE: none the year of the first turnover, nor under 5 000 € of turnover a year.
+    const cfe = revenueFrom !== null && m - revenueFrom >= 12 && last12 > 5000 ? p.cfe / 12 : 0;
 
     // Staff: hours of work, part done by AI, the rest by the founder, then by paid people.
     const tickets = active * p.ticketsPer100 / 100;
@@ -276,19 +306,24 @@ export function project(p0, s) {
     const founder = monetized ? p.founderPay : 0;
 
     // What the owner pays out of pocket, apart from contributions and taxes, which only exist with turnover.
-    const spend = hosting + db + mailing + monitoring + domain + casa + bank + acquisition + admin + team.cost + aiCost + founder;
+    // Foreign tools: VAT that cannot be recovered while no VAT is charged, and the bank's exchange fee on dollars.
+    const foreign = hosting + db + mailing + monitoring + aiCost + casa + bank;
+    const toolTaxes = (vatDue ? 0 : foreign * p.foreignVat / 100) + (foreign - bank) * p.fxFee / 100;
+    const outgoings = hosting + db + mailing + monitoring + domain + casa + bank + acquisition + admin + team.cost + aiCost + founder + oneOff + cfe + toolTaxes;
+    const reserve = monetized ? outgoings * p.contingency / 100 : 0;
+    const spend = outgoings + reserve;
     // Micro-entreprise: contributions on turnover. Company: corporate tax on the profit.
     const beforeTax = revenue - spend;
     const social = company
       ? Math.max(0, beforeTax) * (beforeTax * 12 <= 42500 ? p.isRate : p.isRate2) / 100
-      : turnover * p.socialRate / 100;
+      : turnover * (p.socialRate + p.cfpRate + p.irRate) / 100;
     const costs = spend + social;
     const result = revenue - costs;
     cumul += result; costCumul += costs; spendCumul += spend; socialCumul += social; revCumul += revenue; minCumul = Math.min(minCumul, cumul);
     rows.push({
       m, beta, signups, activated, active, paid, paidM, paidY, licences, revenue, spend, social, costs, result, cumul, costCumul, spendCumul,
       vatDue, company, hours, totalHours, paidHours, team, rev: r,
-      parts: { hosting, db, mailing, monitoring, domain, casa, bank, acquisition, admin, staff: team.cost, ai: aiCost, founder, social },
+      parts: { hosting, db, mailing, monitoring, domain, casa, bank, acquisition, admin, staff: team.cost, ai: aiCost, founder, social, oneOff, cfe, toolTaxes, reserve, refunds: refunds + disputes },
     });
   }
   const last = rows[rows.length - 1];
@@ -414,9 +449,17 @@ export function atUsers(p, s, N) {
 }
 
 /** Where a strategy starts paying for itself: premium subscribers needed to cover a fixed monthly cost. */
-export function breakEvenSubscribers(p, fixedMonthly, extraPerSubscriber = 0, vatDue = false) {
+/** What one monthly Premium subscriber leaves each month, after VAT, Stripe, refunds and contributions. */
+export function subscriberMargin(p, vatDue = false) {
   const ht = vatDue ? p.price / (1 + p.vat / 100) : p.price;
-  const margin = ht - (p.price * p.stripePct / 100 + p.stripeFix) - ht * p.socialRate / 100 - extraPerSubscriber;
+  const cardPct = p.stripePct + p.premiumCards / 100 * (p.premiumCardPct - p.stripePct);
+  const fees = p.price * (cardPct + p.stripeBilling) / 100 + p.stripeFix;
+  const losses = p.price * (p.refundRate + p.disputeRate) / 100 + p.disputeRate / 100 * p.disputeFee;
+  return ht - fees - losses - ht * (p.socialRate + p.cfpRate + p.irRate) / 100;
+}
+
+export function breakEvenSubscribers(p, fixedMonthly, extraPerSubscriber = 0, vatDue = false) {
+  const margin = subscriberMargin(p, vatDue) - extraPerSubscriber;
   return margin > 0 ? Math.ceil(fixedMonthly / margin) : Infinity;
 }
 
@@ -427,7 +470,8 @@ export const fmtInt = (n) => new Intl.NumberFormat("fr-FR", { maximumFractionDig
 export const GROUPS = [
   ["Croissance et fidélité", ["months", "betaMonths", "signups0", "growth", "freeChurn", "paidChurn"]],
   ["Activation", ["actStatements", "actTakeout", "actGmail", "actBankAll", "outlookShare"]],
-  ["Prix et revenus", ["conv", "price", "oneOff", "oneOffShare", "vat", "stripePct", "stripeFix", "socialRate"]],
+  ["Prix et revenus", ["conv", "price", "oneOff", "oneOffShare", "vat", "socialRate"]],
+  ["Frais de paiement, taxes et dépenses faciles à oublier", ["stripePct", "stripeFix", "stripeBilling", "premiumCards", "premiumCardPct", "refundRate", "disputeRate", "disputeFee", "foreignVat", "fxFee", "cfpRate", "irRate", "cfe", "bankFeeMicro", "bankFeeCompany", "trademark", "companySetup", "contingency"]],
   ["Autres revenus", ["annualPrice", "annualShare", "annualChurn", "affRate", "affCommission", "conciergeShare", "conciergePrice", "b2bFrom", "b2bPerQuarter", "b2bPrice", "b2bChurn"]],
   ["Statut et impôts", ["vatThreshold", "microCeiling", "accountant", "isRate", "isRate2", "rcPro"]],
   ["Hébergement et outils selon l'échelle", ["usdEur", "vercelPro", "hobbyCapacity", "proExtraPerActive", "tursoFreeActives", "tursoDev", "tursoDevActives", "tursoScaler", "domain", "resendFree", "resendPro", "resendScale", "alertsPerPremium", "emailsPerActive", "sentryFreeActives", "sentryTeam", "aiPerActive"]],

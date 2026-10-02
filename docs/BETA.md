@@ -182,7 +182,7 @@ Ce que Google exige pour l'ouvrir à plus de 100 personnes (détail et sources d
 | Audit de sécurité CASA niveau 2, chaque année, par un laboratoire agréé (plus d'auto-analyse gratuite) | 540 à 1 800 $ par an (TAC Security), 800 à 1 200 $ (Leviathan) | obligation confirmée, prix partiellement vérifié (sources tierces) |
 | Délai | plusieurs semaines, souvent 2 à 8 | partiellement vérifié |
 
-Réglages : les mêmes que le scénario A, avec l'application Google validée et le domaine. Dépense sur 24 mois (plafond de 450 testeurs, audit compté à 700 € par an) : **1 424 €** sans aucun revenu ; 2 562 € sans plafond (Vercel Pro et des heures d'aide payées au-delà des vôtres). C'est donc un scénario à n'ouvrir qu'avec le Premium, ou après avoir mesuré qu'il change vraiment l'activation : les 100 places de test Gmail de la bêta servent à cette mesure.
+Réglages : les mêmes que le scénario A, avec l'application Google validée et le domaine. Dépense sur 24 mois (plafond de 450 testeurs, audit compté à 700 € par an) : **1 732 €** sans aucun revenu ; 2 922 € sans plafond (Vercel Pro et des heures d'aide payées au-delà des vôtres). C'est donc un scénario à n'ouvrir qu'avec le Premium, ou après avoir mesuré qu'il change vraiment l'activation : les 100 places de test Gmail de la bêta servent à cette mesure.
 
 **Solution gratuite intermédiaire (A-Outlook)** : ouvrir la connexion Outlook en lecture seule à tous dès maintenant (pas de plafond trouvé, vérification d'éditeur Microsoft gratuite, partiellement vérifié) et garder l'export Takeout pour Gmail. 0 €.
 
@@ -211,10 +211,10 @@ Un compte est facturé une fois par mois s'il a un consentement valide et qu'il 
 | **Plus d'environ 1 250 testeurs actifs** | Lignes lues de Turso Free | Turso Developer | 4,99 $ par mois (partiellement vérifié) |
 | **Alertes envoyées à d'autres que vous** | Resend exige un domaine vérifié | Acheter un domaine | environ 10 € par an (estimation) |
 | **Plus de 100 alertes par jour ou 3 000 par mois** | Plafond de Resend Free | Resend Pro | 20 $ par mois (partiellement vérifié) |
-| **Passer au scénario B** | La licence Enable Banking coûte 900 € par mois la 1re année, puis 1 200 €, puis 1 500 € | La signer quand les abonnés **en plus** que la banque apporte la paient : environ **2 500 abonnés Premium** (10 000 à 20 000 actifs) si la connexion directe ajoute 1 point de conversion (hypothèse à mesurer). Couvrir la licence avec tous les abonnés demanderait 250 abonnés la 1re année (305 avec TVA), mais ils paieraient déjà sans elle | 900 à 1 500 € par mois, 0,50 € par compte au-delà du quota (confirmé) |
+| **Passer au scénario B** | La licence Enable Banking coûte 900 € par mois la 1re année, puis 1 200 €, puis 1 500 € | La signer quand les abonnés **en plus** que la banque apporte la paient : environ **2 800 abonnés Premium** (10 000 à 20 000 actifs) si la connexion directe ajoute 1 point de conversion (hypothèse à mesurer). Couvrir la licence avec tous les abonnés demanderait 272 abonnés la 1re année (336 avec TVA), mais ils paieraient déjà sans elle | 900 à 1 500 € par mois, 0,50 € par compte au-delà du quota (confirmé) |
 | **L'import de relevé fait fuir** | Plus de 40 % des testeurs s'arrêtent à l'étape « importer un relevé » (à mesurer) | Argument pour le scénario B, à condition que le seuil précédent soit proche | |
 
-Deux choses rendent le modèle perdant, d'après le masterplan : la publicité payée (résultat négatif dans les 9 scénarios qui l'utilisent), et signer le contrat Enable Banking trop tôt. Ouvrir la banque directe à tous dès le lancement coûte 26 300 € de dépenses sur 24 mois pour un résultat de -19 205 €, contre 3 234 € et +500 € avec les relevés seuls ; la réserver au Premium dès le lancement reste perdant (-21 345 € pour O-P-org), car la licence de 900 € par mois arrive avant les abonnés.
+Deux choses rendent le modèle perdant, d'après le masterplan : la publicité payée (résultat négatif dans les 9 scénarios qui l'utilisent), et signer le contrat Enable Banking trop tôt. Ouvrir la banque directe à tous dès le lancement coûte 33 402 € de dépenses sur 24 mois pour un résultat de -26 854 €, contre 4 261 € et -813 € avec les relevés seuls ; la réserver au Premium dès le lancement reste perdant (-28 664 € pour O-P-org), car la licence de 900 € par mois arrive avant les abonnés.
 
 ## 6. Un modèle rentable, et son seuil de rentabilité
 
@@ -241,13 +241,13 @@ Le modèle compte aussi :
 
 | Sur 24 mois | T-R-org (export Takeout) | O-R-org (Outlook pour tous) | R2 central (IA, offre complète) | R3 (même chose sans IA) | **R9 sobre (recommandé)** |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Dépenses (outils, IA, personnel) | 3 234 € | 3 238 € | 3 239 € | 14 704 € | **1 163 €** |
-| Résultat | +500 € | +776 € | +1 372 € | -10 094 € | **+3 447 €** |
-| Trésorerie à avancer | 868 € | 813 € | 687 € | 10 094 € | **21 €** |
-| Remboursé au | mois 23 | mois 22 | mois 20 | non atteint | **mois 6** |
-| Seuil de rentabilité (régime stable) | 193 actifs | 193 actifs | 165 actifs | 929 actifs | **43 actifs, 20 inscrits par mois** |
+| Dépenses (outils, IA, personnel, frais et taxes) | 4 261 € | 4 266 € | 4 267 € | 15 741 € | **1 620 €** |
+| Résultat | -813 € | -560 € | +39 € | -11 435 € | **+2 685 €** |
+| Trésorerie à avancer | 1 623 € | 1 539 € | 1 357 € | 11 435 € | **253 €** |
+| Remboursé au | non atteint | non atteint | mois 24 | non atteint | **mois 12** |
+| Seuil de rentabilité (régime stable) | 263 actifs | 263 actifs | 223 actifs | 1 248 actifs | **59 actifs, 27 inscrits par mois** |
 
-Sous 1 000 € de dépenses : aucun scénario payant une fois le travail et les outils comptés honnêtement ; le plus sobre (R9) reste à 1 163 € sur 24 mois et se rembourse au 6e mois. R2, R3 et R9 ne signent le contrat Enable Banking qu'à 2 500 abonnés, jamais atteints en 24 mois ; le signer dès le lancement (R10) ferait perdre 18 723 € sur la période. Le travail pèse plus que les serveurs : sans IA, les heures au-delà des vôtres coûtent environ 11 500 € de plus sur la période (14 704 € de dépenses contre 3 239 €). Il faut **6 abonnés Premium** pour payer Vercel Pro, **17** pour l'audit Gmail et **31** pour l'assistant de code à 100 $. Ce sont des projections sur hypothèses : remplacez-les par les mesures de la bêta (§ 7) dans le masterplan.
+Sous 1 000 € de dépenses : aucun scénario payant une fois le travail et les outils comptés honnêtement ; le plus sobre (R9) reste à 1 620 € sur 24 mois et se rembourse au 12e mois. Ces chiffres comptent les frais faciles à oublier (Stripe Billing, remboursements, litiges, TVA non récupérable sur les outils étrangers, change, CFE, formation professionnelle, versement libératoire, marque, réserve de 5 %) : voir [MODELE-ECONOMIQUE.md](MODELE-ECONOMIQUE.md), § 1 bis. R2, R3 et R9 ne signent le contrat Enable Banking qu'à 2 800 abonnés, jamais atteints en 24 mois ; le signer dès le lancement (R10) ferait perdre 25 488 € sur la période. Le travail pèse plus que les serveurs : sans IA, les heures au-delà des vôtres coûtent environ 11 500 € de plus sur la période (15 741 € de dépenses contre 4 267 €). Il faut **6 abonnés Premium** pour payer Vercel Pro, **18** pour l'audit Gmail et **34** pour l'assistant de code à 100 $. Ce sont des projections sur hypothèses : remplacez-les par les mesures de la bêta (§ 7) dans le masterplan.
 
 **Fonctionnalités à construire pour ce modèle**, dans l'ordre :
 

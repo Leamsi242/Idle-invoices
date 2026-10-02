@@ -182,7 +182,7 @@ tr[data-id] { cursor: pointer; }
 </div>
 
 <script type="module">
-import { PARAMS, GROUPS, CHOICES, defaults, allScenarios, project, breakEven, reachBy, atUsers, atScale, breakEvenSubscribers, fmtEur, fmtInt } from "./model.mjs";
+import { PARAMS, GROUPS, CHOICES, defaults, allScenarios, project, breakEven, reachBy, atUsers, atScale, breakEvenSubscribers, subscriberMargin, fmtEur, fmtInt } from "./model.mjs";
 
 const KEY = "sd-masterplan-v1";
 const $ = (id) => document.getElementById(id);
@@ -339,8 +339,8 @@ function renderMatrix() {
 }
 
 function renderThresholds() {
-  const marginOf = (vat) => { const ht = vat ? p.price / (1 + p.vat / 100) : p.price; return ht - (p.price * p.stripePct / 100 + p.stripeFix) - ht * p.socialRate / 100; };
-  $("margin").textContent = `Un abonné Premium à ${String(p.price).replace(".", ",")} € rapporte ${fmtEur(marginOf(false), 2)} par mois sans TVA due (franchise, sous ${eur(p.vatThreshold)} de chiffre d'affaires par an), ${fmtEur(marginOf(true), 2)} une fois la TVA due, Stripe et cotisations retirés.`;
+  const marginOf = (vat) => subscriberMargin(p, vat);
+  $("margin").textContent = `Un abonné Premium à ${String(p.price).replace(".", ",")} € rapporte ${fmtEur(marginOf(false), 2)} par mois sans TVA due (franchise, sous ${eur(p.vatThreshold)} de chiffre d'affaires par an), ${fmtEur(marginOf(true), 2)} une fois la TVA due, après Stripe, Stripe Billing, remboursements, litiges, cotisations et versement libératoire.`;
   const usd = (n) => n * p.usdEur;
   const list = [
     ["Vercel Pro", usd(p.vercelPro), 0, "Au premier euro encaissé, ou au-delà de " + fmtInt(p.hobbyCapacity) + " actifs"],

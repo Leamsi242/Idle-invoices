@@ -1,7 +1,7 @@
 // Writes docs/MODELE-ECONOMIQUE.md from docs/model.mjs, the model the masterplan page uses too.
 // Run: npm run modele (after changing a parameter in docs/model.mjs).
 import fs from "node:fs";
-import { PARAMS, GROUPS, CHOICES, defaults, allScenarios, project, breakEven, reachBy, atScale, breakEvenSubscribers, ebCost, bankCost, fmtEur, fmtInt } from "../docs/model.mjs";
+import { PARAMS, GROUPS, CHOICES, defaults, allScenarios, project, breakEven, reachBy, atScale, breakEvenSubscribers, subscriberMargin, ebCost, bankCost, fmtEur, fmtInt } from "../docs/model.mjs";
 
 const p = defaults();
 const scenarios = allScenarios().map((s) => ({ s, r: project(p, s) }));
@@ -13,7 +13,7 @@ const dec = (n) => String(n).replace(".", ",");
 const usd = (n) => n * p.usdEur;
 const pct = (n) => `${fmtInt(n)} %`;
 const REC = "R9-sobre";
-const marginOf = (vat) => { const ht = vat ? p.price / (1 + p.vat / 100) : p.price; return ht - (p.price * p.stripePct / 100 + p.stripeFix) - ht * p.socialRate / 100; };
+const marginOf = (vat) => subscriberMargin(p, vat);
 const SCALES = [500, 2000, 10000, 50000, 200000];
 /** Break-even in words: sign-ups per month, actives and payers once settled. */
 const beText = (be) => (!be ? "jamais (dans la limite testée)" : be.signups < 3 ? "atteint sans utilisateurs (licences seules)" : `${fmtInt(be.signups)} inscrits par mois, ${fmtInt(be.actives)} actifs, ${fmtInt(be.premium)} Premium`);
@@ -32,6 +32,30 @@ Projection sur ${p.months} mois, dont ${p.betaMonths} mois de bêta gratuite. Mo
 - **Les outils selon l'échelle** : Vercel Hobby puis Pro, Turso gratuit puis Developer puis Scaler, Resend gratuit puis Pro puis Scale, suivi d'erreurs gratuit puis payant.
 - **Le personnel** : chaque tâche (support, développement, contenus, administration, vente aux professionnels) a un volume d'heures qui grandit avec les utilisateurs. L'IA en prend une part (assistant de support, assistant de code, rédaction) pour un coût mensuel ; vous donnez ${fmtInt(p.founderHours)} heures par mois ; le reste est payé à des indépendants, ou à des salariés dès que c'est moins cher.
 - **Le seuil de rentabilité** en utilisateurs, et ce qu'il faut pour l'atteindre à un mois donné.
+
+## 1 bis. Les dépenses faciles à oublier, comptées
+
+Pour ne découvrir aucune dépense après coup, le modèle compte aussi :
+
+| Dépense | Montant retenu | Verdict | Source |
+| --- | --- | --- | --- |
+| Stripe Billing, pour gérer les abonnements | ${dec(p.stripeBilling)} % des paiements d'abonnement, en plus des frais de carte | partiellement vérifié | [Flexprice](https://flexprice.io/blog/stripe-pricing-breakdown-2026) |
+| Cartes premium ou hors d'Europe | ${pct(p.premiumCards)} des paiements à ${dec(p.premiumCardPct)} % + ${dec(p.stripeFix)} € au lieu de ${dec(p.stripePct)} % | partiellement vérifié (part : hypothèse) | [Indy](https://www.indy.fr/guide/comptabilite-en-ligne/commerce/stripe-comptabilite/frais-stripe/) |
+| Remboursements accordés | ${pct(p.refundRate)} des encaissements, Stripe gardant ses frais | hypothèse | |
+| Litiges (paiement contesté par la banque du client) | ${dec(p.disputeRate)} % des paiements, ${eur(p.disputeFee)} de frais chacun plus le montant perdu | frais partiellement vérifiés, taux hypothèse | [Chargeflow](https://www.chargeflow.io/blog/stripe-dispute-fees) |
+| TVA des outils étrangers, non récupérable en franchise | ${pct(p.foreignVat)} des factures des outils (hébergement, base, e-mails, IA, banque, audit) tant que vous ne facturez pas de TVA | partiellement vérifié, taux selon le fournisseur | [Tailride, factures OpenAI](https://tailride.so/fr/blog/telecharger-factures-openai-api) |
+| Frais de change sur les factures en dollars | ${pct(p.fxFee)} | hypothèse, selon votre banque | |
+| Contribution à la formation professionnelle | ${dec(p.cfpRate)} % du chiffre d'affaires | partiellement vérifié (0,1 à 0,3 % selon l'activité) | [entreprises.gouv.fr](https://www.entreprises.gouv.fr/espace-entreprises/faq/mon-entreprise-au-quotidien/quel-est-le-taux-de-contribution-la-formation) |
+| Impôt sur le revenu, versement libératoire | ${dec(p.irRate)} % du chiffre d'affaires, si vous le choisissez (0 pour l'ignorer) | à choisir | |
+| CFE | ${eur(p.cfe)} par an, à partir de la 2e année et au-delà de 5 000 € de chiffre d'affaires | partiellement vérifié, montant selon la commune | [Superindep](https://www.superindep.fr/blog/2025/comment-etre-exonere-cfe/) |
+| Compte bancaire | ${eur(p.bankFeeMicro)} par mois en micro-entreprise (offres gratuites), ${eur(p.bankFeeCompany)} en société | hypothèse | |
+| Dépôt de la marque à l'INPI | ${eur(p.trademark)} une fois, au lancement | partiellement vérifié | [Legalplace](https://www.legalplace.fr/guides/prix-depot-marque-inpi/) |
+| Création de la société, si le chiffre d'affaires dépasse le plafond micro | ${eur(p.companySetup)} une fois | partiellement vérifié | [Legalplace](https://www.legalplace.fr/guides/cout-creation-sasu/) |
+| Réserve pour imprévus | ${pct(p.contingency)} des dépenses | à choisir | |
+
+Avec ces frais, un abonné Premium à ${dec(p.price)} € laisse **${fmtEur(marginOf(false), 2)} par mois** sans TVA due et **${fmtEur(marginOf(true), 2)}** une fois la TVA due, contre ${fmtEur(p.price - (p.price * p.stripePct / 100 + p.stripeFix) - p.price * p.socialRate / 100, 2)} si l'on ne compte que la carte et les cotisations.
+
+Ne sont pas comptés : votre propre impôt sur le revenu hors versement libératoire (il dépend de votre foyer), et les dépenses que vous choisiriez en plus (publicité, salon, matériel).
 
 ## 2. Les paramètres
 `);
@@ -61,7 +85,7 @@ out.push(`
 - **Le travail coûte plus que les serveurs.** Sans IA (R3), les heures au-delà des vôtres partent chez des indépendants dès le lancement : le même scénario perd de l'argent sur 24 mois. Avec un seul assistant à 20 $ (R9), le seuil tombe à quelques dizaines d'inscrits par mois.
 - **L'affiliation seule ne suffit pas** (R4) : il faut des dizaines de milliers d'actifs pour couvrir le travail. Elle complète le Premium, elle ne le remplace pas.
 - **Les licences professionnelles** (R6, R8) rendent le projet rentable même avec peu d'utilisateurs, si ${fmtInt(p.b2bPerQuarter)} licence par trimestre à ${eur(p.b2bPrice)} par mois se vend vraiment : c'est l'hypothèse la plus fragile, à tester par 5 entretiens avant d'y consacrer du temps.
-- **Un prix plus haut** (R5) reste rentable avec environ 30 % d'abonnés en moins : à tester avec deux prix pendant le lancement.
+- **Un prix plus haut** (R5, 7,99 €) donne ${eur(byId("R5-premium-cher").r.summary.result24)} sur 24 mois contre ${eur(byId("R2-central").r.summary.result24)} pour le central, avec environ 30 % d'abonnés en moins : à tester avec deux prix pendant le lancement plutôt qu'à supposer.
 `);
 
 // Break-even.
@@ -72,7 +96,7 @@ const r18 = reachBy(p, central, 18, "payback");
 const r24 = reachBy(p, central, 24, "payback");
 out.push(`## 4. Le seuil de rentabilité
 
-**En régime stable** (inscriptions constantes, tout s'est tassé : paliers d'outils, TVA, personnel), le scénario central couvre ses coûts à partir de **${beText(be)}**. Un abonné Premium à ${dec(p.price)} € rapporte ${fmtEur(marginOf(false), 2)} par mois sans TVA due, ${fmtEur(marginOf(true), 2)} une fois la TVA due (Stripe et cotisations déduites).
+**En régime stable** (inscriptions constantes, tout s'est tassé : paliers d'outils, TVA, personnel), le scénario central couvre ses coûts à partir de **${beText(be)}**. Un abonné Premium à ${dec(p.price)} € rapporte ${fmtEur(marginOf(false), 2)} par mois sans TVA due, ${fmtEur(marginOf(true), 2)} une fois la TVA due (Stripe et Stripe Billing, remboursements, litiges, cotisations, formation professionnelle et versement libératoire déduits).
 
 **Pour atteindre un objectif à une date** (scénario central, ${fmtInt(p.signups0)} inscrits le premier mois après la bêta et ${pct(p.growth)} de croissance par mois dans les hypothèses actuelles) :
 `);
@@ -186,7 +210,7 @@ const casaMonthly = p.casa / 12;
 out.push(`
 ## 9. Les seuils où chaque dépense se rembourse
 
-Nombre d'abonnés Premium à ${dec(p.price)} € (sans TVA due, cotisations déduites) pour couvrir chaque dépense.
+Nombre d'abonnés Premium à ${dec(p.price)} € (sans TVA due, cotisations déduites) pour couvrir chaque dépense. Les coûts des outils étrangers sont indiqués hors TVA non récupérable et hors frais de change : ces deux frais s'y ajoutent (§ 1 bis).
 `);
 out.push(row(["Dépense", "Coût par mois", "Abonnés Premium pour la couvrir", "Quand la déclencher"]));
 out.push(row(["---", "---:", "---:", "---"]));
@@ -247,7 +271,7 @@ for (const n of [50, 500, 1000, 1500, 3000, 10000]) out.push(row([fmtInt(n), eur
 const withBank = (n, vendor) => atScale(p, { ...ebScen, bankAt: "launch", vendor }, n), noBank = (n) => atScale(p, { ...ebScen, bank: "statements" }, n);
 const sizes = [2000, 5000, 10000, 20000, 50000];
 out.push(`
-**Quand signer.** La licence est un coût fixe, mais elle ne se paie pas par tous les abonnés : ils paieraient de toute façon avec les relevés importés. Elle se paie par les abonnés **en plus** que la connexion directe apporte (hypothèse : +${dec(p.convBank)} point de conversion, à mesurer). Il faut donc environ licence × ${dec(p.conv)} ÷ (${dec(p.convBank)} × marge d'un abonné) abonnés Premium : environ ${fmtInt(p.pwFee * p.conv / (p.convBank * 2.95))} pour les ${eur(p.pwFee)} de Powens, ${fmtInt(p.ebFee3 * p.conv / (p.convBank * 2.95))} pour la licence de ${eur(p.ebFee3)} d'Enable Banking (TVA due). Le modèle signe à **${fmtInt(p.pwTrigger)} abonnés avec Powens** et **${fmtInt(p.bankTrigger)} avec Enable Banking** (réglables). Écart de résultat d'un mois type par rapport à « sans banque directe », plan ${ebScen.id}, en régime stable :
+**Quand signer.** La licence est un coût fixe, mais elle ne se paie pas par tous les abonnés : ils paieraient de toute façon avec les relevés importés. Elle se paie par les abonnés **en plus** que la connexion directe apporte (hypothèse : +${dec(p.convBank)} point de conversion, à mesurer). Il faut donc environ licence × ${dec(p.conv)} ÷ (${dec(p.convBank)} × marge d'un abonné) abonnés Premium : environ ${fmtInt(p.pwFee * p.conv / (p.convBank * marginOf(true)))} pour les ${eur(p.pwFee)} de Powens, ${fmtInt(p.ebFee3 * p.conv / (p.convBank * marginOf(true)))} pour la licence de ${eur(p.ebFee3)} d'Enable Banking (TVA due). Le modèle signe à **${fmtInt(p.pwTrigger)} abonnés avec Powens** et **${fmtInt(p.bankTrigger)} avec Enable Banking** (réglables). Écart de résultat d'un mois type par rapport à « sans banque directe », plan ${ebScen.id}, en régime stable :
 `);
 out.push(row(["Actifs", ...sizes.map(fmtInt)]));
 out.push(row(["---", ...sizes.map(() => "---:")]));

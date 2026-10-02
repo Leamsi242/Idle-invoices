@@ -12,6 +12,30 @@ Projection sur 24 mois, dont 2 mois de bêta gratuite. Montants en euros. Chaque
 - **Le personnel** : chaque tâche (support, développement, contenus, administration, vente aux professionnels) a un volume d'heures qui grandit avec les utilisateurs. L'IA en prend une part (assistant de support, assistant de code, rédaction) pour un coût mensuel ; vous donnez 40 heures par mois ; le reste est payé à des indépendants, ou à des salariés dès que c'est moins cher.
 - **Le seuil de rentabilité** en utilisateurs, et ce qu'il faut pour l'atteindre à un mois donné.
 
+## 1 bis. Les dépenses faciles à oublier, comptées
+
+Pour ne découvrir aucune dépense après coup, le modèle compte aussi :
+
+| Dépense | Montant retenu | Verdict | Source |
+| --- | --- | --- | --- |
+| Stripe Billing, pour gérer les abonnements | 0,7 % des paiements d'abonnement, en plus des frais de carte | partiellement vérifié | [Flexprice](https://flexprice.io/blog/stripe-pricing-breakdown-2026) |
+| Cartes premium ou hors d'Europe | 10 % des paiements à 2,8 % + 0,25 € au lieu de 1,5 % | partiellement vérifié (part : hypothèse) | [Indy](https://www.indy.fr/guide/comptabilite-en-ligne/commerce/stripe-comptabilite/frais-stripe/) |
+| Remboursements accordés | 2 % des encaissements, Stripe gardant ses frais | hypothèse | |
+| Litiges (paiement contesté par la banque du client) | 0,2 % des paiements, 20 € de frais chacun plus le montant perdu | frais partiellement vérifiés, taux hypothèse | [Chargeflow](https://www.chargeflow.io/blog/stripe-dispute-fees) |
+| TVA des outils étrangers, non récupérable en franchise | 20 % des factures des outils (hébergement, base, e-mails, IA, banque, audit) tant que vous ne facturez pas de TVA | partiellement vérifié, taux selon le fournisseur | [Tailride, factures OpenAI](https://tailride.so/fr/blog/telecharger-factures-openai-api) |
+| Frais de change sur les factures en dollars | 2 % | hypothèse, selon votre banque | |
+| Contribution à la formation professionnelle | 0,2 % du chiffre d'affaires | partiellement vérifié (0,1 à 0,3 % selon l'activité) | [entreprises.gouv.fr](https://www.entreprises.gouv.fr/espace-entreprises/faq/mon-entreprise-au-quotidien/quel-est-le-taux-de-contribution-la-formation) |
+| Impôt sur le revenu, versement libératoire | 1,7 % du chiffre d'affaires, si vous le choisissez (0 pour l'ignorer) | à choisir | |
+| CFE | 300 € par an, à partir de la 2e année et au-delà de 5 000 € de chiffre d'affaires | partiellement vérifié, montant selon la commune | [Superindep](https://www.superindep.fr/blog/2025/comment-etre-exonere-cfe/) |
+| Compte bancaire | 0 € par mois en micro-entreprise (offres gratuites), 15 € en société | hypothèse | |
+| Dépôt de la marque à l'INPI | 190 € une fois, au lancement | partiellement vérifié | [Legalplace](https://www.legalplace.fr/guides/prix-depot-marque-inpi/) |
+| Création de la société, si le chiffre d'affaires dépasse le plafond micro | 195 € une fois | partiellement vérifié | [Legalplace](https://www.legalplace.fr/guides/cout-creation-sasu/) |
+| Réserve pour imprévus | 5 % des dépenses | à choisir | |
+
+Avec ces frais, un abonné Premium à 4,99 € laisse **3,32 € par mois** sans TVA due et **2,68 €** une fois la TVA due, contre 3,61 € si l'on ne compte que la carte et les cotisations.
+
+Ne sont pas comptés : votre propre impôt sur le revenu hors versement libératoire (il dépend de votre foyer), et les dépenses que vous choisiriez en plus (publicité, salon, matériel).
+
 ## 2. Les paramètres
 
 ### Croissance et fidélité
@@ -44,9 +68,30 @@ Projection sur 24 mois, dont 2 mois de bêta gratuite. Montants en euros. Chaque
 | Rapport unique sans abonnement | 9 € TTC | hypothèse |  |
 | Activés qui achètent le rapport unique | 3 % des activés | hypothèse |  |
 | TVA | 20 % | confirmé (taux normal français) |  |
+| Cotisations micro-entreprise (prestations de services) | 21,2 % du chiffre d'affaires | confirmé (2026) | 21,2 % pour les prestations commerciales (BIC) ; 25,6 % si l'activité est déclarée en profession libérale (BNC) |
+
+### Frais de paiement, taxes et dépenses faciles à oublier
+
+| Paramètre | Valeur | Verdict | Source ou remarque |
+| --- | --- | --- | --- |
 | Stripe, part variable (cartes EEE standard) | 1,5 % | partiellement vérifié |  |
 | Stripe, part fixe par paiement | 0,25 € | partiellement vérifié |  |
-| Cotisations micro-entreprise (prestations de services) | 21,2 % du chiffre d'affaires | confirmé (2026) | 21,2 % pour les prestations commerciales (BIC) ; 25,6 % si l'activité est déclarée en profession libérale (BNC) |
+| Stripe Billing (gestion des abonnements, relances) | 0,7 % des abonnements | partiellement vérifié | sur les paiements d'abonnement, en plus des frais de carte |
+| Paiements par carte premium ou hors d'Europe | 10 % des paiements | hypothèse |  |
+| Stripe, cartes premium (2,9 à 3,15 % hors d'Europe) | 2,8 % | partiellement vérifié |  |
+| Remboursements accordés (Stripe garde ses frais) | 2 % des encaissements | hypothèse |  |
+| Paiements contestés par la banque du client | 0,2 % des paiements | hypothèse |  |
+| Frais Stripe par litige (montant perdu en plus) | 20 € par litige | partiellement vérifié | 20 € par litige, 20 € de plus pour le contester, rendus si gagné |
+| TVA payée sur les outils étrangers tant que vous ne facturez pas de TVA | 20 % | partiellement vérifié, taux selon le fournisseur | en franchise, la TVA des fournisseurs n'est pas récupérable : OpenAI facture par exemple 23 % sans numéro de TVA |
+| Frais de change de la banque sur les factures en dollars | 2 % des factures en dollars | hypothèse, selon votre banque |  |
+| Contribution à la formation professionnelle (micro-entreprise) | 0,2 % du chiffre d'affaires | partiellement vérifié | 0,1 à 0,3 % selon l'activité, les sources varient pour les services |
+| Impôt sur le revenu, versement libératoire (prestations de services commerciales) | 1,7 % du chiffre d'affaires | à choisir | si vous le choisissez et y avez droit ; sinon l'impôt dépend de votre foyer. 0 pour l'ignorer |
+| Cotisation foncière des entreprises (CFE) | 300 € par an | partiellement vérifié, montant selon la commune | exonérée l'année du premier chiffre d'affaires, puis sous 5 000 € de chiffre d'affaires ; sinon base de 250 à 1 194 € selon la commune, avant son taux |
+| Compte bancaire dédié (micro-entreprise) | 0 € par mois | hypothèse | obligatoire après deux années à plus de 10 000 € ; des offres en ligne gratuites existent |
+| Compte bancaire professionnel (société) | 15 € par mois | hypothèse |  |
+| Dépôt de la marque à l'INPI (une classe, 10 ans) | 190 € une fois | partiellement vérifié |  |
+| Création de la société (annonce légale, greffe, bénéficiaires) | 195 € une fois | partiellement vérifié |  |
+| Réserve pour imprévus | 5 % des dépenses | à choisir | hausses de tarifs, oublis, frais bancaires ; 0 pour l'ignorer |
 
 ### Autres revenus
 
@@ -143,12 +188,12 @@ Projection sur 24 mois, dont 2 mois de bêta gratuite. Montants en euros. Chaque
 | Compte au-delà du quota, jusqu'au 5 000e | 0,5 € par compte et par mois | confirmé (offre écrite), tranches à confirmer | un compte = un IBAN unique avec un consentement valide, interrogé dans le mois ; reconnexions non recomptées ; le modèle applique les prix par tranche (chaque compte au prix de son rang), lecture de l'offre à confirmer |
 | Compte du 5 001e au 50 000e | 0,3 € par compte et par mois | confirmé (offre écrite) |  |
 | Compte au-delà du 50 000e | 0,2 € par compte et par mois | confirmé (offre écrite) |  |
-| Abonnés Premium à partir desquels signer le contrat (scénarios « au seuil ») | 2500 abonnés Premium | calculé, à choisir | la licence ne se paie que par les abonnés en plus que la banque apporte : licence × conversion ÷ (conversion en plus × marge d'un abonné), soit environ 2 500 pour 1 500 € avec la TVA due |
+| Abonnés Premium à partir desquels signer le contrat (scénarios « au seuil ») | 2800 abonnés Premium | calculé, à choisir | la licence ne se paie que par les abonnés en plus que la banque apporte : licence × conversion ÷ (conversion en plus × marge d'un abonné), soit environ 2 800 pour 1 500 € avec la TVA due |
 | Comptes bancaires reliés par utilisateur (Enable Banking facture les comptes, Powens les utilisateurs) | 1,3 comptes par utilisateur | hypothèse à mesurer |  |
 | Powens, forfait mensuel | 900 € par mois | non vérifiable (oral) | annoncé oralement par Powens le 1er octobre 2026, à faire confirmer par écrit (durée, évolution, prix au-delà) |
 | Utilisateurs inclus dans le forfait Powens (connexions illimitées) | 1000 utilisateurs | non vérifiable (oral) |  |
 | Powens, utilisateur au-delà du forfait | 0,9 € par utilisateur et par mois | hypothèse | non communiqué : le modèle prend le prix moyen du forfait |
-| Abonnés Premium à partir desquels signer avec Powens (scénarios « au seuil ») | 1500 abonnés Premium | calculé, à choisir | forfait × conversion ÷ (conversion en plus × marge d'un abonné), soit environ 1 500 pour 900 € avec la TVA due |
+| Abonnés Premium à partir desquels signer avec Powens (scénarios « au seuil ») | 1700 abonnés Premium | calculé, à choisir | forfait × conversion ÷ (conversion en plus × marge d'un abonné), soit environ 1 700 pour 900 € avec la TVA due |
 | Conversion en Premium en plus quand la banque directe y est incluse | 1 points | hypothèse à mesurer |  |
 | Part des concernés qui connectent leur banque | 60 % | hypothèse |  |
 
@@ -161,40 +206,40 @@ Projection sur 24 mois, dont 2 mois de bêta gratuite. Montants en euros. Chaque
 
 ## 3. Les scénarios réalistes
 
-Tous en bouche-à-oreille, Outlook ouvert à tous (export pour Gmail), banque directe réservée au Premium et contrat Enable Banking signé seulement à 2 500 abonnés (jamais atteint en 24 mois, sauf mention), IA d'abord sauf mention contraire. Chacun change une chose par rapport au scénario central.
+Tous en bouche-à-oreille, Outlook ouvert à tous (export pour Gmail), banque directe réservée au Premium et contrat Enable Banking signé seulement à 2 800 abonnés (jamais atteint en 24 mois, sauf mention), IA d'abord sauf mention contraire. Chacun change une chose par rapport au scénario central.
 
 | Code | Scénario | Dépenses 24 mois | Résultat 24 mois | Trésorerie à avancer | Premium au mois 24 | Remboursé au | Seuil de rentabilité (régime stable) |
 | --- | --- | ---: | ---: | ---: | ---: | --- | --- |
-| R8-ambitieux | Ambitieux : tout, Gmail pour tous au 10e mois, croissance 15 % par mois | 8 685 € | **4 838 €** | 1 270 € | 336 | mois 17 | atteint sans utilisateurs (licences seules) |
-| R9-sobre | Central sobre : un seul assistant IA à 20 $ par mois, sans assurance | 1 163 € | **3 447 €** | 21 € | 123 | mois 6 | 20 inscrits par mois, 43 actifs, 11 Premium |
-| R6-pro | Central plus licences professionnelles dès le 12e mois | 4 708 € | **3 132 €** | 683 € | 123 | mois 17 | atteint sans utilisateurs (licences seules) |
-| R2-central | Central : Premium, annuel, affiliation et résiliation assistée | 3 239 € | **1 372 €** | 687 € | 123 | mois 20 | 75 inscrits par mois, 165 actifs, 42 Premium |
-| R5-premium-cher | Premium à 7,99 €, conversion 3,5 %, annuel à 59,99 € | 3 238 € | **930 €** | 801 € | 86 | mois 21 | 74 inscrits par mois, 153 actifs, 29 Premium |
-| R7-lent | Central avec une croissance lente, 4 % par mois | 3 211 € | **-637 €** | 930 € | 55 | non atteint | 75 inscrits par mois, 165 actifs, 42 Premium |
-| R1-prudent | Prudent (test de résistance) : Premium mensuel et annuel, conversion 3 %, croissance 6 % par mois | 3 216 € | **-1 518 €** | 1 539 € | 43 | non atteint | 132 inscrits par mois, 266 actifs, 45 Premium |
-| R4-gratuit-affil | Gratuit pour tous, payé par l'affiliation (aucun Premium) | 3 235 € | **-2 310 €** | 2 310 € | 0 | non atteint | 40 462 inscrits par mois, 69 594 actifs, 0 Premium |
-| R3-sans-IA | Central sans IA : même offre, tout le travail fait par des personnes | 14 704 € | **-10 094 €** | 10 094 € | 123 | non atteint | 423 inscrits par mois, 929 actifs, 238 Premium |
-| R11-powens-tot | Sobre, mais contrat Powens signé dès le lancement | 20 977 € | **-15 723 €** | 15 723 € | 147 | non atteint | 457 inscrits par mois, 1 048 actifs, 309 Premium |
-| R10-banque-tot | Sobre, mais contrat Enable Banking signé dès le lancement | 23 977 € | **-18 723 €** | 18 723 € | 147 | non atteint | 785 inscrits par mois, 1 799 actifs, 531 Premium |
+| R9-sobre | Central sobre : un seul assistant IA à 20 $ par mois, sans assurance | 1 620 € | **2 685 €** | 253 € | 123 | mois 12 | 27 inscrits par mois, 59 actifs, 15 Premium |
+| R8-ambitieux | Ambitieux : tout, Gmail pour tous au 10e mois, croissance 15 % par mois | 10 525 € | **2 209 €** | 2 049 € | 336 | mois 20 | atteint sans utilisateurs (licences seules) |
+| R6-pro | Central plus licences professionnelles dès le 12e mois | 5 914 € | **1 506 €** | 1 272 € | 123 | mois 21 | atteint sans utilisateurs (licences seules) |
+| R2-central | Central : Premium, annuel, affiliation et résiliation assistée | 4 267 € | **39 €** | 1 357 € | 123 | mois 24 | 101 inscrits par mois, 223 actifs, 57 Premium |
+| R5-premium-cher | Premium à 7,99 €, conversion 3,5 %, annuel à 59,99 € | 4 266 € | **-387 €** | 1 510 € | 86 | non atteint | 101 inscrits par mois, 207 actifs, 40 Premium |
+| R7-lent | Central avec une croissance lente, 4 % par mois | 4 232 € | **-1 829 €** | 1 865 € | 55 | non atteint | 101 inscrits par mois, 223 actifs, 57 Premium |
+| R1-prudent | Prudent (test de résistance) : Premium mensuel et annuel, conversion 3 %, croissance 6 % par mois | 4 238 € | **-2 661 €** | 2 661 € | 43 | non atteint | 180 inscrits par mois, 361 actifs, 61 Premium |
+| R4-gratuit-affil | Gratuit pour tous, payé par l'affiliation (aucun Premium) | 4 263 € | **-3 360 €** | 3 360 € | 0 | non atteint | 42 934 inscrits par mois, 73 846 actifs, 0 Premium |
+| R3-sans-IA | Central sans IA : même offre, tout le travail fait par des personnes | 15 741 € | **-11 435 €** | 11 435 € | 123 | non atteint | 568 inscrits par mois, 1 248 actifs, 320 Premium |
+| R11-powens-tot | Sobre, mais contrat Powens signé dès le lancement | 26 609 € | **-21 708 €** | 21 708 € | 147 | non atteint | 674 inscrits par mois, 1 545 actifs, 456 Premium |
+| R10-banque-tot | Sobre, mais contrat Enable Banking signé dès le lancement | 30 389 € | **-25 488 €** | 25 488 € | 147 | non atteint | 1 197 inscrits par mois, 2 744 actifs, 809 Premium |
 
 **Lecture** :
 
 - **Le travail coûte plus que les serveurs.** Sans IA (R3), les heures au-delà des vôtres partent chez des indépendants dès le lancement : le même scénario perd de l'argent sur 24 mois. Avec un seul assistant à 20 $ (R9), le seuil tombe à quelques dizaines d'inscrits par mois.
 - **L'affiliation seule ne suffit pas** (R4) : il faut des dizaines de milliers d'actifs pour couvrir le travail. Elle complète le Premium, elle ne le remplace pas.
 - **Les licences professionnelles** (R6, R8) rendent le projet rentable même avec peu d'utilisateurs, si 1 licence par trimestre à 149 € par mois se vend vraiment : c'est l'hypothèse la plus fragile, à tester par 5 entretiens avant d'y consacrer du temps.
-- **Un prix plus haut** (R5) reste rentable avec environ 30 % d'abonnés en moins : à tester avec deux prix pendant le lancement.
+- **Un prix plus haut** (R5, 7,99 €) donne -387 € sur 24 mois contre 39 € pour le central, avec environ 30 % d'abonnés en moins : à tester avec deux prix pendant le lancement plutôt qu'à supposer.
 
 ## 4. Le seuil de rentabilité
 
-**En régime stable** (inscriptions constantes, tout s'est tassé : paliers d'outils, TVA, personnel), le scénario central couvre ses coûts à partir de **75 inscrits par mois, 165 actifs, 42 Premium**. Un abonné Premium à 4,99 € rapporte 3,61 € par mois sans TVA due, 2,95 € une fois la TVA due (Stripe et cotisations déduites).
+**En régime stable** (inscriptions constantes, tout s'est tassé : paliers d'outils, TVA, personnel), le scénario central couvre ses coûts à partir de **101 inscrits par mois, 223 actifs, 57 Premium**. Un abonné Premium à 4,99 € rapporte 3,32 € par mois sans TVA due, 2,68 € une fois la TVA due (Stripe et Stripe Billing, remboursements, litiges, cotisations, formation professionnelle et versement libératoire déduits).
 
 **Pour atteindre un objectif à une date** (scénario central, 100 inscrits le premier mois après la bêta et 10 % de croissance par mois dans les hypothèses actuelles) :
 
 | Objectif | Inscrits le 1er mois nécessaires (croissance actuelle) | Ou croissance nécessaire (inscrits actuels) |
 | --- | ---: | ---: |
-| Mois 12 rentable | 104 | 10,5 % par mois |
-| Investissement remboursé au mois 18 | 113 | 11,7 % par mois |
-| Investissement remboursé au mois 24 | 70 | 6,4 % par mois |
+| Mois 12 rentable | 140 | 15,6 % par mois |
+| Investissement remboursé au mois 18 | 162 | 17 % par mois |
+| Investissement remboursé au mois 24 | 100 | 9,9 % par mois |
 
 Sur la page, choisissez votre objectif (un mois, ou un nombre d'actifs) : elle calcule la même chose pour n'importe quel scénario et peut appliquer la valeur trouvée à vos hypothèses.
 
@@ -202,17 +247,17 @@ Seuil de chaque scénario de la matrice (régime stable) :
 
 | Code | Seuil |
 | --- | --- |
-| O>G-R-org | 96 inscrits par mois, 273 actifs, 53 Premium |
-| O>G-P-org | 761 inscrits par mois, 2 225 actifs, 507 Premium |
-| T-R-org | 102 inscrits par mois, 193 actifs, 38 Premium |
-| T-P-org | 1 080 inscrits par mois, 2 111 actifs, 486 Premium |
-| T-T-org | 665 inscrits par mois, 2 111 actifs, 486 Premium |
-| G-R-org | 95 inscrits par mois, 271 actifs, 53 Premium |
-| G-P-org | 751 inscrits par mois, 2 200 actifs, 506 Premium |
-| G-T-org | 530 inscrits par mois, 2 199 actifs, 506 Premium |
-| O-R-org | 95 inscrits par mois, 193 actifs, 38 Premium |
-| O-P-org | 1 005 inscrits par mois, 2 111 actifs, 486 Premium |
-| O-T-org | 635 inscrits par mois, 2 111 actifs, 486 Premium |
+| O>G-R-org | 132 inscrits par mois, 375 actifs, 73 Premium |
+| O>G-P-org | 1 233 inscrits par mois, 3 604 actifs, 821 Premium |
+| T-R-org | 139 inscrits par mois, 263 actifs, 52 Premium |
+| T-P-org | 1 747 inscrits par mois, 3 413 actifs, 786 Premium |
+| T-T-org | 1 075 inscrits par mois, 3 413 actifs, 786 Premium |
+| G-R-org | 131 inscrits par mois, 372 actifs, 73 Premium |
+| G-P-org | 1 215 inscrits par mois, 3 559 actifs, 819 Premium |
+| G-T-org | 857 inscrits par mois, 3 557 actifs, 818 Premium |
+| O-R-org | 129 inscrits par mois, 263 actifs, 52 Premium |
+| O-P-org | 1 625 inscrits par mois, 3 413 actifs, 786 Premium |
+| O-T-org | 1 027 inscrits par mois, 3 413 actifs, 786 Premium |
 
 Avec la publicité payée, un inscrit coûte 1,50 € et rapporte moins : le seuil n'est atteint que très loin, ou jamais.
 
@@ -227,51 +272,51 @@ La part de Premium parmi les actifs y est élevée (environ un quart) parce que 
 | Actifs | 500 | 2 000 | 10 000 | 50 000 | 200 000 |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Inscrits par mois | 228 | 910 | 4 551 | 22 754 | 91 017 |
-| Abonnés Premium | 128 | 513 | 2 618 | 15 249 | 61 362 |
-| Revenus nets par mois | 567 € | 2 269 € | 9 681 € | 55 427 € | 222 813 € |
+| Abonnés Premium | 128 | 513 | 2 564 | 15 224 | 61 362 |
+| Revenus nets par mois | 548 € | 2 193 € | 9 114 € | 53 090 € | 213 703 € |
 | Hébergement, base, e-mails, suivi | 20 € | 46 € | 104 € | 311 € | 1 050 € |
 | IA (support, assistants, produit) | 21 € | 28 € | 67 € | 271 € | 1 032 € |
-| Heures de travail (dont payées) | 39 h (0 h) | 48 h (8 h) | 91 h (51 h) | 316 h (276 h) | 1 156 h (1 116 h) |
-| Personnel payé | 0 € | 263 €, indépendants (moins de 0,1 ETP) | 1 776 €, indépendants (0,3 ETP) | 5 200 €, salariés (2 ETP) | 20 800 €, salariés (8 ETP) |
-| Banque, comptable, assurance | 0 € | 0 € | 1 217 € | 4 849 € | 16 110 € |
+| Heures de travail (dont payées) | 39 h (0 h) | 48 h (8 h) | 90 h (50 h) | 316 h (276 h) | 1 156 h (1 116 h) |
+| Personnel payé | 0 € | 263 €, indépendants (moins de 0,1 ETP) | 1 764 €, indépendants (0,3 ETP) | 5 200 €, salariés (2 ETP) | 20 800 €, salariés (8 ETP) |
+| Banque, comptable, assurance | 0 € | 0 € | 135 € | 4 859 € | 16 125 € |
 | Statut | micro, sans TVA | micro, sans TVA | société, TVA | société, TVA | société, TVA |
-| Cotisations ou impôt | 130 € | 520 € | 1 783 € | 11 709 € | 47 961 € |
-| **Résultat par mois** | **401 €** | **1 435 €** | **5 209 €** | **33 723 €** | **138 363 €** |
-| Marge | 71 % | 63 % | 54 % | 61 % | 62 % |
+| Cotisations ou impôt | 142 € | 566 € | 1 807 € | 10 962 € | 45 094 € |
+| **Résultat par mois** | **334 €** | **1 253 €** | **5 200 €** | **31 542 €** | **130 030 €** |
+| Marge | 61 % | 57 % | 57 % | 59 % | 61 % |
 
 ### Scénario central (R2), IA d'abord
 
 | Actifs | 500 | 2 000 | 10 000 | 50 000 | 200 000 |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Inscrits par mois | 228 | 910 | 4 551 | 22 754 | 91 017 |
-| Abonnés Premium | 128 | 513 | 2 618 | 15 249 | 61 362 |
-| Revenus nets par mois | 567 € | 2 269 € | 9 681 € | 55 427 € | 222 813 € |
+| Abonnés Premium | 128 | 513 | 2 564 | 15 224 | 61 362 |
+| Revenus nets par mois | 548 € | 2 193 € | 9 114 € | 53 090 € | 213 703 € |
 | Hébergement, base, e-mails, suivi | 20 € | 46 € | 104 € | 311 € | 1 050 € |
 | IA (support, assistants, produit) | 113 € | 120 € | 159 € | 363 € | 1 124 € |
-| Heures de travail (dont payées) | 36 h (0 h) | 44 h (4 h) | 86 h (46 h) | 303 h (263 h) | 1 111 h (1 071 h) |
-| Personnel payé | 0 € | 144 €, indépendants (moins de 0,1 ETP) | 1 600 €, indépendants (0,3 ETP) | 5 200 €, salariés (2 ETP) | 20 800 €, salariés (8 ETP) |
-| Banque, comptable, assurance | 15 € | 15 € | 1 232 € | 4 864 € | 16 125 € |
+| Heures de travail (dont payées) | 36 h (0 h) | 44 h (4 h) | 85 h (45 h) | 303 h (263 h) | 1 111 h (1 071 h) |
+| Personnel payé | 0 € | 144 €, indépendants (moins de 0,1 ETP) | 1 588 €, indépendants (0,3 ETP) | 5 200 €, salariés (2 ETP) | 20 800 €, salariés (8 ETP) |
+| Banque, comptable, assurance | 15 € | 15 € | 150 € | 4 874 € | 16 140 € |
 | Statut | micro, sans TVA | micro, sans TVA | société, TVA | société, TVA | société, TVA |
-| Cotisations ou impôt | 130 € | 520 € | 1 801 € | 11 682 € | 47 934 € |
-| **Résultat par mois** | **294 €** | **1 447 €** | **5 260 €** | **33 643 €** | **139 583 €** |
-| Marge | 52 % | 64 % | 54 % | 61 % | 63 % |
+| Cotisations ou impôt | 142 € | 566 € | 1 825 € | 10 933 € | 45 066 € |
+| **Résultat par mois** | **200 €** | **1 245 €** | **5 252 €** | **31 457 €** | **131 309 €** |
+| Marge | 37 % | 57 % | 58 % | 59 % | 61 % |
 
 ### Même scénario sans IA (R3)
 
 | Actifs | 500 | 2 000 | 10 000 | 50 000 | 200 000 |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Inscrits par mois | 228 | 910 | 4 551 | 22 754 | 91 017 |
-| Abonnés Premium | 128 | 513 | 2 618 | 15 249 | 61 362 |
-| Revenus nets par mois | 567 € | 2 269 € | 9 681 € | 55 427 € | 222 813 € |
+| Abonnés Premium | 128 | 513 | 2 564 | 15 224 | 61 362 |
+| Revenus nets par mois | 548 € | 2 193 € | 9 114 € | 53 090 € | 213 703 € |
 | Hébergement, base, e-mails, suivi | 20 € | 46 € | 104 € | 311 € | 1 050 € |
-| IA (support, assistants, produit) | 2 € | 6 € | 31 € | 158 € | 634 € |
-| Heures de travail (dont payées) | 59 h (19 h) | 72 h (32 h) | 146 h (106 h) | 529 h (489 h) | 1 955 h (1 915 h) |
+| IA (support, assistants, produit) | 2 € | 6 € | 30 € | 158 € | 634 € |
+| Heures de travail (dont payées) | 59 h (19 h) | 72 h (32 h) | 145 h (105 h) | 528 h (488 h) | 1 955 h (1 915 h) |
 | Personnel payé | 649 €, indépendants (0,1 ETP) | 1 127 €, indépendants (0,2 ETP) | 2 600 €, salariés (1 ETP) | 10 400 €, salariés (4 ETP) | 33 800 €, salariés (13 ETP) |
-| Banque, comptable, assurance | 15 € | 15 € | 1 232 € | 4 864 € | 16 125 € |
+| Banque, comptable, assurance | 15 € | 15 € | 150 € | 4 874 € | 16 140 € |
 | Statut | micro, sans TVA | micro, sans TVA | société, TVA | société, TVA | société, TVA |
-| Cotisations ou impôt | 130 € | 520 € | 1 583 € | 10 434 € | 44 807 € |
-| **Résultat par mois** | **-242 €** | **581 €** | **4 585 €** | **29 896 €** | **128 897 €** |
-| Marge | -43 % | 26 % | 47 % | 54 % | 58 % |
+| Cotisations ou impôt | 142 € | 566 € | 1 594 € | 9 623 € | 41 785 € |
+| **Résultat par mois** | **-337 €** | **362 €** | **4 543 €** | **27 526 €** | **120 097 €** |
+| Marge | -62 % | 16 % | 50 % | 52 % | 56 % |
 
 **Ce que l'IA remplace, et ce qu'elle ne remplace pas** :
 
@@ -307,37 +352,37 @@ Chaque scénario combine **la boîte mail** (Export Gmail (Takeout) ; Connexion 
 
 | Code | Scénario | Dépenses 24 mois | Cotisations | Revenus nets | Résultat 24 mois | Trésorerie à avancer | Premium au mois 24 | Premier mois rentable | Remboursé au |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| R8-ambitieux | Ambitieux : tout, Gmail pour tous au 10e mois, croissance 15 % par mois | 8 685 € | 3 817 € | 17 341 € | **4 838 €** | 1 270 € | 336 | mois 12 | mois 17 |
-| R9-sobre | Central sobre : un seul assistant IA à 20 $ par mois, sans assurance | 1 163 € | 1 313 € | 5 924 € | **3 447 €** | 21 € | 123 | mois 5 | mois 6 |
-| R6-pro | Central plus licences professionnelles dès le 12e mois | 4 708 € | 2 199 € | 10 039 € | **3 132 €** | 683 € | 123 | mois 12 | mois 17 |
-| R2-central | Central : Premium, annuel, affiliation et résiliation assistée | 3 239 € | 1 313 € | 5 924 € | **1 372 €** | 687 € | 123 | mois 13 | mois 20 |
-| R5-premium-cher | Premium à 7,99 €, conversion 3,5 %, annuel à 59,99 € | 3 238 € | 1 178 € | 5 346 € | **930 €** | 801 € | 86 | mois 14 | mois 21 |
-| G-R-org | Connexion Gmail pour tous, relevés seulement, bouche-à-oreille | 4 783 € | 1 635 € | 7 236 € | **819 €** | 1 833 € | 156 | mois 11 | mois 23 |
-| O-R-org | Outlook pour tous, export pour Gmail, relevés seulement, bouche-à-oreille | 3 238 € | 1 172 € | 5 186 € | **776 €** | 813 € | 112 | mois 14 | mois 22 |
-| T-R-org | Export Gmail (Takeout), relevés seulement, bouche-à-oreille | 3 234 € | 1 090 € | 4 824 € | **500 €** | 868 € | 104 | mois 14 | mois 23 |
-| O>G-R-org | Outlook pour tous et export Gmail, puis connexion Gmail pour tous au 10e mois, relevés seulement, bouche-à-oreille | 4 771 € | 1 479 € | 6 545 € | **295 €** | 1 492 € | 151 | mois 13 | mois 22 |
-| R7-lent | Central avec une croissance lente, 4 % par mois | 3 211 € | 733 € | 3 307 € | **-637 €** | 930 € | 55 | mois 17 | non atteint |
-| R1-prudent | Prudent (test de résistance) : Premium mensuel et annuel, conversion 3 %, croissance 6 % par mois | 3 216 € | 487 € | 2 186 € | **-1 518 €** | 1 539 € | 43 | mois 23 | non atteint |
-| R4-gratuit-affil | Gratuit pour tous, payé par l'affiliation (aucun Premium) | 3 235 € | 249 € | 1 174 € | **-2 310 €** | 2 310 € | 0 | non atteint | non atteint |
-| R3-sans-IA | Central sans IA : même offre, tout le travail fait par des personnes | 14 704 € | 1 313 € | 5 924 € | **-10 094 €** | 10 094 € | 123 | non atteint | non atteint |
-| R11-powens-tot | Sobre, mais contrat Powens signé dès le lancement | 20 977 € | 1 498 € | 6 752 € | **-15 723 €** | 15 723 € | 147 | non atteint | non atteint |
-| G-R-pub | Connexion Gmail pour tous, relevés seulement, publicité payée | 27 770 € | 3 270 € | 14 473 € | **-16 568 €** | 16 568 € | 313 | non atteint | non atteint |
-| O-R-pub | Outlook pour tous, export pour Gmail, relevés seulement, publicité payée | 25 371 € | 2 344 € | 10 372 € | **-17 342 €** | 17 342 € | 224 | non atteint | non atteint |
-| T-R-pub | Export Gmail (Takeout), relevés seulement, publicité payée | 25 212 € | 2 180 € | 9 648 € | **-17 744 €** | 17 744 € | 208 | non atteint | non atteint |
-| R10-banque-tot | Sobre, mais contrat Enable Banking signé dès le lancement | 23 977 € | 1 498 € | 6 752 € | **-18 723 €** | 18 723 € | 147 | non atteint | non atteint |
-| G-T-org | Connexion Gmail pour tous, banque directe pour tous, bouche-à-oreille | 28 151 € | 2 710 € | 11 988 € | **-18 873 €** | 18 873 € | 266 | non atteint | non atteint |
-| O-T-org | Outlook pour tous, export pour Gmail, banque directe pour tous, bouche-à-oreille | 26 356 € | 2 168 € | 9 590 € | **-18 933 €** | 18 933 € | 213 | non atteint | non atteint |
-| T-T-org | Export Gmail (Takeout), banque directe pour tous, bouche-à-oreille | 26 300 € | 2 072 € | 9 167 € | **-19 205 €** | 19 205 € | 203 | non atteint | non atteint |
-| G-P-org | Connexion Gmail pour tous, banque directe en premium, bouche-à-oreille | 27 610 € | 1 913 € | 8 462 € | **-21 061 €** | 21 061 € | 188 | non atteint | non atteint |
-| O-P-org | Outlook pour tous, export pour Gmail, banque directe en premium, bouche-à-oreille | 26 039 € | 1 371 € | 6 065 € | **-21 345 €** | 21 345 € | 134 | non atteint | non atteint |
-| T-P-org | Export Gmail (Takeout), banque directe en premium, bouche-à-oreille | 26 035 € | 1 275 € | 5 641 € | **-21 669 €** | 21 669 € | 125 | non atteint | non atteint |
-| O>G-P-org | Outlook pour tous et export Gmail, puis connexion Gmail pour tous au 10e mois, banque directe en premium, bouche-à-oreille | 27 598 € | 1 728 € | 7 645 € | **-21 681 €** | 21 681 € | 182 | non atteint | non atteint |
-| G-T-pub | Connexion Gmail pour tous, banque directe pour tous, publicité payée | 53 369 € | 5 420 € | 23 976 € | **-34 813 €** | 34 813 € | 532 | non atteint | non atteint |
-| O-T-pub | Outlook pour tous, export pour Gmail, banque directe pour tous, publicité payée | 49 899 € | 4 336 € | 19 181 € | **-35 055 €** | 35 055 € | 425 | non atteint | non atteint |
-| T-T-pub | Export Gmail (Takeout), banque directe pour tous, publicité payée | 49 615 € | 4 145 € | 18 335 € | **-35 425 €** | 35 425 € | 406 | non atteint | non atteint |
-| G-P-pub | Connexion Gmail pour tous, banque directe en premium, publicité payée | 50 630 € | 3 826 € | 16 924 € | **-37 532 €** | 37 532 € | 375 | non atteint | non atteint |
-| O-P-pub | Outlook pour tous, export pour Gmail, banque directe en premium, publicité payée | 48 192 € | 2 742 € | 12 129 € | **-38 805 €** | 38 805 € | 269 | non atteint | non atteint |
-| T-P-pub | Export Gmail (Takeout), banque directe en premium, publicité payée | 48 051 € | 2 551 € | 11 283 € | **-39 319 €** | 39 319 € | 250 | non atteint | non atteint |
+| R9-sobre | Central sobre : un seul assistant IA à 20 $ par mois, sans assurance | 1 620 € | 1 431 € | 5 737 € | **2 685 €** | 253 € | 123 | mois 6 | mois 12 |
+| R8-ambitieux | Ambitieux : tout, Gmail pour tous au 10e mois, croissance 15 % par mois | 10 525 € | 4 159 € | 16 893 € | **2 209 €** | 2 049 € | 336 | mois 12 | mois 20 |
+| R6-pro | Central plus licences professionnelles dès le 12e mois | 5 914 € | 2 396 € | 9 816 € | **1 506 €** | 1 272 € | 123 | mois 13 | mois 21 |
+| R2-central | Central : Premium, annuel, affiliation et résiliation assistée | 4 267 € | 1 431 € | 5 737 € | **39 €** | 1 357 € | 123 | mois 15 | mois 24 |
+| R5-premium-cher | Premium à 7,99 €, conversion 3,5 %, annuel à 59,99 € | 4 266 € | 1 284 € | 5 163 € | **-387 €** | 1 510 € | 86 | mois 16 | non atteint |
+| O-R-org | Outlook pour tous, export pour Gmail, relevés seulement, bouche-à-oreille | 4 266 € | 1 277 € | 4 983 € | **-560 €** | 1 539 € | 112 | mois 16 | non atteint |
+| T-R-org | Export Gmail (Takeout), relevés seulement, bouche-à-oreille | 4 261 € | 1 188 € | 4 635 € | **-813 €** | 1 623 € | 104 | mois 17 | non atteint |
+| G-R-org | Connexion Gmail pour tous, relevés seulement, bouche-à-oreille | 6 237 € | 1 782 € | 6 953 € | **-1 066 €** | 2 933 € | 156 | mois 15 | non atteint |
+| O>G-R-org | Outlook pour tous et export Gmail, puis connexion Gmail pour tous au 10e mois, relevés seulement, bouche-à-oreille | 6 241 € | 1 611 € | 6 290 € | **-1 562 €** | 2 352 € | 151 | mois 15 | non atteint |
+| R7-lent | Central avec une croissance lente, 4 % par mois | 4 232 € | 799 € | 3 201 € | **-1 829 €** | 1 865 € | 55 | mois 22 | non atteint |
+| R1-prudent | Prudent (test de résistance) : Premium mensuel et annuel, conversion 3 %, croissance 6 % par mois | 4 238 € | 530 € | 2 107 € | **-2 661 €** | 2 661 € | 43 | non atteint | non atteint |
+| R4-gratuit-affil | Gratuit pour tous, payé par l'affiliation (aucun Premium) | 4 263 € | 271 € | 1 174 € | **-3 360 €** | 3 360 € | 0 | non atteint | non atteint |
+| R3-sans-IA | Central sans IA : même offre, tout le travail fait par des personnes | 15 741 € | 1 431 € | 5 737 € | **-11 435 €** | 11 435 € | 123 | non atteint | non atteint |
+| G-R-pub | Connexion Gmail pour tous, relevés seulement, publicité payée | 30 564 € | 3 563 € | 13 906 € | **-20 221 €** | 20 221 € | 313 | non atteint | non atteint |
+| O-R-pub | Outlook pour tous, export pour Gmail, relevés seulement, publicité payée | 27 683 € | 2 554 € | 9 966 € | **-20 271 €** | 20 271 € | 224 | non atteint | non atteint |
+| T-R-pub | Export Gmail (Takeout), relevés seulement, publicité payée | 27 483 € | 2 375 € | 9 271 € | **-20 588 €** | 20 588 € | 208 | non atteint | non atteint |
+| R11-powens-tot | Sobre, mais contrat Powens signé dès le lancement | 26 609 € | 1 632 € | 6 534 € | **-21 708 €** | 21 708 € | 147 | non atteint | non atteint |
+| R10-banque-tot | Sobre, mais contrat Enable Banking signé dès le lancement | 30 389 € | 1 632 € | 6 534 € | **-25 488 €** | 25 488 € | 147 | non atteint | non atteint |
+| O-T-org | Outlook pour tous, export pour Gmail, banque directe pour tous, bouche-à-oreille | 33 462 € | 2 362 € | 9 212 € | **-26 612 €** | 26 612 € | 213 | non atteint | non atteint |
+| T-T-org | Export Gmail (Takeout), banque directe pour tous, bouche-à-oreille | 33 402 € | 2 258 € | 8 806 € | **-26 854 €** | 26 854 € | 203 | non atteint | non atteint |
+| G-T-org | Connexion Gmail pour tous, banque directe pour tous, bouche-à-oreille | 35 697 € | 2 953 € | 11 516 € | **-27 134 €** | 27 134 € | 266 | non atteint | non atteint |
+| O-P-org | Outlook pour tous, export pour Gmail, banque directe en premium, bouche-à-oreille | 32 995 € | 1 494 € | 5 826 € | **-28 664 €** | 28 664 € | 134 | non atteint | non atteint |
+| T-P-org | Export Gmail (Takeout), banque directe en premium, bouche-à-oreille | 32 990 € | 1 390 € | 5 419 € | **-28 960 €** | 28 960 € | 125 | non atteint | non atteint |
+| G-P-org | Connexion Gmail pour tous, banque directe en premium, bouche-à-oreille | 35 025 € | 2 084 € | 8 129 € | **-28 981 €** | 28 981 € | 188 | non atteint | non atteint |
+| O>G-P-org | Outlook pour tous et export Gmail, puis connexion Gmail pour tous au 10e mois, banque directe en premium, bouche-à-oreille | 35 027 € | 1 883 € | 7 344 € | **-29 566 €** | 29 566 € | 182 | non atteint | non atteint |
+| O-T-pub | Outlook pour tous, export pour Gmail, banque directe pour tous, publicité payée | 58 403 € | 4 725 € | 18 425 € | **-44 703 €** | 44 703 € | 425 | non atteint | non atteint |
+| T-T-pub | Export Gmail (Takeout), banque directe pour tous, publicité payée | 58 084 € | 4 516 € | 17 612 € | **-44 988 €** | 44 988 € | 406 | non atteint | non atteint |
+| G-T-pub | Connexion Gmail pour tous, banque directe pour tous, publicité payée | 62 552 € | 5 906 € | 23 031 € | **-45 427 €** | 45 427 € | 532 | non atteint | non atteint |
+| G-P-pub | Connexion Gmail pour tous, banque directe en premium, publicité payée | 59 385 € | 4 169 € | 16 257 € | **-47 297 €** | 47 297 € | 375 | non atteint | non atteint |
+| O-P-pub | Outlook pour tous, export pour Gmail, banque directe en premium, publicité payée | 56 461 € | 2 988 € | 11 651 € | **-47 797 €** | 47 797 € | 269 | non atteint | non atteint |
+| T-P-pub | Export Gmail (Takeout), banque directe en premium, publicité payée | 56 309 € | 2 779 € | 10 838 € | **-48 250 €** | 48 250 € | 250 | non atteint | non atteint |
 
 **Lecture** : la publicité payée fait perdre de l'argent dans tous les cas ; la banque directe signée dès le lancement (combinaisons P et T) coûte la licence Enable Banking chaque mois et fait perdre de l'argent sur 24 mois ; les meilleurs résultats viennent du bouche-à-oreille, d'une offre qui ne dépend pas du seul Premium mensuel, et de l'IA pour le travail répétitif.
 
@@ -346,26 +391,26 @@ Chaque scénario combine **la boîte mail** (Export Gmail (Takeout) ; Connexion 
 | Code | Scénario | Dépenses 24 mois | Ce que ça permet |
 | --- | --- | ---: | --- |
 | A0 | Gratuit, export Gmail, 450 testeurs au plus | 0 € | 450 testeurs actifs au plus ; Gmail par export Takeout (0 €), connexion Gmail pour 100 testeurs |
-| A-Gmail | Gratuit, connexion Gmail pour tous, 450 testeurs au plus | 1 424 € | La connexion Gmail en lecture seule ouverte à tous, 450 testeurs au plus ; validation Google et audit CASA payants |
+| A-Gmail | Gratuit, connexion Gmail pour tous, 450 testeurs au plus | 1 732 € | La connexion Gmail en lecture seule ouverte à tous, 450 testeurs au plus ; validation Google et audit CASA payants |
 | A-Outlook | Gratuit, connexion Outlook pour tous et export pour Gmail, 450 testeurs au plus | 0 € | Comme A0, plus la connexion Outlook ouverte à tous (gratuite, sans plafond trouvé) |
-| A-Gmail+ | Gratuit, connexion Gmail pour tous, sans plafond | 2 562 € | Comme A-Gmail, sans plafond de testeurs : Vercel Pro, et des heures d'aide payées au-delà des vôtres |
+| A-Gmail+ | Gratuit, connexion Gmail pour tous, sans plafond | 2 922 € | Comme A-Gmail, sans plafond de testeurs : Vercel Pro, et des heures d'aide payées au-delà des vôtres |
 
 ## 9. Les seuils où chaque dépense se rembourse
 
-Nombre d'abonnés Premium à 4,99 € (sans TVA due, cotisations déduites) pour couvrir chaque dépense.
+Nombre d'abonnés Premium à 4,99 € (sans TVA due, cotisations déduites) pour couvrir chaque dépense. Les coûts des outils étrangers sont indiqués hors TVA non récupérable et hors frais de change : ces deux frais s'y ajoutent (§ 1 bis).
 
 | Dépense | Coût par mois | Abonnés Premium pour la couvrir | Quand la déclencher |
 | --- | ---: | ---: | --- |
 | Vercel Pro | 18 € | 6 | Au premier euro encaissé (obligatoire), ou au-delà de 450 testeurs actifs |
-| Assistant de code et de rédaction | 110 € | 31 | Quand il économise plus d'heures payées qu'il ne coûte |
-| Connexion Gmail pour tous (audit CASA annuel) | 58 € | 17 | Quand la connexion Gmail apporte au moins ce nombre d'abonnés en plus que l'export |
-| Expert-comptable (société) | 120 € | 41 | Au passage en société (au-delà de 83 600 € de chiffre d'affaires) |
+| Assistant de code et de rédaction | 110 € | 34 | Quand il économise plus d'heures payées qu'il ne coûte |
+| Connexion Gmail pour tous (audit CASA annuel) | 58 € | 18 | Quand la connexion Gmail apporte au moins ce nombre d'abonnés en plus que l'export |
+| Expert-comptable (société) | 120 € | 45 | Au passage en société (au-delà de 83 600 € de chiffre d'affaires) |
 | Turso Developer | 5 € | 2 | Au-delà de 1 250 actifs |
 | Resend Pro | 18 € | 6 | Au-delà de 3 000 e-mails par mois |
-| Un salarié à temps plein | 2 600 € | 881 | Quand plus de 74 heures payées par mois sont nécessaires |
-| Licence Enable Banking, 1re année | 900 € | 250 (305 avec TVA) | Mais seuls les abonnés en plus grâce à la banque la paient : voir § 10 bis |
-| Licence Enable Banking, 2e année | 1 200 € | 333 (407 avec TVA) | Mais seuls les abonnés en plus grâce à la banque la paient : voir § 10 bis |
-| Licence Enable Banking, 3e année et après | 1 500 € | 416 (509 avec TVA) | Mais seuls les abonnés en plus grâce à la banque la paient : voir § 10 bis |
+| Un salarié à temps plein | 2 600 € | 970 | Quand plus de 74 heures payées par mois sont nécessaires |
+| Licence Enable Banking, 1re année | 900 € | 271 (336 avec TVA) | Mais seuls les abonnés en plus grâce à la banque la paient : voir § 10 bis |
+| Licence Enable Banking, 2e année | 1 200 € | 362 (448 avec TVA) | Mais seuls les abonnés en plus grâce à la banque la paient : voir § 10 bis |
+| Licence Enable Banking, 3e année et après | 1 500 € | 452 (560 avec TVA) | Mais seuls les abonnés en plus grâce à la banque la paient : voir § 10 bis |
 
 ## 10. Laisser tous les utilisateurs se connecter à Gmail en lecture seule
 
@@ -380,13 +425,13 @@ Comparaison, relevés seulement et bouche-à-oreille :
 
 |  | Export Takeout (T-R-org) | Outlook pour tous (O-R-org) | Gmail pour tous dès le départ (G-R-org) | Outlook, puis Gmail au 10e mois (O>G-R-org) |
 | --- | ---: | ---: | ---: | ---: |
-| Dépenses 24 mois | 3 234 € | 3 238 € | 4 783 € | 4 771 € |
-| Résultat 24 mois | 500 € | 776 € | 819 € | 295 € |
-| Trésorerie à avancer | 868 € | 813 € | 1 833 € | 1 492 € |
+| Dépenses 24 mois | 4 261 € | 4 266 € | 6 237 € | 6 241 € |
+| Résultat 24 mois | -813 € | -560 € | -1 066 € | -1 562 € |
+| Trésorerie à avancer | 1 623 € | 1 539 € | 2 933 € | 2 352 € |
 | Premium au mois 24 | 104 | 112 | 156 | 151 |
-| Remboursé au | mois 23 | mois 22 | mois 23 | mois 22 |
+| Remboursé au | non atteint | non atteint | non atteint | non atteint |
 
-Tout dépend de l'hypothèse « activation en plus avec la connexion Gmail en lecture seule » (30 points contre 10 pour l'export) : **mesurez-la pendant la bêta** avec les 100 places de test Gmail. Si l'écart réel apporte moins de 17 abonnés, l'export suffit.
+Tout dépend de l'hypothèse « activation en plus avec la connexion Gmail en lecture seule » (30 points contre 10 pour l'export) : **mesurez-la pendant la bêta** avec les 100 places de test Gmail. Si l'écart réel apporte moins de 18 abonnés, l'export suffit.
 
 ## 10 bis. La connexion bancaire directe (Enable Banking)
 
@@ -411,16 +456,16 @@ Enable Banking facture des **comptes**, Powens des **utilisateurs** : avec 1,3 c
 | 3 000 | 1 950 € | 1 950 € | 1 950 € | 2 700 € |
 | 10 000 | 4 900 € | 4 900 € | 4 900 € | 9 000 € |
 
-**Quand signer.** La licence est un coût fixe, mais elle ne se paie pas par tous les abonnés : ils paieraient de toute façon avec les relevés importés. Elle se paie par les abonnés **en plus** que la connexion directe apporte (hypothèse : +1 point de conversion, à mesurer). Il faut donc environ licence × 5 ÷ (1 × marge d'un abonné) abonnés Premium : environ 1 525 pour les 900 € de Powens, 2 542 pour la licence de 1 500 € d'Enable Banking (TVA due). Le modèle signe à **1 500 abonnés avec Powens** et **2 500 avec Enable Banking** (réglables). Écart de résultat d'un mois type par rapport à « sans banque directe », plan R9-sobre, en régime stable :
+**Quand signer.** La licence est un coût fixe, mais elle ne se paie pas par tous les abonnés : ils paieraient de toute façon avec les relevés importés. Elle se paie par les abonnés **en plus** que la connexion directe apporte (hypothèse : +1 point de conversion, à mesurer). Il faut donc environ licence × 5 ÷ (1 × marge d'un abonné) abonnés Premium : environ 1 678 pour les 900 € de Powens, 2 797 pour la licence de 1 500 € d'Enable Banking (TVA due). Le modèle signe à **1 700 abonnés avec Powens** et **2 800 avec Enable Banking** (réglables). Écart de résultat d'un mois type par rapport à « sans banque directe », plan R9-sobre, en régime stable :
 
 | Actifs | 2 000 | 5 000 | 10 000 | 20 000 | 50 000 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Résultat sans banque directe | 1 435 € | 2 768 € | 5 598 € | 11 980 € | 31 215 € |
+| Résultat sans banque directe | 1 253 € | 2 407 € | 5 200 € | 11 254 € | 29 515 € |
 | Utilisateurs connectés | 354 | 885 | 1 769 | 3 538 | 8 846 |
-| Écart avec Enable Banking | **-1 273 €** | **-1 033 €** | **-222 €** | **80 €** | **1 171 €** |
-| Écart avec Powens | **-673 €** | **-433 €** | **-291 €** | **-583 €** | **-1 462 €** |
+| Écart avec Enable Banking | **-1 680 €** | **-1 147 €** | **-319 €** | **-86 €** | **803 €** |
+| Écart avec Powens | **-924 €** | **-517 €** | **-391 €** | **-783 €** | **-1 962 €** |
 
-**Lecture** : Powens coûte moins cher tant que les utilisateurs connectés restent sous 1 000 (forfait fixe, sans hausse annoncée, quand Enable Banking passe à 1 200 € puis 1 500 €). Au-delà, tout dépend de son prix par utilisateur en plus, **la question à poser par écrit** : à 0,90 €, Enable Banking redevient moins cher au-delà d'environ 1 000 utilisateurs connectés la 1re année de son contrat, 1 700 à partir de la 3e. Signer dès le lancement coûte 22 170 € sur 24 mois avec Enable Banking (R10) et 19 170 € avec Powens (R11), par rapport au plan sobre. Tant que le seuil n'est pas atteint, la banque directe reste en test gratuit (comptes du propriétaire chez Enable Banking, sandbox chez Powens) et les utilisateurs importent leurs relevés.
+**Lecture** : Powens coûte moins cher tant que les utilisateurs connectés restent sous 1 000 (forfait fixe, sans hausse annoncée, quand Enable Banking passe à 1 200 € puis 1 500 €). Au-delà, tout dépend de son prix par utilisateur en plus, **la question à poser par écrit** : à 0,90 €, Enable Banking redevient moins cher au-delà d'environ 1 000 utilisateurs connectés la 1re année de son contrat, 1 700 à partir de la 3e. Signer dès le lancement coûte 28 173 € sur 24 mois avec Enable Banking (R10) et 24 393 € avec Powens (R11), par rapport au plan sobre. Tant que le seuil n'est pas atteint, la banque directe reste en test gratuit (comptes du propriétaire chez Enable Banking, sandbox chez Powens) et les utilisateurs importent leurs relevés.
 
 
 ## 11. Le masterplan recommandé
@@ -428,13 +473,13 @@ Enable Banking facture des **comptes**, Powens des **utilisateurs** : avec 1,3 c
 | Phase | Mois | Ce qu'on fait | Déclencheur pour passer à la suite | Dépense |
 | --- | --- | --- | --- | --- |
 | 0. Bêta gratuite | 1 à 2 | A-Outlook : relevés, export Gmail, Outlook pour tous, 100 places Gmail de test pour mesurer l'effet de la connexion ; vous répondez vous-même | Taux d'analyse terminée, intention de payer, 5 entretiens avec des professionnels | 0 € |
-| 1. Lancement sobre | 3 à 9 | R9-sobre : Premium mensuel et annuel, rapport unique, résiliation assistée, affiliation signalée ; un seul assistant IA ; Stripe, Vercel Pro | Seuil de rentabilité atteint (20 inscrits par mois, 43 actifs, 11 Premium) | environ 38 € par mois |
-| 2. Gmail pour tous | à partir du 10e mois, si l'effet mesuré dépasse 17 abonnés | Validation Google, audit CASA | Heures au-delà des vôtres | + 700 € par an |
-| 3. Banque directe en Premium | à 1 500 abonnés avec Powens, 2 500 avec Enable Banking | Le moins cher des deux au volume prévu : Powens sous 1 000 utilisateurs connectés, Enable Banking au-delà (selon le prix Powens au-delà du forfait, à obtenir par écrit) | | 900 € par mois chez Powens ; 900 €, 1 200 € puis 1 500 € chez Enable Banking |
+| 1. Lancement sobre | 3 à 9 | R9-sobre : Premium mensuel et annuel, rapport unique, résiliation assistée, affiliation signalée ; un seul assistant IA ; Stripe, Vercel Pro | Seuil de rentabilité atteint (27 inscrits par mois, 59 actifs, 15 Premium) | environ 49 € par mois |
+| 2. Gmail pour tous | à partir du 10e mois, si l'effet mesuré dépasse 18 abonnés | Validation Google, audit CASA | Heures au-delà des vôtres | + 700 € par an |
+| 3. Banque directe en Premium | à 1 700 abonnés avec Powens, 2 800 avec Enable Banking | Le moins cher des deux au volume prévu : Powens sous 1 000 utilisateurs connectés, Enable Banking au-delà (selon le prix Powens au-delà du forfait, à obtenir par écrit) | | 900 € par mois chez Powens ; 900 €, 1 200 € puis 1 500 € chez Enable Banking |
 | 4. Premières personnes | quand les heures dépassent 40 h par mois | Indépendant pour le support et les contenus, puis un salarié au-delà de 74 h | Licences professionnelles validées par des entretiens | 35 € de l'heure, puis 2 600 € par mois |
 | 5. Licences professionnelles | quand 3 professionnels ont dit oui | Marque blanche, 149 € par mois | | 12 h par licence |
 
-Avec les paramètres actuels, le plan R9-sobre donne sur 24 mois : dépenses 1 163 €, résultat **3 447 €**, trésorerie à avancer 21 €, 123 abonnés Premium à la fin, remboursé au mois 6.
+Avec les paramètres actuels, le plan R9-sobre donne sur 24 mois : dépenses 1 620 €, résultat **2 685 €**, trésorerie à avancer 253 €, 123 abonnés Premium à la fin, remboursé au mois 12.
 
 **Critères d'arrêt** : si la conversion reste sous 1 % des inscrits après 3 mois de lancement, ou si le coût par actif dépasse le revenu par actif, revenir à la phase gratuite et retravailler l'offre avant de dépenser plus.
 
@@ -444,28 +489,28 @@ Avec les paramètres actuels, le plan R9-sobre donne sur 24 mois : dépenses 1�
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 1 (bêta) | 50 | 22 | 0 | 0 € | 0 € | 0 € | 0 € | 0 € | 0 € | 0 € |
 | 2 (bêta) | 50 | 38 | 0 | 0 € | 0 € | 0 € | 0 € | 0 € | 0 € | 0 € |
-| 3 | 100 | 71 | 2 | 29 € | 38 € | 19 € | 0 € | 6 € | -15 € | -15 € |
-| 4 | 110 | 101 | 4 | 42 € | 38 € | 19 € | 0 € | 9 € | -5 € | -21 € |
-| 5 | 121 | 129 | 7 | 56 € | 38 € | 19 € | 0 € | 12 € | 5 € | -15 € |
-| 6 | 133 | 155 | 9 | 71 € | 39 € | 19 € | 0 € | 16 € | 16 € | 1 € |
-| 7 | 146 | 182 | 12 | 86 € | 39 € | 19 € | 0 € | 19 € | 28 € | 29 € |
-| 8 | 161 | 208 | 15 | 102 € | 39 € | 19 € | 0 € | 23 € | 41 € | 70 € |
-| 9 | 177 | 235 | 19 | 120 € | 39 € | 20 € | 0 € | 27 € | 55 € | 125 € |
-| 10 | 195 | 264 | 22 | 139 € | 39 € | 20 € | 0 € | 31 € | 69 € | 194 € |
-| 11 | 214 | 295 | 26 | 160 € | 39 € | 20 € | 0 € | 35 € | 85 € | 280 € |
-| 12 | 236 | 328 | 30 | 183 € | 39 € | 20 € | 0 € | 40 € | 103 € | 383 € |
-| 13 | 259 | 364 | 35 | 207 € | 40 € | 20 € | 0 € | 46 € | 122 € | 504 € |
-| 14 | 285 | 403 | 40 | 234 € | 40 € | 20 € | 0 € | 52 € | 142 € | 647 € |
-| 15 | 314 | 446 | 45 | 263 € | 40 € | 21 € | 0 € | 58 € | 165 € | 811 € |
-| 16 | 345 | 493 | 51 | 295 € | 40 € | 21 € | 0 € | 65 € | 189 € | 1 001 € |
-| 17 | 380 | 544 | 57 | 330 € | 41 € | 21 € | 0 € | 73 € | 216 € | 1 217 € |
-| 18 | 418 | 600 | 64 | 368 € | 41 € | 21 € | 0 € | 82 € | 245 € | 1 462 € |
-| 19 | 459 | 661 | 72 | 410 € | 52 € | 22 € | 11 € | 91 € | 267 € | 1 728 € |
-| 20 | 505 | 729 | 80 | 455 € | 65 € | 22 € | 23 € | 101 € | 289 € | 2 018 € |
-| 21 | 556 | 803 | 89 | 505 € | 79 € | 22 € | 37 € | 112 € | 314 € | 2 332 € |
-| 22 | 612 | 885 | 100 | 560 € | 95 € | 23 € | 52 € | 124 € | 341 € | 2 673 € |
-| 23 | 673 | 974 | 111 | 621 € | 112 € | 23 € | 69 € | 138 € | 371 € | 3 044 € |
-| 24 | 740 | 1 073 | 123 | 687 € | 131 € | 24 € | 87 € | 152 € | 404 € | 3 447 € |
+| 3 | 100 | 71 | 2 | 28 € | 248 € | 19 € | 0 € | 7 € | -227 € | -227 € |
+| 4 | 110 | 101 | 4 | 41 € | 49 € | 19 € | 0 € | 10 € | -18 € | -245 € |
+| 5 | 121 | 129 | 7 | 54 € | 49 € | 19 € | 0 € | 14 € | -8 € | -253 € |
+| 6 | 133 | 155 | 9 | 69 € | 49 € | 19 € | 0 € | 17 € | 2 € | -250 € |
+| 7 | 146 | 182 | 12 | 83 € | 49 € | 19 € | 0 € | 21 € | 13 € | -237 € |
+| 8 | 161 | 208 | 15 | 99 € | 49 € | 19 € | 0 € | 25 € | 25 € | -212 € |
+| 9 | 177 | 235 | 19 | 117 € | 50 € | 20 € | 0 € | 29 € | 38 € | -174 € |
+| 10 | 195 | 264 | 22 | 135 € | 50 € | 20 € | 0 € | 34 € | 52 € | -122 € |
+| 11 | 214 | 295 | 26 | 155 € | 50 € | 20 € | 0 € | 39 € | 66 € | -56 € |
+| 12 | 236 | 328 | 30 | 177 € | 50 € | 20 € | 0 € | 44 € | 83 € | 27 € |
+| 13 | 259 | 364 | 35 | 201 € | 50 € | 20 € | 0 € | 50 € | 100 € | 127 € |
+| 14 | 285 | 403 | 40 | 226 € | 51 € | 20 € | 0 € | 56 € | 119 € | 246 € |
+| 15 | 314 | 446 | 45 | 255 € | 51 € | 21 € | 0 € | 64 € | 140 € | 387 € |
+| 16 | 345 | 493 | 51 | 285 € | 51 € | 21 € | 0 € | 71 € | 163 € | 549 € |
+| 17 | 380 | 544 | 57 | 319 € | 52 € | 21 € | 0 € | 80 € | 188 € | 737 € |
+| 18 | 418 | 600 | 64 | 356 € | 52 € | 21 € | 0 € | 89 € | 215 € | 952 € |
+| 19 | 459 | 661 | 72 | 396 € | 64 € | 22 € | 11 € | 99 € | 234 € | 1 186 € |
+| 20 | 505 | 729 | 80 | 441 € | 78 € | 22 € | 23 € | 110 € | 253 € | 1 439 € |
+| 21 | 556 | 803 | 89 | 489 € | 93 € | 22 € | 37 € | 122 € | 274 € | 1 713 € |
+| 22 | 612 | 885 | 100 | 543 € | 109 € | 23 € | 52 € | 135 € | 298 € | 2 011 € |
+| 23 | 673 | 974 | 111 | 601 € | 128 € | 23 € | 69 € | 150 € | 323 € | 2 334 € |
+| 24 | 740 | 1 073 | 123 | 665 € | 148 € | 24 € | 87 € | 166 € | 351 € | 2 685 € |
 
 ---
-Généré le 2026-10-01 par `scripts/gen-modele.mjs`. Ne pas modifier à la main : modifiez `docs/model.mjs`.
+Généré le 2026-10-02 par `scripts/gen-modele.mjs`. Ne pas modifier à la main : modifiez `docs/model.mjs`.
