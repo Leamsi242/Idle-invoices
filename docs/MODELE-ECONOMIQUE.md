@@ -201,7 +201,7 @@ Ne sont pas comptés : votre propre impôt sur le revenu hors versement libérat
 
 | Paramètre | Valeur | Verdict | Source ou remarque |
 | --- | --- | --- | --- |
-| Coût d'acquisition en publicité payée | 1,5 € par inscrit | hypothèse |  |
+| Coût d'acquisition en publicité payée (par inscrit venu de la publicité) | 1,5 € par inscrit | hypothèse |  |
 | Inscriptions multipliées par la publicité | 2 × | hypothèse |  |
 
 ## 3. Les scénarios réalistes
@@ -364,10 +364,10 @@ Chaque scénario combine **la boîte mail** (Export Gmail (Takeout) ; Connexion 
 | R7-lent | Central avec une croissance lente, 4 % par mois | 4 232 € | 799 € | 3 201 € | **-1 829 €** | 1 865 € | 55 | mois 22 | non atteint |
 | R1-prudent | Prudent (test de résistance) : Premium mensuel et annuel, conversion 3 %, croissance 6 % par mois | 4 238 € | 530 € | 2 107 € | **-2 661 €** | 2 661 € | 43 | non atteint | non atteint |
 | R4-gratuit-affil | Gratuit pour tous, payé par l'affiliation (aucun Premium) | 4 263 € | 271 € | 1 174 € | **-3 360 €** | 3 360 € | 0 | non atteint | non atteint |
+| G-R-pub | Connexion Gmail pour tous, relevés seulement, publicité payée | 19 318 € | 3 563 € | 13 906 € | **-8 975 €** | 8 975 € | 313 | non atteint | non atteint |
+| O-R-pub | Outlook pour tous, export pour Gmail, relevés seulement, publicité payée | 16 437 € | 2 554 € | 9 966 € | **-9 025 €** | 9 025 € | 224 | non atteint | non atteint |
+| T-R-pub | Export Gmail (Takeout), relevés seulement, publicité payée | 16 237 € | 2 375 € | 9 271 € | **-9 342 €** | 9 342 € | 208 | non atteint | non atteint |
 | R3-sans-IA | Central sans IA : même offre, tout le travail fait par des personnes | 15 741 € | 1 431 € | 5 737 € | **-11 435 €** | 11 435 € | 123 | non atteint | non atteint |
-| G-R-pub | Connexion Gmail pour tous, relevés seulement, publicité payée | 30 564 € | 3 563 € | 13 906 € | **-20 221 €** | 20 221 € | 313 | non atteint | non atteint |
-| O-R-pub | Outlook pour tous, export pour Gmail, relevés seulement, publicité payée | 27 683 € | 2 554 € | 9 966 € | **-20 271 €** | 20 271 € | 224 | non atteint | non atteint |
-| T-R-pub | Export Gmail (Takeout), relevés seulement, publicité payée | 27 483 € | 2 375 € | 9 271 € | **-20 588 €** | 20 588 € | 208 | non atteint | non atteint |
 | R11-powens-tot | Sobre, mais contrat Powens signé dès le lancement | 26 609 € | 1 632 € | 6 534 € | **-21 708 €** | 21 708 € | 147 | non atteint | non atteint |
 | R10-banque-tot | Sobre, mais contrat Enable Banking signé dès le lancement | 30 389 € | 1 632 € | 6 534 € | **-25 488 €** | 25 488 € | 147 | non atteint | non atteint |
 | O-T-org | Outlook pour tous, export pour Gmail, banque directe pour tous, bouche-à-oreille | 33 462 € | 2 362 € | 9 212 € | **-26 612 €** | 26 612 € | 213 | non atteint | non atteint |
@@ -377,12 +377,12 @@ Chaque scénario combine **la boîte mail** (Export Gmail (Takeout) ; Connexion 
 | T-P-org | Export Gmail (Takeout), banque directe en premium, bouche-à-oreille | 32 990 € | 1 390 € | 5 419 € | **-28 960 €** | 28 960 € | 125 | non atteint | non atteint |
 | G-P-org | Connexion Gmail pour tous, banque directe en premium, bouche-à-oreille | 35 025 € | 2 084 € | 8 129 € | **-28 981 €** | 28 981 € | 188 | non atteint | non atteint |
 | O>G-P-org | Outlook pour tous et export Gmail, puis connexion Gmail pour tous au 10e mois, banque directe en premium, bouche-à-oreille | 35 027 € | 1 883 € | 7 344 € | **-29 566 €** | 29 566 € | 182 | non atteint | non atteint |
-| O-T-pub | Outlook pour tous, export pour Gmail, banque directe pour tous, publicité payée | 58 403 € | 4 725 € | 18 425 € | **-44 703 €** | 44 703 € | 425 | non atteint | non atteint |
-| T-T-pub | Export Gmail (Takeout), banque directe pour tous, publicité payée | 58 084 € | 4 516 € | 17 612 € | **-44 988 €** | 44 988 € | 406 | non atteint | non atteint |
-| G-T-pub | Connexion Gmail pour tous, banque directe pour tous, publicité payée | 62 552 € | 5 906 € | 23 031 € | **-45 427 €** | 45 427 € | 532 | non atteint | non atteint |
-| G-P-pub | Connexion Gmail pour tous, banque directe en premium, publicité payée | 59 385 € | 4 169 € | 16 257 € | **-47 297 €** | 47 297 € | 375 | non atteint | non atteint |
-| O-P-pub | Outlook pour tous, export pour Gmail, banque directe en premium, publicité payée | 56 461 € | 2 988 € | 11 651 € | **-47 797 €** | 47 797 € | 269 | non atteint | non atteint |
-| T-P-pub | Export Gmail (Takeout), banque directe en premium, publicité payée | 56 309 € | 2 779 € | 10 838 € | **-48 250 €** | 48 250 € | 250 | non atteint | non atteint |
+| O-T-pub | Outlook pour tous, export pour Gmail, banque directe pour tous, publicité payée | 47 157 € | 4 725 € | 18 425 € | **-33 457 €** | 33 457 € | 425 | non atteint | non atteint |
+| T-T-pub | Export Gmail (Takeout), banque directe pour tous, publicité payée | 46 838 € | 4 516 € | 17 612 € | **-33 742 €** | 33 742 € | 406 | non atteint | non atteint |
+| G-T-pub | Connexion Gmail pour tous, banque directe pour tous, publicité payée | 51 306 € | 5 906 € | 23 031 € | **-34 181 €** | 34 181 € | 532 | non atteint | non atteint |
+| G-P-pub | Connexion Gmail pour tous, banque directe en premium, publicité payée | 48 139 € | 4 169 € | 16 257 € | **-36 051 €** | 36 051 € | 375 | non atteint | non atteint |
+| O-P-pub | Outlook pour tous, export pour Gmail, banque directe en premium, publicité payée | 45 215 € | 2 988 € | 11 651 € | **-36 551 €** | 36 551 € | 269 | non atteint | non atteint |
+| T-P-pub | Export Gmail (Takeout), banque directe en premium, publicité payée | 45 063 € | 2 779 € | 10 838 € | **-37 004 €** | 37 004 € | 250 | non atteint | non atteint |
 
 **Lecture** : la publicité payée fait perdre de l'argent dans tous les cas ; la banque directe signée dès le lancement (combinaisons P et T) coûte la licence Enable Banking chaque mois et fait perdre de l'argent sur 24 mois ; les meilleurs résultats viennent du bouche-à-oreille, d'une offre qui ne dépend pas du seul Premium mensuel, et de l'IA pour le travail répétitif.
 

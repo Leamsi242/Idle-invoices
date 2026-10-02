@@ -79,7 +79,7 @@ export const PARAMS = {
   pwTrigger: { v: 1700, unit: "abonnés Premium", label: "Abonnés Premium à partir desquels signer avec Powens (scénarios « au seuil »)", note: "forfait × conversion ÷ (conversion en plus × marge d'un abonné), soit environ 1 700 pour 900 € avec la TVA due", verdict: "calculé, à choisir" },
   convBank: { v: 1, unit: "points", label: "Conversion en Premium en plus quand la banque directe y est incluse", verdict: "hypothèse à mesurer" },
   bankShare: { v: 60, unit: "%", label: "Part des concernés qui connectent leur banque", verdict: "hypothèse" },
-  cac: { v: 1.5, unit: "€ par inscrit", label: "Coût d'acquisition en publicité payée", verdict: "hypothèse" },
+  cac: { v: 1.5, unit: "€ par inscrit", label: "Coût d'acquisition en publicité payée (par inscrit venu de la publicité)", verdict: "hypothèse" },
   paidBoost: { v: 2, unit: "×", label: "Inscriptions multipliées par la publicité", verdict: "hypothèse" },
   // Monetization beyond the monthly Premium (hypotheses to test, one at a time, after launch).
   annualPrice: { v: 39.99, unit: "€ TTC par an", label: "Premium annuel", note: "4 mois offerts (remise de 33 %) par rapport à 12 × 4,99 € = 59,88 € ; 49,99 € ferait 2 mois offerts (16,5 %)", verdict: "hypothèse, remise à choisir" },
@@ -283,7 +283,8 @@ export function project(p0, s) {
     const casa = s.mail === "gmail" && m >= casaMonth && (m - casaMonth) % 12 === 0 ? p.casa : 0;
     const connected = !bankOn ? 0 : s.bank === "all" ? active * p.bankShare / 100 : paid * p.bankShare / 100;
     const bank = bankOn ? bankCost(p, s.vendor ?? "enable", connected, m - bankFrom + 1) : 0;
-    const acquisition = s.acquisition === "paid" && !beta ? signups * p.cac : 0;
+    // Advertising pays for the sign-ups it brings on top of word of mouth, not for every sign-up.
+    const acquisition = s.acquisition === "paid" && !beta ? (signups - base) * p.cac : 0;
     const admin = (company ? p.accountant + p.bankFeeCompany : monetized ? p.bankFeeMicro : 0) + (monetized ? p.rcPro : 0);
     // One-off costs: the trademark at launch, the company's creation when the micro-entreprise ends.
     const oneOff = (monetized && m === p.betaMonths + 1 ? p.trademark : 0) + (company && m === companyFrom ? p.companySetup : 0);
