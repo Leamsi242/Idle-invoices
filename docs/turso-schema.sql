@@ -121,7 +121,11 @@ CREATE TABLE "Account" (
     "sessionId" TEXT NOT NULL,
     "plan" TEXT NOT NULL DEFAULT 'free',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "lastLoginAt" DATETIME
+    "lastLoginAt" DATETIME,
+    "stripeCustomerId" TEXT,
+    "subscriptionStatus" TEXT,
+    "premiumUntil" DATETIME,
+    "billingEventAt" INTEGER
 );
 
 -- CreateTable
@@ -164,6 +168,9 @@ CREATE UNIQUE INDEX "Account_emailHash_key" ON "Account"("emailHash");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Account_sessionId_key" ON "Account"("sessionId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Account_stripeCustomerId_key" ON "Account"("stripeCustomerId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "LoginToken_tokenHash_key" ON "LoginToken"("tokenHash");

@@ -21,6 +21,7 @@ export default async function Privacy() {
           <li>The names of the files you uploaded and of the banks and mailboxes you connected, so you know what was read.</li>
           <li>Your answers to &quot;How do you pay?&quot; (which banks, cards, payment apps, stores and mailboxes you use, never any number or password), encrypted, to build your checklist.</li>
           <li>If you open an account: your e-mail address, encrypted, to send you sign-in links. There is no password. The account and its address are deleted when you delete them, or after a year without signing in.</li>
+          <li>If you pay for Premium: your Stripe customer number and the state of your subscription (active, end of the period paid). Your card is typed on Stripe&apos;s page and never reaches us; Stripe keeps the invoices, as the law requires.</li>
         </ul>
       </section>
 
@@ -113,6 +114,7 @@ function PrivacyFr() {
           <li>Les noms des fichiers envoyés et des banques et boîtes mail connectées, pour que vous sachiez ce qui a été lu.</li>
           <li>Vos réponses à « Comment payez-vous ? » (quelles banques, cartes, applications de paiement, magasins et boîtes mail, jamais un numéro ni un mot de passe), chiffrées, pour construire votre liste.</li>
           <li>Si vous ouvrez un compte : votre adresse e-mail, chiffrée, pour vous envoyer les liens de connexion. Il n&apos;y a pas de mot de passe. Le compte et l&apos;adresse sont supprimés quand vous les supprimez, ou après un an sans connexion.</li>
+          <li>Si vous payez le Premium : votre numéro de client Stripe et l&apos;état de votre abonnement (actif, fin de la période payée). Votre carte se saisit sur la page de Stripe et ne nous parvient jamais ; Stripe conserve les factures, comme la loi l&apos;exige.</li>
         </ul>
       </section>
 

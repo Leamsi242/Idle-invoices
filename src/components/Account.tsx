@@ -44,14 +44,78 @@ export function SignInForm() {
   );
 }
 
+/** The choice of period, then Stripe's payment page. */
+export function PremiumCheckout({ offers }: { offers: { period: "monthly" | "yearly"; label: string }[] }) {
+  const { locale } = useI18n();
+  const t = ACCOUNT_DICTS[locale];
+  const [period, setPeriod] = useState(offers[0].period);
+  const [state, setState] = useState<"idle" | "busy" | "error">("idle");
+  return (
+    <div className="space-y-3">
+      <div className="grid gap-2 sm:grid-cols-2" role="radiogroup">
+        {offers.map((o) => (
+          <label key={o.period} className={`flex cursor-pointer items-center gap-2 rounded-2xl border p-3 text-sm ${period === o.period ? "border-brand bg-brand-soft" : "border-line"}`}>
+            <input type="radio" name="period" checked={period === o.period} onChange={() => setPeriod(o.period)} />
+            <span>
+              <span className="block font-semibold text-ink">{t.choose[o.period]}</span>
+              <span className="text-ink-2">{o.label}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+      <button
+        className={primary}
+        disabled={state === "busy"}
+        onClick={async () => {
+          setState("busy");
+          const res = await fetch("/api/billing/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ period }) }).catch(() => null);
+          const data = (await res?.json().catch(() => null)) as { url?: string } | null;
+          if (res?.ok && data?.url) return window.location.assign(data.url);
+          setState("error");
+        }}
+      >
+        {state === "busy" ? t.redirecting : t.pay}
+      </button>
+      <p className="text-xs text-muted">{t.securePay}</p>
+      {state === "error" && <p role="alert" className="rounded-2xl bg-leak-soft p-3 text-sm text-leak">{t.billingError}</p>}
+    </div>
+  );
+}
+
+/** Stripe's customer portal: card, invoices, cancellation. */
+export function ManageBilling() {
+  const { locale } = useI18n();
+  const t = ACCOUNT_DICTS[locale];
+  const [state, setState] = useState<"idle" | "busy" | "error">("idle");
+  return (
+    <div className="space-y-2">
+      <button
+        className="rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-ink-2 hover:border-brand hover:text-brand disabled:opacity-50"
+        disabled={state === "busy"}
+        onClick={async () => {
+          setState("busy");
+          const res = await fetch("/api/billing/portal", { method: "POST" }).catch(() => null);
+          const data = (await res?.json().catch(() => null)) as { url?: string } | null;
+          if (res?.ok && data?.url) return window.location.assign(data.url);
+          setState("error");
+        }}
+      >
+        {state === "busy" ? t.redirecting : t.manage}
+      </button>
+      {state === "error" && <p role="alert" className="rounded-2xl bg-leak-soft p-3 text-sm text-leak">{t.billingError}</p>}
+    </div>
+  );
+}
+
 /** Sign out, or delete the account with its data. */
 export function AccountActions() {
   const { locale } = useI18n();
   const t = ACCOUNT_DICTS[locale];
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [error, setError] = useState(false);
   return (
-    <div className="space-y-3 border-t border-line pt-4">
+    <div className="space-y-3">
       <button
         className="rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-ink-2 hover:border-brand hover:text-brand disabled:opacity-50"
         disabled={pending}
@@ -70,7 +134,8 @@ export function AccountActions() {
         onClick={() => {
           if (!confirm(t.deleteConfirm)) return;
           start(async () => {
-            await fetch("/api/auth/account", { method: "DELETE" });
+            const res = await fetch("/api/auth/account", { method: "DELETE" }).catch(() => null);
+            if (!res?.ok) return setError(true);
             router.push("/");
             router.refresh();
           });
@@ -78,6 +143,7 @@ export function AccountActions() {
       >
         {t.deleteAccount}
       </button>
+      {error && <p role="alert" className="rounded-2xl bg-leak-soft p-3 text-sm text-leak">{t.deleteBillingError}</p>}
     </div>
   );
 }

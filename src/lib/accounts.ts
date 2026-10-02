@@ -4,6 +4,7 @@ import { decrypt, encrypt, lookupHash } from "./crypto";
 import { emailConfigured } from "./notify";
 import { deleteEverything, sessionHasData } from "./store";
 import { ACCOUNT_DICTS } from "./i18n-account";
+import { cancelAllSubscriptions } from "./billing";
 import type { Locale } from "./i18n";
 
 /**
@@ -126,28 +127,54 @@ export async function verifyLogin(token: string, currentSession: string | null, 
   return { sessionId: account.sessionId, outcome: result };
 }
 
-export interface AccountView { email: string; plan: string; createdAt: string }
+export interface AccountView {
+  id: string;
+  email: string;
+  plan: string;
+  createdAt: string;
+  stripeCustomerId: string | null;
+  subscriptionStatus: string | null;
+  premiumUntil: string | null;
+}
 
 export async function getAccount(sessionId: string | null): Promise<AccountView | null> {
   if (!sessionId) return null;
   const a = await prisma.account.findUnique({ where: { sessionId } });
-  return a ? { email: decrypt(a.email), plan: a.plan, createdAt: a.createdAt.toISOString().slice(0, 10) } : null;
+  return a
+    ? {
+        id: a.id,
+        email: decrypt(a.email),
+        plan: a.plan,
+        createdAt: a.createdAt.toISOString().slice(0, 10),
+        stripeCustomerId: a.stripeCustomerId,
+        subscriptionStatus: a.subscriptionStatus,
+        premiumUntil: a.premiumUntil?.toISOString().slice(0, 10) ?? null,
+      }
+    : null;
 }
 
-/** The account, its pending links and every row of its session. */
-export async function deleteAccount(sessionId: string) {
+/**
+ * The account, its pending links and every row of its session. A paying account's subscription
+ * is stopped at Stripe first: if Stripe cannot be reached, nothing is deleted (the error goes up),
+ * so nobody keeps paying for an account that is gone.
+ */
+export async function deleteAccount(sessionId: string, f: typeof fetch = fetch) {
   const a = await prisma.account.findUnique({ where: { sessionId } });
+  if (a?.stripeCustomerId) await cancelAllSubscriptions(a.stripeCustomerId, f);
   await deleteEverything(sessionId);
   if (!a) return;
   await prisma.loginToken.deleteMany({ where: { emailHash: a.emailHash } });
   await prisma.account.delete({ where: { id: a.id } });
 }
 
-/** Spent and expired links, and accounts nobody used for a year. */
+/** Spent and expired links, and accounts nobody used for a year (never one still paying). */
 export async function purgeAccounts(now = new Date()) {
   await prisma.loginToken.deleteMany({ where: { OR: [{ expiresAt: { lt: now } }, { usedAt: { not: null } }] } });
   const idle = new Date(now.getTime() - ACCOUNT_IDLE_DAYS * 86_400_000);
-  const stale = await prisma.account.findMany({ where: { OR: [{ lastLoginAt: { lt: idle } }, { lastLoginAt: null, createdAt: { lt: idle } }] }, select: { sessionId: true } });
+  const stale = await prisma.account.findMany({
+    where: { plan: "free", OR: [{ lastLoginAt: { lt: idle } }, { lastLoginAt: null, createdAt: { lt: idle } }] },
+    select: { sessionId: true },
+  });
   for (const { sessionId } of stale) await deleteAccount(sessionId);
   return stale.length;
 }

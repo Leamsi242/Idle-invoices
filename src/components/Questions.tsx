@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCOUNT_DICTS } from "@/lib/i18n-account";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { Usage } from "@/lib/types";
@@ -34,7 +35,7 @@ export function LabelQuestion({ labelKey, amount }: { labelKey: string; amount: 
 }
 
 export function DeleteEverythingButton({ compact = false, label }: { compact?: boolean; label?: string }) {
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
   const q = m.questions;
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -49,7 +50,9 @@ export function DeleteEverythingButton({ compact = false, label }: { compact?: b
       onClick={() => {
         if (!confirm(q.deleteConfirm)) return;
         start(async () => {
-          await fetch("/api/data", { method: "DELETE" });
+          const res = await fetch("/api/data", { method: "DELETE" }).catch(() => null);
+          // A Premium subscription that Stripe could not stop: nothing was deleted.
+          if (!res?.ok) return alert(ACCOUNT_DICTS[locale].deleteBillingError);
           router.push("/");
           router.refresh();
         });

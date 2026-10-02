@@ -7,7 +7,13 @@ import { revokeScanInProgress } from "@/lib/gmail-scan-cookie";
 export async function DELETE() {
   const sessionId = await getSessionId();
   await revokeScanInProgress();
-  if (sessionId) await deleteAccount(sessionId);
+  try {
+    if (sessionId) await deleteAccount(sessionId);
+  } catch (e) {
+    // A Premium subscription could not be stopped at Stripe: nothing was deleted, so the user can retry.
+    console.error("Delete refused, subscription still running:", e);
+    return NextResponse.json({ error: "billing" }, { status: 502 });
+  }
   await clearSession();
   return NextResponse.json({ ok: true });
 }

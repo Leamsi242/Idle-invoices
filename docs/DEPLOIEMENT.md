@@ -25,7 +25,7 @@ Gardez-les dans un gestionnaire de mots de passe. Perdre `DATA_ENCRYPTION_KEY` r
 
 Vérification : la console Turso liste les tables `Upload`, `Transaction`, `Subscription`, `Match`, `Descriptor`, `TrackedTrial`, `Profile`, `BankLink`, `Alert`, `Account` et `LoginToken`.
 
-Base déjà créée avant l'arrivée des comptes : exécutez seulement [`docs/migrations/2026-10-accounts.sql`](migrations/2026-10-accounts.sql) dans la même console (deux tables et quatre index, rien n'est modifié ailleurs).
+Base déjà créée avant l'arrivée des comptes : exécutez seulement [`docs/migrations/2026-10-accounts.sql`](migrations/2026-10-accounts.sql), puis [`docs/migrations/2026-10-billing.sql`](migrations/2026-10-billing.sql), dans la même console (deux tables, quatre colonnes et cinq index, rien n'est modifié ailleurs).
 
 ## 3. Déployer sur Vercel
 
@@ -117,6 +117,39 @@ Vérification : `/api/health` affiche `"gmail": true`, et le bouton Gmail appara
 - **Alertes par e-mail** (surveillance) : créez un compte sur [resend.com](https://resend.com), vérifiez votre domaine d'envoi, puis ajoutez `RESEND_API_KEY`, `ALERT_FROM` (par exemple `Subscription Detective <alertes@votre-domaine.fr>`) et `APP_URL` (`https://<domaine>`). Sans cela, les alertes apparaissent seulement en haut du rapport.
 - **Comptes** (connexion par lien e-mail, page `/account`) : mêmes réglages `RESEND_API_KEY`, `ALERT_FROM` et `APP_URL`. En production, `APP_URL` est obligatoire : le lien envoyé pointe toujours vers cette adresse, jamais vers celle de la requête. Sans ces réglages, la page indique que la connexion n'est pas encore disponible ; l'application reste utilisable sans compte.
 - **Banque de démonstration en ligne** : `BANK_DEMO=1` affiche « Demo bank (test data) » dans la liste des banques. Laissez-la vide pour vos testeurs.
+
+## 6 bis. Paiements Premium avec Stripe (mode test, gratuit)
+
+En mode test, Stripe ne prélève rien et ne facture rien : les cartes sont fictives. L'application refuse d'elle-même une clé réelle (`sk_live_…`) tant que `BILLING_LIVE=1` n'est pas posé. Les libellés du tableau de bord Stripe ci-dessous peuvent avoir un peu changé : je ne peux pas consulter Stripe depuis mon environnement.
+
+Prérequis : les **comptes** doivent marcher en ligne (Resend, section 6), car un paiement Premium est toujours rattaché à un compte.
+
+1. **Créer le compte Stripe** sur [stripe.com](https://stripe.com) (e-mail et mot de passe suffisent pour le mode test ; pas besoin de SIRET ni d'IBAN à ce stade). Vérifiez en haut du tableau de bord que vous êtes en **mode test** ou dans un **sandbox**.
+2. **Créer le produit** : Catalogue de produits, Ajouter un produit, nom « Subscription Detective Premium ».
+   - prix 1 : 4,99 EUR, récurrent, mensuel ;
+   - prix 2 : 39,99 EUR, récurrent, annuel.
+   Copiez l'identifiant de chaque prix (il commence par `price_`).
+3. **Activer le portail client** : Paramètres, Billing, Portail client. Autorisez l'annulation et la mise à jour de la carte, puis **enregistrez** (sans cet enregistrement, le bouton « Gérer mon abonnement » échoue en mode test).
+4. **Déclarer le webhook** : Développeurs (ou Workbench), Webhooks, Ajouter une destination.
+   - adresse : `https://<domaine>/api/billing/webhook` ;
+   - événements : `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`.
+   Copiez le **secret de signature** (il commence par `whsec_`).
+5. **Copier la clé secrète** : Développeurs, Clés API, clé secrète de test (`sk_test_…`). La clé publiable (`pk_test_…`) n'est pas utile : le paiement se fait sur la page de Stripe.
+6. **Dans Vercel** (Settings, Environment Variables), ajoutez `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_MONTHLY` et `STRIPE_PRICE_YEARLY`, puis **redéployez** (Deployments, les trois points, Redeploy) : une variable ajoutée ne s'applique qu'au déploiement suivant.
+7. **Tester** sur `https://<domaine>/account` : connectez-vous, choisissez Mensuel ou Annuel, « Continuer vers le paiement ».
+   - carte qui passe : `4242 4242 4242 4242`, une date future, n'importe quel CVC ;
+   - carte refusée : `4000 0000 0000 0002` ;
+   - au retour, la page affiche « Premium actif, payé jusqu'au … » (rechargez si le webhook arrive une seconde après) ;
+   - « Gérer mon abonnement » ouvre le portail : annulez, puis rechargez `/account` : la formule repasse en Gratuite quand Stripe envoie la fin de l'abonnement (à la fin de la période si vous avez choisi « à la fin de la période »).
+   - dans Stripe, Webhooks, l'onglet des tentatives doit montrer des réponses 200. Un 400 veut dire que `STRIPE_WEBHOOK_SECRET` ne correspond pas à cette destination.
+
+Ce que fait l'application de son côté :
+- la formule d'un compte ne change que sur un événement signé par Stripe, jamais sur le retour du navigateur ;
+- un paiement en échec garde le Premium pendant que Stripe réessaie (`past_due`), puis le retire si l'abonnement est annulé ;
+- « Supprimer mon compte » et « Tout supprimer » arrêtent d'abord l'abonnement chez Stripe ; si Stripe ne répond pas, rien n'est supprimé, pour que personne ne continue à payer un compte disparu ;
+- la purge des comptes inactifs depuis un an ne touche jamais un compte qui paie.
+
+Pendant la bêta, payer ne débloque encore aucune fonction : la limite entre gratuit et Premium reste à décider (voir [BETA.md](BETA.md)).
 
 ## 7. Premier test réel
 

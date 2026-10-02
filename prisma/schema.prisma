@@ -154,6 +154,12 @@ model Account {
   plan        String    @default("free") // free, premium
   createdAt   DateTime  @default(now())
   lastLoginAt DateTime?
+  // Stripe: the customer, the subscription's state and the end of the period paid for. Set by
+  // the webhook only; billingEventAt keeps an older event that arrives late from undoing a newer one.
+  stripeCustomerId   String?   @unique
+  subscriptionStatus String?
+  premiumUntil       DateTime?
+  billingEventAt     Int?
 }
 
 // A sign-in link waiting to be opened: only the hash of its token is kept, it works once, for 15 minutes.
