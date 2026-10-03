@@ -174,3 +174,52 @@ model LoginToken {
 
   @@index([emailHash])
 }
+
+// The app's own ad space: campaigns sold directly to advertisers (no ad network). Targeting is
+// contextual only, decided in the app from the categories of the subscriptions it found; nothing
+// about a user is stored with an ad or sent to the advertiser.
+model AdCampaign {
+  id             String   @id @default(cuid())
+  advertiser     String
+  name           String
+  format         String // story, short, card
+  categories     String   @default("") // comma-separated subscription categories; empty: everyone
+  title          String
+  body           String
+  cta            String
+  url            String // https landing page
+  mediaUrl       String? // video (mp4, webm) or image
+  mediaKind      String? // video, image
+  posterUrl      String?
+  pricing        String // cpm, cpc, cpa
+  rate           Float // € HT per 1 000 impressions, per click or per conversion
+  budget         Float // € HT at most; the campaign stops once spent
+  startsOn       DateTime
+  endsOn         DateTime
+  status         String   @default("active") // active, paused
+  postbackSecret String // the advertiser's key to report a conversion
+  createdAt      DateTime @default(now())
+}
+
+// Counters per campaign and per day, nothing per person.
+model AdStat {
+  campaignId  String
+  day         String // YYYY-MM-DD
+  impressions Int    @default(0)
+  views       Int    @default(0) // a story or a short watched to the end
+  clicks      Int    @default(0)
+  conversions Int    @default(0)
+  revenue     Float  @default(0) // € HT earned
+  @@id([campaignId, day])
+}
+
+// A click, under a random id passed to the advertiser so it can report a conversion. It holds
+// no session, address or device: only the campaign and the time.
+model AdClick {
+  id          String    @id
+  campaignId  String
+  createdAt   DateTime  @default(now())
+  convertedAt DateTime?
+
+  @@index([campaignId])
+}

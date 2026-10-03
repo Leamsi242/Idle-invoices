@@ -139,6 +139,51 @@ CREATE TABLE "LoginToken" (
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- CreateTable
+CREATE TABLE "AdCampaign" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "advertiser" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "format" TEXT NOT NULL,
+    "categories" TEXT NOT NULL DEFAULT '',
+    "title" TEXT NOT NULL,
+    "body" TEXT NOT NULL,
+    "cta" TEXT NOT NULL,
+    "url" TEXT NOT NULL,
+    "mediaUrl" TEXT,
+    "mediaKind" TEXT,
+    "posterUrl" TEXT,
+    "pricing" TEXT NOT NULL,
+    "rate" REAL NOT NULL,
+    "budget" REAL NOT NULL,
+    "startsOn" DATETIME NOT NULL,
+    "endsOn" DATETIME NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'active',
+    "postbackSecret" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "AdStat" (
+    "campaignId" TEXT NOT NULL,
+    "day" TEXT NOT NULL,
+    "impressions" INTEGER NOT NULL DEFAULT 0,
+    "views" INTEGER NOT NULL DEFAULT 0,
+    "clicks" INTEGER NOT NULL DEFAULT 0,
+    "conversions" INTEGER NOT NULL DEFAULT 0,
+    "revenue" REAL NOT NULL DEFAULT 0,
+
+    PRIMARY KEY ("campaignId", "day")
+);
+
+-- CreateTable
+CREATE TABLE "AdClick" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "campaignId" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "convertedAt" DATETIME
+);
+
 -- CreateIndex
 CREATE INDEX "Upload_sessionId_idx" ON "Upload"("sessionId");
 
@@ -177,4 +222,7 @@ CREATE UNIQUE INDEX "LoginToken_tokenHash_key" ON "LoginToken"("tokenHash");
 
 -- CreateIndex
 CREATE INDEX "LoginToken_emailHash_idx" ON "LoginToken"("emailHash");
+
+-- CreateIndex
+CREATE INDEX "AdClick_campaignId_idx" ON "AdClick"("campaignId");
 

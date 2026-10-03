@@ -106,6 +106,10 @@ Ne sont pas comptés : votre propre impôt sur le revenu hors versement libérat
 | Actifs qui préparent une résiliation dans l'application | 2 % des actifs par mois | hypothèse à mesurer |  |
 | Résiliations où l'utilisateur accepte l'offre de rétention du service | 10 % | hypothèse |  |
 | Prix payé par une marque pour une offre de rétention acceptée | 0 € HT par offre acceptée | non vérifiable (aucun contrat) | 0 tant qu'aucune marque n'a signé ; 5 € est un ordre de grandeur à négocier |
+| Stories et Shorts vus (le Premium est sans publicité) | 6 vues par utilisateur gratuit et par mois | hypothèse à mesurer |  |
+| Part des vues publicitaires vendues à un annonceur | 0 % des vues vendues | non vérifiable (aucun contrat) | 0 tant qu'aucun annonceur n'a signé |
+| Prix moyen des 1 000 vues (Story 25 €, Short 18 € en tarif de lancement) | 20 € HT pour 1 000 vues | hypothèse, tarif à tester |  |
+| Vente et suivi des campagnes, dès qu'une campagne tourne | 8 heures par mois | hypothèse |  |
 | Activés qui achètent une résiliation assistée | 2 % des activés | hypothèse |  |
 | Prix d'une résiliation assistée (lettre prête, envoi, suivi) | 4,99 € TTC | hypothèse |  |
 | Début des licences professionnelles (marque blanche) | 12 mois | hypothèse |  |

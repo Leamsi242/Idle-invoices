@@ -25,7 +25,7 @@ Gardez-les dans un gestionnaire de mots de passe. Perdre `DATA_ENCRYPTION_KEY` r
 
 Vérification : la console Turso liste les tables `Upload`, `Transaction`, `Subscription`, `Match`, `Descriptor`, `TrackedTrial`, `Profile`, `BankLink`, `Alert`, `Account` et `LoginToken`.
 
-Base déjà créée avant l'arrivée des comptes : exécutez seulement [`docs/migrations/2026-10-accounts.sql`](migrations/2026-10-accounts.sql), puis [`docs/migrations/2026-10-billing.sql`](migrations/2026-10-billing.sql), dans la même console (deux tables, quatre colonnes et cinq index, rien n'est modifié ailleurs).
+Base déjà créée avant l'arrivée des comptes : exécutez seulement [`docs/migrations/2026-10-accounts.sql`](migrations/2026-10-accounts.sql), puis [`docs/migrations/2026-10-billing.sql`](migrations/2026-10-billing.sql) et [`docs/migrations/2026-10-ads.sql`](migrations/2026-10-ads.sql), dans la même console (de nouvelles tables, colonnes et index, rien n'est modifié ailleurs).
 
 ## 3. Déployer sur Vercel
 
@@ -175,6 +175,16 @@ La fiche d'un abonnement (téléphone, box, énergie...) peut proposer une offre
 ```
 
 Règles appliquées par l'application : les offres sont classées selon l'économie de l'utilisateur, jamais selon `commission` (qui ne sert qu'au modèle économique) ; une offre n'apparaît que si elle fait économiser au moins 2 € par mois, si son lien est en `https` et si son prix a été vérifié il y a moins de 60 jours (`checkedOn`) : revérifiez les prix chaque mois. Catégories utiles : `telecom`, `energy` (l'assurance et la banque demandent une immatriculation ORIAS, à ne pas activer sans avis juridique).
+
+## 6 quater. Régie publicitaire (Stories, Shorts)
+
+L'application a son propre espace publicitaire, vendu directement aux annonceurs : une rangée « Bons plans du mois » en Stories plein écran et un Short vidéo dans l'aperçu. Les membres Premium n'en voient pas.
+
+- **Console** : `https://<domaine>/ads`, réservée au navigateur qui a saisi `BETA_OWNER_CODE`. On y crée une campagne (format, ciblage par catégorie, tarif CPM, CPC ou CPA, budget, dates) et on suit vues, vues complètes, clics, souscriptions et revenus.
+- **Page annonceurs** : `https://<domaine>/advertise`, avec les formats et les tarifs de lancement. Ajoutez `ADS_CONTACT_EMAIL` dans Vercel pour afficher le bouton « Lancer une campagne ».
+- **Médias** : vidéo verticale 9:16 (mp4 ou webm, moins de 1 Mo conseillé) hébergée en https par l'annonceur, ou déposée dans `public/ads/`.
+- **Souscriptions (CPA)** : le clic arrive chez l'annonceur avec `sd_click` ; son serveur appelle `https://<domaine>/api/ads/postback?click=<sd_click>&key=<clé>` (clé affichée une fois à la création de la campagne).
+- **Facturation** : à faire hors de l'application (facture HT au montant de la colonne « Revenus »), avec la mention de TVA de votre régime.
 
 ## 7. Premier test réel
 

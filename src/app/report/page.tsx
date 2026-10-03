@@ -1,3 +1,7 @@
+import { AdShort, AdStories } from "@/components/Ads";
+import { serveAds } from "@/lib/ads";
+import { inDemo } from "@/lib/demo-mode";
+import { getAccount } from "@/lib/accounts";
 import Link from "next/link";
 import { today as todayLocal } from "@/lib/today";
 import { getSessionId } from "@/lib/session";
@@ -295,6 +299,9 @@ export default async function Overview() {
   });
   const icons = Object.fromEntries(items.filter((i) => i.name).map((i) => [i.name!, <ServiceIcon key={i.name} name={i.name!} />]));
   const charges = upcomingCharges([...r.forgotten, ...r.active, ...r.idle], r.trials, today);
+  // The app's own ad space: chosen from the categories found here, never from the user; none for Premium.
+  const adContext = { categories: [...new Set(liveSubs.map((s) => s.category).filter((c): c is string => !!c))], demo: await inDemo(), premium: (await getAccount(sessionId))?.plan === "premium" };
+  const [stories, [short]] = await Promise.all([serveAds({ format: "story", ...adContext }), serveAds({ format: "short", ...adContext })]);
   return (
     <div className="space-y-6">
       <section className="flex flex-wrap items-end justify-between gap-3">
@@ -304,6 +311,8 @@ export default async function Overview() {
         </div>
         <p className="flex items-center gap-2 text-sm text-muted"><Icon name="calendar" className="h-4 w-4" />{formatDate(today, locale)}</p>
       </section>
+
+      <AdStories ads={stories} />
 
       <AlertsPanel lines={alerts.map((a) => ({ id: a.id, text: alertLine(a.change, locale), date: formatDate(a.createdAt, locale) }))} />
 
@@ -344,6 +353,8 @@ export default async function Overview() {
       </div>
 
       <Reveals items={insights(subs, today)} m={m} locale={locale} currency={currency} />
+
+      <AdShort ad={short ?? null} />
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2 [&>*]:min-w-0">
         <PaySplit subs={subs} m={m} locale={locale} perYear={w.perYear} />

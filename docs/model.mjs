@@ -91,6 +91,10 @@ export const PARAMS = {
   retentionUse: { v: 2, unit: "% des actifs par mois", label: "Actifs qui préparent une résiliation dans l'application", verdict: "hypothèse à mesurer" },
   retentionAccept: { v: 10, unit: "%", label: "Résiliations où l'utilisateur accepte l'offre de rétention du service", verdict: "hypothèse" },
   retentionCpa: { v: 0, unit: "€ HT par offre acceptée", label: "Prix payé par une marque pour une offre de rétention acceptée", note: "0 tant qu'aucune marque n'a signé ; 5 € est un ordre de grandeur à négocier", verdict: "non vérifiable (aucun contrat)" },
+  adViews: { v: 6, unit: "vues par utilisateur gratuit et par mois", label: "Stories et Shorts vus (le Premium est sans publicité)", verdict: "hypothèse à mesurer" },
+  adFill: { v: 0, unit: "% des vues vendues", label: "Part des vues publicitaires vendues à un annonceur", note: "0 tant qu'aucun annonceur n'a signé", verdict: "non vérifiable (aucun contrat)" },
+  adCpm: { v: 20, unit: "€ HT pour 1 000 vues", label: "Prix moyen des 1 000 vues (Story 25 €, Short 18 € en tarif de lancement)", verdict: "hypothèse, tarif à tester" },
+  adSalesHours: { v: 8, unit: "heures par mois", label: "Vente et suivi des campagnes, dès qu'une campagne tourne", verdict: "hypothèse" },
   conciergeShare: { v: 2, unit: "% des activés", label: "Activés qui achètent une résiliation assistée", verdict: "hypothèse" },
   conciergePrice: { v: 4.99, unit: "€ TTC", label: "Prix d'une résiliation assistée (lettre prête, envoi, suivi)", verdict: "hypothèse" },
   b2bFrom: { v: 12, unit: "mois", label: "Début des licences professionnelles (marque blanche)", verdict: "hypothèse" },
@@ -248,7 +252,9 @@ export function project(p0, s) {
     const ht = (ttc) => (vatDue ? ttc / (1 + p.vat / 100) : ttc);
 
     // Revenue: what customers pay, without VAT, then what Stripe keeps.
-    const r = { premium: 0, annual: 0, oneOff: 0, aff: 0, retention: 0, concierge: 0, b2b: 0 };
+    const r = { premium: 0, annual: 0, oneOff: 0, aff: 0, retention: 0, ads: 0, concierge: 0, b2b: 0 };
+    // The app's own ad space: Stories and Shorts seen by free users, sold directly (invoiced without VAT on our side of the margin).
+    const adsGross = monetized ? (free * p.adViews * p.adFill / 100) * p.adCpm / 1000 : 0;
     // Affiliation: the commission is turnover; the part given back to users is a cost.
     const affGross = monetized && offer.aff ? active * p.affRate / 100 * p.affCommission : 0;
     const retentionGross = monetized && offer.aff ? active * p.retentionUse / 100 * p.retentionAccept / 100 * p.retentionCpa : 0;
@@ -259,6 +265,7 @@ export function project(p0, s) {
       r.oneOff = buyers * (ht(p.oneOff) - stripe(p.oneOff));
       if (offer.aff) r.aff = affGross * (1 - p.affShare / 100);
       if (offer.aff) r.retention = retentionGross;
+      r.ads = adsGross;
       if (offer.concierge) r.concierge = activated * p.conciergeShare / 100 * (ht(p.conciergePrice) - stripe(p.conciergePrice));
       if (offer.b2b) r.b2b = licences * p.b2bPrice * (1 - (cardPct + p.stripeBilling) / 100);
     }
@@ -270,7 +277,7 @@ export function project(p0, s) {
     r.refunds = -(refunds + disputes);
     const revenue = Object.values(r).reduce((t, x) => t + x, 0);
     const turnover = monetized
-      ? paidM * ht(p.price) + paidY * ht(p.annualPrice) / 12 + activated * p.oneOffShare / 100 * ht(p.oneOff) + affGross + retentionGross
+      ? paidM * ht(p.price) + paidY * ht(p.annualPrice) / 12 + activated * p.oneOffShare / 100 * ht(p.oneOff) + affGross + retentionGross + adsGross
         + (offer.concierge ? activated * p.conciergeShare / 100 * ht(p.conciergePrice) : 0) + licences * p.b2bPrice
       : 0;
     turnoverHistory.push(turnover);
@@ -307,6 +314,7 @@ export function project(p0, s) {
       content: monetized ? p.mkHours * (ai ? 1 - p.aiContentGain / 100 : 1) : 0,
       admin: (p.adminHours + p.adminPer1000 * active / 1000) * (ai ? 1 - p.aiAdminGain / 100 : 1),
       b2b: newLicences * p.b2bSetupHours + licences * p.b2bHours,
+      ads: monetized && p.adFill > 0 ? p.adSalesHours : 0,
     };
     const totalHours = Object.values(hours).reduce((t, x) => t + x, 0);
     const paidHours = Math.max(0, totalHours - p.founderHours);
@@ -483,7 +491,7 @@ export const GROUPS = [
   ["Activation", ["actStatements", "actTakeout", "actGmail", "actBankAll", "outlookShare"]],
   ["Prix et revenus", ["conv", "price", "oneOff", "oneOffShare", "vat", "socialRate"]],
   ["Frais de paiement, taxes et dépenses faciles à oublier", ["stripePct", "stripeFix", "stripeBilling", "premiumCards", "premiumCardPct", "refundRate", "disputeRate", "disputeFee", "foreignVat", "fxFee", "cfpRate", "irRate", "cfe", "bankFeeMicro", "bankFeeCompany", "trademark", "companySetup", "contingency"]],
-  ["Autres revenus", ["annualPrice", "annualShare", "annualChurn", "affRate", "affCommission", "affShare", "retentionUse", "retentionAccept", "retentionCpa", "conciergeShare", "conciergePrice", "b2bFrom", "b2bPerQuarter", "b2bPrice", "b2bChurn"]],
+  ["Autres revenus", ["annualPrice", "annualShare", "annualChurn", "affRate", "affCommission", "affShare", "retentionUse", "retentionAccept", "retentionCpa", "adViews", "adFill", "adCpm", "adSalesHours", "conciergeShare", "conciergePrice", "b2bFrom", "b2bPerQuarter", "b2bPrice", "b2bChurn"]],
   ["Statut et impôts", ["vatThreshold", "microCeiling", "accountant", "isRate", "isRate2", "rcPro"]],
   ["Hébergement et outils selon l'échelle", ["usdEur", "vercelPro", "hobbyCapacity", "proExtraPerActive", "tursoFreeActives", "tursoDev", "tursoDevActives", "tursoScaler", "domain", "resendFree", "resendPro", "resendScale", "alertsPerPremium", "emailsPerActive", "sentryFreeActives", "sentryTeam", "aiPerActive"]],
   ["Personnel et IA", ["founderHours", "founderPay", "ticketsPer100", "ticketMin", "aiSupportShare", "aiTicketCost", "devHours", "devPer1000", "aiDevGain", "aiDevTool", "mkHours", "aiContentGain", "aiContentTool", "adminHours", "adminPer1000", "aiAdminGain", "b2bSetupHours", "b2bHours", "freelanceRate", "employeeCost", "fteHours"]],
