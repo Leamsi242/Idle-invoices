@@ -151,6 +151,31 @@ Ce que fait l'application de son côté :
 
 Pendant la bêta, payer ne débloque encore aucune fonction : la limite entre gratuit et Premium reste à décider (voir [BETA.md](BETA.md)).
 
+## 6 ter. Offres partenaires (affiliation)
+
+La fiche d'un abonnement (téléphone, box, énergie...) peut proposer une offre moins chère d'un partenaire, avec la mention « Offre partenaire : nous touchons une commission ». Rien ne s'affiche tant que [`src/data/partner-offers.json`](../src/data/partner-offers.json) est vide (`[]`) ; le mode démo montre une offre fictive.
+
+1. Inscrivez-vous sur une plateforme d'affiliation qui regroupe des opérateurs et des fournisseurs d'énergie, et faites accepter le site par les annonceurs.
+2. Pour chaque offre, ajoutez un objet au fichier :
+
+```json
+{
+  "id": "mobile-xxx-100go",
+  "category": "telecom",
+  "partner": "Nom de l'opérateur",
+  "title": { "fr": "Forfait mobile 100 Go", "en": "100 GB mobile plan" },
+  "conditions": { "fr": "Sans engagement, prix fixe 12 mois.", "en": "No commitment, fixed price for 12 months." },
+  "monthlyPrice": 9.99,
+  "currency": "EUR",
+  "url": "https://lien-d-affiliation...",
+  "commission": 30,
+  "checkedOn": "2026-10-03",
+  "expiresOn": "2026-12-31"
+}
+```
+
+Règles appliquées par l'application : les offres sont classées selon l'économie de l'utilisateur, jamais selon `commission` (qui ne sert qu'au modèle économique) ; une offre n'apparaît que si elle fait économiser au moins 2 € par mois, si son lien est en `https` et si son prix a été vérifié il y a moins de 60 jours (`checkedOn`) : revérifiez les prix chaque mois. Catégories utiles : `telecom`, `energy` (l'assurance et la banque demandent une immatriculation ORIAS, à ne pas activer sans avis juridique).
+
 ## 7. Premier test réel
 
 Sur votre téléphone, ouvrez `https://<domaine>` :

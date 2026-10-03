@@ -87,6 +87,10 @@ export const PARAMS = {
   annualChurn: { v: 1.5, unit: "% par mois", label: "Départs des abonnés annuels (non-renouvellement lissé)", verdict: "hypothèse" },
   affRate: { v: 0.3, unit: "% des actifs par mois", label: "Actifs qui changent d'offre (énergie, box, assurance) par l'application", verdict: "hypothèse" },
   affCommission: { v: 25, unit: "€ HT par contrat", label: "Commission d'affiliation par contrat souscrit", note: "Hello Watt, Selectra et Kelwatt déclarent être payés à la commission par les fournisseurs ; montants non publics", verdict: "modèle confirmé, montant non vérifiable" },
+  affShare: { v: 0, unit: "% de la commission", label: "Part de la commission d'affiliation reversée à l'utilisateur", note: "0 : rien reversé ; 50 : « nous vous reversons la moitié », à tester contre le taux de souscription", verdict: "à choisir" },
+  retentionUse: { v: 2, unit: "% des actifs par mois", label: "Actifs qui préparent une résiliation dans l'application", verdict: "hypothèse à mesurer" },
+  retentionAccept: { v: 10, unit: "%", label: "Résiliations où l'utilisateur accepte l'offre de rétention du service", verdict: "hypothèse" },
+  retentionCpa: { v: 0, unit: "€ HT par offre acceptée", label: "Prix payé par une marque pour une offre de rétention acceptée", note: "0 tant qu'aucune marque n'a signé ; 5 € est un ordre de grandeur à négocier", verdict: "non vérifiable (aucun contrat)" },
   conciergeShare: { v: 2, unit: "% des activés", label: "Activés qui achètent une résiliation assistée", verdict: "hypothèse" },
   conciergePrice: { v: 4.99, unit: "€ TTC", label: "Prix d'une résiliation assistée (lettre prête, envoi, suivi)", verdict: "hypothèse" },
   b2bFrom: { v: 12, unit: "mois", label: "Début des licences professionnelles (marque blanche)", verdict: "hypothèse" },
@@ -244,13 +248,17 @@ export function project(p0, s) {
     const ht = (ttc) => (vatDue ? ttc / (1 + p.vat / 100) : ttc);
 
     // Revenue: what customers pay, without VAT, then what Stripe keeps.
-    const r = { premium: 0, annual: 0, oneOff: 0, aff: 0, concierge: 0, b2b: 0 };
+    const r = { premium: 0, annual: 0, oneOff: 0, aff: 0, retention: 0, concierge: 0, b2b: 0 };
+    // Affiliation: the commission is turnover; the part given back to users is a cost.
+    const affGross = monetized && offer.aff ? active * p.affRate / 100 * p.affCommission : 0;
+    const retentionGross = monetized && offer.aff ? active * p.retentionUse / 100 * p.retentionAccept / 100 * p.retentionCpa : 0;
     if (monetized) {
       r.premium = paidM * (ht(p.price) - stripe(p.price, true));
       r.annual = paidY * (ht(p.annualPrice) - stripe(p.annualPrice, true)) / 12;
       const buyers = activated * p.oneOffShare / 100;
       r.oneOff = buyers * (ht(p.oneOff) - stripe(p.oneOff));
-      if (offer.aff) r.aff = active * p.affRate / 100 * p.affCommission;
+      if (offer.aff) r.aff = affGross * (1 - p.affShare / 100);
+      if (offer.aff) r.retention = retentionGross;
       if (offer.concierge) r.concierge = activated * p.conciergeShare / 100 * (ht(p.conciergePrice) - stripe(p.conciergePrice));
       if (offer.b2b) r.b2b = licences * p.b2bPrice * (1 - (cardPct + p.stripeBilling) / 100);
     }
@@ -262,7 +270,7 @@ export function project(p0, s) {
     r.refunds = -(refunds + disputes);
     const revenue = Object.values(r).reduce((t, x) => t + x, 0);
     const turnover = monetized
-      ? paidM * ht(p.price) + paidY * ht(p.annualPrice) / 12 + activated * p.oneOffShare / 100 * ht(p.oneOff) + r.aff
+      ? paidM * ht(p.price) + paidY * ht(p.annualPrice) / 12 + activated * p.oneOffShare / 100 * ht(p.oneOff) + affGross + retentionGross
         + (offer.concierge ? activated * p.conciergeShare / 100 * ht(p.conciergePrice) : 0) + licences * p.b2bPrice
       : 0;
     turnoverHistory.push(turnover);
@@ -475,7 +483,7 @@ export const GROUPS = [
   ["Activation", ["actStatements", "actTakeout", "actGmail", "actBankAll", "outlookShare"]],
   ["Prix et revenus", ["conv", "price", "oneOff", "oneOffShare", "vat", "socialRate"]],
   ["Frais de paiement, taxes et dépenses faciles à oublier", ["stripePct", "stripeFix", "stripeBilling", "premiumCards", "premiumCardPct", "refundRate", "disputeRate", "disputeFee", "foreignVat", "fxFee", "cfpRate", "irRate", "cfe", "bankFeeMicro", "bankFeeCompany", "trademark", "companySetup", "contingency"]],
-  ["Autres revenus", ["annualPrice", "annualShare", "annualChurn", "affRate", "affCommission", "conciergeShare", "conciergePrice", "b2bFrom", "b2bPerQuarter", "b2bPrice", "b2bChurn"]],
+  ["Autres revenus", ["annualPrice", "annualShare", "annualChurn", "affRate", "affCommission", "affShare", "retentionUse", "retentionAccept", "retentionCpa", "conciergeShare", "conciergePrice", "b2bFrom", "b2bPerQuarter", "b2bPrice", "b2bChurn"]],
   ["Statut et impôts", ["vatThreshold", "microCeiling", "accountant", "isRate", "isRate2", "rcPro"]],
   ["Hébergement et outils selon l'échelle", ["usdEur", "vercelPro", "hobbyCapacity", "proExtraPerActive", "tursoFreeActives", "tursoDev", "tursoDevActives", "tursoScaler", "domain", "resendFree", "resendPro", "resendScale", "alertsPerPremium", "emailsPerActive", "sentryFreeActives", "sentryTeam", "aiPerActive"]],
   ["Personnel et IA", ["founderHours", "founderPay", "ticketsPer100", "ticketMin", "aiSupportShare", "aiTicketCost", "devHours", "devPer1000", "aiDevGain", "aiDevTool", "mkHours", "aiContentGain", "aiContentTool", "adminHours", "adminPer1000", "aiAdminGain", "b2bSetupHours", "b2bHours", "freelanceRate", "employeeCost", "fteHours"]],

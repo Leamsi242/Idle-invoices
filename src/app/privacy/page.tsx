@@ -22,6 +22,7 @@ export default async function Privacy() {
           <li>Your answers to &quot;How do you pay?&quot; (which banks, cards, payment apps, stores and mailboxes you use, never any number or password), encrypted, to build your checklist.</li>
           <li>If you open an account: your e-mail address, encrypted, to send you sign-in links. There is no password. The account and its address are deleted when you delete them, or after a year without signing in.</li>
           <li>If you pay for Premium: your Stripe customer number and the state of your subscription (active, end of the period paid). Your card is typed on Stripe&apos;s page and never reaches us; Stripe keeps the invoices, as the law requires.</li>
+          <li>Partner offers: some subscriptions show a cheaper offer from a partner, labelled as such. It is chosen in the app from what it already found; nothing about you is sent to the partner. If you click, the partner knows you came from us, nothing more.</li>
         </ul>
       </section>
 
@@ -115,6 +116,7 @@ function PrivacyFr() {
           <li>Vos réponses à « Comment payez-vous ? » (quelles banques, cartes, applications de paiement, magasins et boîtes mail, jamais un numéro ni un mot de passe), chiffrées, pour construire votre liste.</li>
           <li>Si vous ouvrez un compte : votre adresse e-mail, chiffrée, pour vous envoyer les liens de connexion. Il n&apos;y a pas de mot de passe. Le compte et l&apos;adresse sont supprimés quand vous les supprimez, ou après un an sans connexion.</li>
           <li>Si vous payez le Premium : votre numéro de client Stripe et l&apos;état de votre abonnement (actif, fin de la période payée). Votre carte se saisit sur la page de Stripe et ne nous parvient jamais ; Stripe conserve les factures, comme la loi l&apos;exige.</li>
+          <li>Offres partenaires : certains abonnements affichent une offre moins chère d&apos;un partenaire, signalée comme telle. Elle est choisie dans l&apos;application à partir de ce qu&apos;elle a déjà trouvé ; rien vous concernant n&apos;est transmis au partenaire. Si vous cliquez, le partenaire sait seulement que vous venez de chez nous.</li>
         </ul>
       </section>
 

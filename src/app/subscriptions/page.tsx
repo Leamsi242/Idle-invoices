@@ -16,13 +16,16 @@ import { Decisions, LabelQuestion } from "@/components/Questions";
 import { ReminderButton } from "@/components/Reminders";
 import { Drawer } from "@/components/Drawer";
 import { Icon, Pill } from "@/components/ui";
+import { PartnerOfferCard } from "@/components/PartnerOffer";
+import { bestAlternative, partnerOffers, type Alternative } from "@/lib/partner-offers";
+import { inDemo } from "@/lib/demo-mode";
 
 export const dynamic = "force-dynamic";
 
 const payName = (p: string, m: Messages) => (p === PAID_WITH_FILE ? m.report.viaFile : p === PAID_WITH_RECEIPTS ? m.report.viaReceipts : p);
 
 /** The detail of one subscription, as a panel over the table: the proof, then the decision. */
-function Detail({ s, m, w, locale, today }: { s: StoredSubscription; m: Messages; w: V3; locale: Locale; today: string }) {
+function Detail({ s, m, w, locale, today, alt }: { s: StoredSubscription; m: Messages; w: V3; locale: Locale; today: string; alt: Alternative | null }) {
   const t = m.report;
   const $ = (n: number) => money(n, s.currency, locale);
   const status = statusOf(s);
@@ -97,6 +100,8 @@ function Detail({ s, m, w, locale, today }: { s: StoredSubscription; m: Messages
           <Decisions labelKey={s.key} frequency={s.frequency} usage={s.usage} t={{ keep: w.keep, notUsed: w.notUsed, cancelled: w.cancelled, notSub: w.notSub, undo: w.undo }} />
         </section>
 
+        {alt && <PartnerOfferCard alt={alt} current={monthly(s)} locale={locale} />}
+
         {!ended && s.usage !== "notsub" && (
           <details className="rounded-2xl bg-surface-2 p-4 text-sm">
             <summary className="flex items-center gap-1 font-medium"><Icon name="chevron" className="chev h-4 w-4" />{t.howToCancel}</summary>
@@ -163,7 +168,7 @@ export default async function Subscriptions({ searchParams }: { searchParams: Pr
       ) : (
         <SubsTable rows={rows} t={{ search: w.search, paidWith: m.report.paidWith, allWays: w.allWays, filters: w.filters, sorts: w.sorts, sortBy: w.sortBy, cols: w.cols, noMatch: w.noMatch, perMonth: w.perMonth }} />
       )}
-      {open && <Detail s={open} m={m} w={w} locale={locale} today={today} />}
+      {open && <Detail s={open} m={m} w={w} locale={locale} today={today} alt={bestAlternative(open, partnerOffers(await inDemo(), today), today)} />}
     </div>
   );
 }

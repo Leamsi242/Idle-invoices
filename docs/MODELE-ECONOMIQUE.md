@@ -102,6 +102,10 @@ Ne sont pas comptés : votre propre impôt sur le revenu hors versement libérat
 | Départs des abonnés annuels (non-renouvellement lissé) | 1,5 % par mois | hypothèse |  |
 | Actifs qui changent d'offre (énergie, box, assurance) par l'application | 0,3 % des actifs par mois | hypothèse |  |
 | Commission d'affiliation par contrat souscrit | 25 € HT par contrat | modèle confirmé, montant non vérifiable | Hello Watt, Selectra et Kelwatt déclarent être payés à la commission par les fournisseurs ; montants non publics |
+| Part de la commission d'affiliation reversée à l'utilisateur | 0 % de la commission | à choisir | 0 : rien reversé ; 50 : « nous vous reversons la moitié », à tester contre le taux de souscription |
+| Actifs qui préparent une résiliation dans l'application | 2 % des actifs par mois | hypothèse à mesurer |  |
+| Résiliations où l'utilisateur accepte l'offre de rétention du service | 10 % | hypothèse |  |
+| Prix payé par une marque pour une offre de rétention acceptée | 0 € HT par offre acceptée | non vérifiable (aucun contrat) | 0 tant qu'aucune marque n'a signé ; 5 € est un ordre de grandeur à négocier |
 | Activés qui achètent une résiliation assistée | 2 % des activés | hypothèse |  |
 | Prix d'une résiliation assistée (lettre prête, envoi, suivi) | 4,99 € TTC | hypothèse |  |
 | Début des licences professionnelles (marque blanche) | 12 mois | hypothèse |  |
@@ -513,4 +517,4 @@ Avec les paramètres actuels, le plan R9-sobre donne sur 24 mois : dépenses 1�
 | 24 | 740 | 1 073 | 123 | 665 € | 148 € | 24 € | 87 € | 166 € | 351 € | 2 685 € |
 
 ---
-Généré le 2026-10-02 par `scripts/gen-modele.mjs`. Ne pas modifier à la main : modifiez `docs/model.mjs`.
+Généré le 2026-10-03 par `scripts/gen-modele.mjs`. Ne pas modifier à la main : modifiez `docs/model.mjs`.
